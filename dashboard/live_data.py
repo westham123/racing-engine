@@ -9,6 +9,15 @@ import re
 from bs4 import BeautifulSoup
 from datetime import date, datetime
 import pandas as pd
+import sys, os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+try:
+    from engine.odds_model import OddsModel as _OddsModel
+    _odds_model = _OddsModel()
+    MODEL_AVAILABLE = True
+except Exception as _model_err:
+    MODEL_AVAILABLE = False
+    _odds_model = None
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -248,9 +257,23 @@ def get_todays_selections():
                 if rn.get("status") == "NON_RUNNER":
                     continue
 
-                # Derive confidence proxy from odds + timeform stars + rating
+                # Derive confidence using full ML model (or proxy if model unavailable)
                 odds_str = rn.get("odds", "N/A")
-                confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
+                if MODEL_AVAILABLE and _odds_model is not None:
+                    runner_input = {
+                        "odds":     odds_str,
+                        "form":     rn.get("form", "-"),
+                        "going":    going,
+                        "trainer":  rn.get("trainer", ""),
+                        "jockey":   rn.get("jockey", ""),
+                        "signal":   rn.get("signal", "Stable"),
+                        "bet_movements": rn.get("bet_movements", []),
+                        "tf_stars": rn.get("tf_stars"),
+                        "course":   course,
+                    }
+                    confidence = _odds_model.calculate_confidence(runner_input)
+                else:
+                    confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
 
                 all_rows.append({
                     "Race": f"{time} {course}",
