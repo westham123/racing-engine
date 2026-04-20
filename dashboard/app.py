@@ -1,5 +1,5 @@
 # Racing Engine — Visual Dashboard
-# Version: 0.1
+# Version: 0.3 — PIN lock added
 # Built with Streamlit
 # Date: 20 April 2026
 
@@ -7,7 +7,6 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, date
-import random
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(
@@ -22,11 +21,14 @@ st.markdown("""
 <style>
     .main { background-color: #0f1117; }
     .block-container { padding-top: 1.5rem; }
-    .metric-card {
+    .pin-container {
+        max-width: 360px;
+        margin: 8rem auto;
         background: #1c1f2e;
-        border-radius: 10px;
-        padding: 1rem 1.2rem;
-        border-left: 4px solid #00c853;
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        border: 1px solid #2e3250;
+        text-align: center;
     }
     .alert-high {
         background: #1a0000;
@@ -54,7 +56,43 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# ── Sample Data (replaced by live data in v0.2) ──────────────
+# ── PIN Lock ─────────────────────────────────────────────────
+CORRECT_PIN = "1012"
+
+if "unlocked" not in st.session_state:
+    st.session_state.unlocked = False
+
+if not st.session_state.unlocked:
+    st.markdown("""
+    <div class='pin-container'>
+        <h2 style='color:#ffffff; margin-bottom:0.2rem;'>🏇 Racing Engine</h2>
+        <p style='color:#888; margin-bottom:1.5rem;'>Enter PIN to access dashboard</p>
+    </div>
+    """, unsafe_allow_html=True)
+
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("### 🏇 Racing Engine")
+        st.markdown("Enter your PIN to continue")
+        pin_input = st.text_input(
+            "PIN",
+            type="password",
+            max_chars=4,
+            placeholder="Enter 4-digit PIN",
+            label_visibility="collapsed"
+        )
+        unlock = st.button("Unlock", use_container_width=True, type="primary")
+
+        if unlock or (len(pin_input) == 4):
+            if pin_input == CORRECT_PIN:
+                st.session_state.unlocked = True
+                st.rerun()
+            elif len(pin_input) == 4:
+                st.error("Incorrect PIN. Please try again.")
+    st.stop()
+
+# ── Sample Data ───────────────────────────────────────────────
 def get_sample_selections():
     return pd.DataFrame([
         {"Race": "14:00 Cheltenham", "Horse": "Energumene", "Jockey": "P. Townend", "Trainer": "W. Mullins", "Going": "Good-Soft", "Odds": "2/1", "Confidence": 0.84, "Signal": "⬆ Steam"},
@@ -95,12 +133,12 @@ def get_sample_learning():
 
 def get_sample_results():
     return pd.DataFrame([
-        {"Date": "19 Apr", "Race": "14:00 Cheltenham", "Selection": "Energumene", "Result": "WON", "Odds": "2/1", "Confidence": 0.83, "Correct": True},
-        {"Date": "19 Apr", "Race": "14:35 Cheltenham", "Selection": "Constitution Hill", "Result": "WON", "Odds": "5/4", "Confidence": 0.90, "Correct": True},
-        {"Date": "19 Apr", "Race": "15:10 Cheltenham", "Selection": "Galopin Des Champs", "Result": "2nd", "Odds": "4/6", "Confidence": 0.85, "Correct": False},
-        {"Date": "19 Apr", "Race": "15:45 Cheltenham", "Selection": "Fact To File", "Result": "WON", "Odds": "7/2", "Confidence": 0.70, "Correct": True},
-        {"Date": "18 Apr", "Race": "14:20 Leopardstown", "Selection": "Brighterdaysahead", "Result": "WON", "Odds": "9/4", "Confidence": 0.78, "Correct": True},
-        {"Date": "18 Apr", "Race": "15:00 Leopardstown", "Selection": "Marine Nationale", "Result": "3rd", "Odds": "11/4", "Confidence": 0.66, "Correct": False},
+        {"Date": "19 Apr", "Race": "14:00 Cheltenham", "Selection": "Energumene", "Result": "WON", "Odds": "2/1", "Confidence": 0.83},
+        {"Date": "19 Apr", "Race": "14:35 Cheltenham", "Selection": "Constitution Hill", "Result": "WON", "Odds": "5/4", "Confidence": 0.90},
+        {"Date": "19 Apr", "Race": "15:10 Cheltenham", "Selection": "Galopin Des Champs", "Result": "2nd", "Odds": "4/6", "Confidence": 0.85},
+        {"Date": "19 Apr", "Race": "15:45 Cheltenham", "Selection": "Fact To File", "Result": "WON", "Odds": "7/2", "Confidence": 0.70},
+        {"Date": "18 Apr", "Race": "14:20 Leopardstown", "Selection": "Brighterdaysahead", "Result": "WON", "Odds": "9/4", "Confidence": 0.78},
+        {"Date": "18 Apr", "Race": "15:00 Leopardstown", "Selection": "Marine Nationale", "Result": "3rd", "Odds": "11/4", "Confidence": 0.66},
     ])
 
 # ── Sidebar ───────────────────────────────────────────────────
@@ -121,8 +159,12 @@ with st.sidebar:
     st.markdown("🟢 BHA Going Reports — *live*")
     st.markdown("🟢 HRI Data — *live*")
     st.markdown("---")
-    st.markdown("**Engine v0.1**")
+    st.markdown("**Engine v0.3**")
     st.markdown("GitHub: `westham123/racing-engine`")
+    st.markdown("---")
+    if st.button("🔒 Lock Dashboard", use_container_width=True):
+        st.session_state.unlocked = False
+        st.rerun()
 
 # ── Header ────────────────────────────────────────────────────
 st.markdown("# 🏇 Racing Engine Dashboard")
@@ -184,8 +226,6 @@ with tab1:
 
     st.markdown("---")
     st.markdown("### Signal Breakdown")
-    st.markdown("How each data signal contributed to today's top selection.")
-
     signals = pd.DataFrame({
         "Signal": ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
         "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
@@ -199,8 +239,7 @@ with tab2:
     st.markdown("### Recommended Accumulator Permutations")
     st.markdown("Built from today's top-confidence runners. Ranked by combined confidence score.")
 
-    accas = get_sample_accas()
-    acca_df = pd.DataFrame(accas)
+    acca_df = pd.DataFrame(get_sample_accas())
 
     def colour_acca_conf(val):
         if val >= 0.80:
@@ -209,14 +248,12 @@ with tab2:
             return "background-color: #332200; color: #ffaa00"
         return "background-color: #330000; color: #ff6666"
 
-    styled_acca = acca_df.style\
-        .applymap(colour_acca_conf, subset=["Confidence"])\
-        .format({"Confidence": "{:.0%}"})
-
-    st.dataframe(styled_acca, use_container_width=True, hide_index=True)
+    st.dataframe(
+        acca_df.style.applymap(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
+        use_container_width=True, hide_index=True
+    )
 
     st.markdown("---")
-    st.markdown("### Permutation Types Explained")
     col1, col2 = st.columns(2)
     with col1:
         st.markdown("""
@@ -235,32 +272,25 @@ with tab2:
 # ── Tab 3: Live Alerts ────────────────────────────────────────
 with tab3:
     st.markdown("### Live Alerts")
-    st.markdown("Real-time notifications for market moves, going changes, non-runners and jockey changes.")
-
-    alerts = get_sample_alerts()
-    for alert in alerts:
-        css_class = f"alert-{alert['level']}"
+    for alert in get_sample_alerts():
         icon = "🔴" if alert["level"] == "high" else "🟠" if alert["level"] == "medium" else "🟢"
         st.markdown(
-            f'<div class="{css_class}">{icon} <strong>{alert["time"]}</strong> — {alert["message"]}</div>',
+            f'<div class="alert-{alert["level"]}">{icon} <strong>{alert["time"]}</strong> — {alert["message"]}</div>',
             unsafe_allow_html=True
         )
 
     st.markdown("---")
     st.markdown("### Going Reports")
-    going_df = pd.DataFrame([
+    st.dataframe(pd.DataFrame([
         {"Course": "Cheltenham", "Country": "🇬🇧 UK", "Going": "Good to Soft", "Updated": "13:00", "Trend": "Drying"},
         {"Course": "Leopardstown", "Country": "🇮🇪 IRE", "Going": "Soft", "Updated": "12:30", "Trend": "Stable"},
         {"Course": "Sandown", "Country": "🇬🇧 UK", "Going": "Good", "Updated": "11:45", "Trend": "Drying"},
         {"Course": "Naas", "Country": "🇮🇪 IRE", "Going": "Heavy", "Updated": "12:00", "Trend": "Easing"},
-    ])
-    st.dataframe(going_df, use_container_width=True, hide_index=True)
+    ]), use_container_width=True, hide_index=True)
 
 # ── Tab 4: Learning Engine ────────────────────────────────────
 with tab4:
     st.markdown("### Learning Engine Performance")
-    st.markdown("The engine tracks every recommendation against actual outcomes and adjusts signal weightings automatically.")
-
     learn_df = get_sample_learning()
 
     col1, col2, col3 = st.columns(3)
@@ -280,23 +310,20 @@ with tab4:
 
     st.markdown("---")
     st.markdown("#### Current Signal Weightings")
-    weights_df = pd.DataFrame([
-        {"Signal": "Market Odds", "Initial Weight": "25%", "Current Weight": "25%", "Change": "—"},
-        {"Signal": "Horse Form", "Initial Weight": "20%", "Current Weight": "22%", "Change": "↑ +2%"},
-        {"Signal": "Track Form", "Initial Weight": "15%", "Current Weight": "14%", "Change": "↓ -1%"},
-        {"Signal": "Going", "Initial Weight": "10%", "Current Weight": "10%", "Change": "—"},
+    st.dataframe(pd.DataFrame([
+        {"Signal": "Market Odds",  "Initial Weight": "25%", "Current Weight": "25%", "Change": "—"},
+        {"Signal": "Horse Form",   "Initial Weight": "20%", "Current Weight": "22%", "Change": "↑ +2%"},
+        {"Signal": "Track Form",   "Initial Weight": "15%", "Current Weight": "14%", "Change": "↓ -1%"},
+        {"Signal": "Going",        "Initial Weight": "10%", "Current Weight": "10%", "Change": "—"},
         {"Signal": "Trainer Form", "Initial Weight": "10%", "Current Weight": "13%", "Change": "↑ +3%"},
-        {"Signal": "Jockey Form", "Initial Weight": "10%", "Current Weight": "9%", "Change": "↓ -1%"},
-        {"Signal": "Market Moves", "Initial Weight": "7%", "Current Weight": "7%", "Change": "—"},
-        {"Signal": "Jump Index", "Initial Weight": "3%", "Current Weight": "3%", "Change": "—"},
-    ])
-    st.dataframe(weights_df, use_container_width=True, hide_index=True)
+        {"Signal": "Jockey Form",  "Initial Weight": "10%", "Current Weight": "9%",  "Change": "↓ -1%"},
+        {"Signal": "Market Moves", "Initial Weight": "7%",  "Current Weight": "7%",  "Change": "—"},
+        {"Signal": "Jump Index",   "Initial Weight": "3%",  "Current Weight": "3%",  "Change": "—"},
+    ]), use_container_width=True, hide_index=True)
 
 # ── Tab 5: Results History ────────────────────────────────────
 with tab5:
     st.markdown("### Results History")
-    st.markdown("Every recommendation the engine has made, compared against the actual result.")
-
     results_df = get_sample_results()
 
     def colour_result(val):
@@ -304,14 +331,10 @@ with tab5:
             return "background-color: #003300; color: #00ff88; font-weight: bold"
         return "background-color: #330000; color: #ff6666"
 
-    def colour_correct(val):
-        return "color: #00ff88" if val else "color: #ff4444"
-
-    styled_results = results_df.drop(columns=["Correct"]).style\
-        .applymap(colour_result, subset=["Result"])\
-        .format({"Confidence": "{:.0%}"})
-
-    st.dataframe(styled_results, use_container_width=True, hide_index=True)
+    st.dataframe(
+        results_df.style.applymap(colour_result, subset=["Result"]).format({"Confidence": "{:.0%}"}),
+        use_container_width=True, hide_index=True
+    )
 
     st.markdown("---")
     col1, col2, col3 = st.columns(3)
@@ -320,4 +343,4 @@ with tab5:
     with col2:
         st.metric("Strike Rate", "66.7%", "Last 2 days")
     with col3:
-        st.metric("Best Confidence Call", "Constitution Hill 90%", "Won at 5/4")
+        st.metric("Best Call", "Constitution Hill 90%", "Won at 5/4")
