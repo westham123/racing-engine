@@ -7,6 +7,137 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime, date
+from itertools import combinations
+
+
+# ══════════════════════════════════════════════════════════════
+# ACCA EFFICIENCY ENGINE — inlined to avoid Streamlit Cloud
+# import resolution issues with subdirectory modules
+# ══════════════════════════════════════════════════════════════
+
+def _odds_to_probability(odds_str: str) -> float:
+    """Convert fractional odds string (e.g. '5/4') to implied probability."""
+    try:
+        if "/" in str(odds_str):
+            num, den = str(odds_str).split("/")
+            return float(den) / (float(num) + float(den))
+        elif str(odds_str).replace(".", "").isdigit():
+            dec = float(odds_str)
+            return 1 / dec
+        return 0.5
+    except Exception:
+        return 0.5
+
+
+def _probability_to_odds(prob: float) -> str:
+    """Convert probability to approximate fractional odds string."""
+    if prob <= 0 or prob >= 1:
+        return "N/A"
+    decimal = 1 / prob
+    common = {
+        1.25: "1/4", 1.33: "1/3", 1.5: "1/2", 1.67: "4/6",
+        2.0: "Evs", 2.5: "6/4", 3.0: "2/1", 3.5: "5/2",
+        4.0: "3/1", 4.5: "7/2", 5.0: "4/1", 6.0: "5/1",
+        7.0: "6/1", 8.0: "7/1", 9.0: "8/1", 10.0: "9/1",
+        11.0: "10/1", 13.0: "12/1", 17.0: "16/1"
+    }
+    closest = min(common.keys(), key=lambda x: abs(x - decimal))
+    if abs(closest - decimal) < 0.5:
+        return common[closest]
+    return f"{decimal - 1:.0f}/1"
+
+
+class AccaEfficiencyEngine:
+    """Analyses accumulator selections for efficiency, EV, and coverage options."""
+
+    def analyse_selections(self, selections: list) -> list:
+        results = []
+        for sel in selections:
+            bookie_prob = _odds_to_probability(sel["odds"])
+            engine_prob = sel["confidence"]
+            edge = engine_prob - bookie_prob
+            ev = (engine_prob * (1 / bookie_prob - 1)) - (1 - engine_prob)
+            results.append({
+                **sel,
+                "bookie_prob": round(bookie_prob * 100, 1),
+                "engine_prob": round(engine_prob * 100, 1),
+                "edge": round(edge * 100, 1),
+                "expected_value": round(ev, 3),
+                "ev_rating": "\u2705 Value" if ev > 0.05 else "\u26a0\ufe0f Marginal" if ev > 0 else "\u274c No Value",
+            })
+        return results
+
+    def build_permutations(self, selections: list, min_legs: int = 2, max_legs: int = 6) -> list:
+        perms = []
+        for n_legs in range(min_legs, min(max_legs + 1, len(selections) + 1)):
+            for combo in combinations(selections, n_legs):
+                combined_engine_prob = np.prod([s["confidence"] for s in combo])
+                combined_bookie_prob = np.prod([_odds_to_probability(s["odds"]) for s in combo])
+                combined_decimal = np.prod([(1 / _odds_to_probability(s["odds"])) for s in combo])
+                ev = (combined_engine_prob * combined_decimal) - 1
+                type_names = {2: "Double", 3: "Treble", 4: "Lucky 15 leg", 5: "Lucky 31 leg", 6: "Lucky 63 leg"}
+                bet_type = type_names.get(n_legs, f"{n_legs}-fold")
+                perms.append({
+                    "type": bet_type,
+                    "legs": n_legs,
+                    "selections": " + ".join([s["horse"] for s in combo]),
+                    "races": " | ".join([s["race"] for s in combo]),
+                    "combined_engine_prob": round(combined_engine_prob * 100, 1),
+                    "combined_bookie_prob": round(combined_bookie_prob * 100, 1),
+                    "combined_odds": f"{combined_decimal - 1:.1f}/1",
+                    "expected_value": round(ev, 3),
+                    "ev_rating": "\u2705 Value" if ev > 0.1 else "\u26a0\ufe0f Marginal" if ev > 0 else "\u274c Avoid",
+                    "confidence_gap": round((combined_engine_prob - combined_bookie_prob * 100), 1),
+                })
+        perms.sort(key=lambda x: x["expected_value"], reverse=True)
+        return perms
+
+    def coverage_options(self, race: dict, top_n: int = 3) -> list:
+        runners = sorted(race["runners"], key=lambda x: x["confidence"], reverse=True)
+        options = []
+        for n in range(1, min(top_n + 1, len(runners) + 1)):
+            covered = runners[:n]
+            coverage_prob = min(sum([r["confidence"] for r in covered]), 0.99)
+            options.append({
+                "cover_n": n,
+                "horses": ", ".join([r["horse"] for r in covered]),
+                "odds": ", ".join([r["odds"] for r in covered]),
+                "coverage_prob": round(coverage_prob * 100, 1),
+                "stake_multiplier": n,
+                "label": "Single selection" if n == 1 else f"Cover top {n}",
+                "recommendation": "\u2705 Recommended" if n == 1 and covered[0]["confidence"] >= 0.80
+                                   else "\u26a0\ufe0f Consider covering" if coverage_prob < 0.70
+                                   else "\u2139\ufe0f Optional cover"
+            })
+        return options
+
+    def full_day_analysis(self, daily_races: list) -> dict:
+        all_selections = []
+        for race in daily_races:
+            top_runner = max(race["runners"], key=lambda x: x["confidence"])
+            top_runner = dict(top_runner)
+            top_runner["race"] = race["race"]
+            all_selections.append(top_runner)
+        selection_analysis = self.analyse_selections(all_selections)
+        perms = self.build_permutations(all_selections)
+        coverage = {race["race"]: self.coverage_options(race) for race in daily_races}
+        value_perms = [p for p in perms if p["ev_rating"] == "\u2705 Value"]
+        best_perm = perms[0] if perms else None
+        avg_edge = np.mean([s["edge"] for s in selection_analysis]) if selection_analysis else 0
+        return {
+            "selections": selection_analysis,
+            "permutations": perms[:20],
+            "coverage_options": coverage,
+            "summary": {
+                "total_selections": len(all_selections),
+                "value_perms": len(value_perms),
+                "best_perm": best_perm,
+                "avg_edge": round(avg_edge, 1),
+                "overall_rating": "\U0001f7e2 Strong day" if avg_edge > 5 else "\U0001f7e1 Mixed day" if avg_edge > 0 else "\U0001f534 Weak day"
+            }
+        }
+
+# ══════════════════════════════════════════════════════════════
 
 # ── Page Config ──────────────────────────────────────────────
 st.set_page_config(
@@ -300,7 +431,6 @@ with tab3:
         ]},
     ]
 
-    from permutations.acca_efficiency import AccaEfficiencyEngine
     engine = AccaEfficiencyEngine()
     analysis = engine.full_day_analysis(sample_races)
 
