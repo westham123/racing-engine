@@ -80,7 +80,7 @@ if not st.session_state.unlocked:
             placeholder="Enter 4-digit PIN",
             label_visibility="collapsed"
         )
-        unlock = st.button("Unlock", use_container_width=True, type="primary")
+        unlock = st.button("Unlock", width="stretch", type="primary")
         if unlock or (len(pin_input) == 4):
             if pin_input == CORRECT_PIN:
                 st.session_state.unlocked = True
@@ -162,7 +162,7 @@ with st.sidebar:
     st.markdown("**Engine v0.3**")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
-    if st.button("🔒 Lock Dashboard", use_container_width=True):
+    if st.button("🔒 Lock Dashboard", width="stretch"):
         st.session_state.unlocked = False
         st.rerun()
 
@@ -223,7 +223,7 @@ with tab1:
         .map(colour_signal, subset=["Signal"])\
         .format({"Confidence": "{:.0%}"})
 
-    st.dataframe(styled, use_container_width=True, hide_index=True)
+    st.dataframe(styled, width="stretch", hide_index=True)
 
     st.markdown("---")
     st.markdown("### Signal Breakdown")
@@ -233,7 +233,7 @@ with tab1:
         "Score (Constitution Hill)": [0.92, 0.95, 0.88, 0.85, 0.97, 0.90, 0.96, 0.88]
     })
     st.dataframe(signals.style.format({"Weight": "{:.0%}", "Score (Constitution Hill)": "{:.0%}"}),
-                 use_container_width=True, hide_index=True)
+                 width="stretch", hide_index=True)
 
 # ── Tab 2: Accumulator Permutations ───────────────────────────
 with tab2:
@@ -251,7 +251,7 @@ with tab2:
 
     st.dataframe(
         acca_df.style.map(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
-        use_container_width=True, hide_index=True
+        width="stretch", hide_index=True
     )
 
     st.markdown("---")
@@ -346,7 +346,7 @@ with tab3:
 
     st.dataframe(
         sel_df.style.map(colour_ev, subset=["Rating"]).map(colour_edge, subset=["Edge %"]),
-        use_container_width=True, hide_index=True
+        width="stretch", hide_index=True
     )
 
     st.markdown("---")
@@ -362,7 +362,7 @@ with tab3:
 
     st.dataframe(
         perm_df.style.map(colour_ev, subset=["Rating"]),
-        use_container_width=True, hide_index=True
+        width="stretch", hide_index=True
     )
 
     st.markdown("---")
@@ -387,7 +387,7 @@ with tab3:
 
             st.dataframe(
                 opt_df.style.map(colour_rec, subset=["Recommendation"]),
-                use_container_width=True, hide_index=True
+                width="stretch", hide_index=True
             )
 
     st.markdown("---")
@@ -411,7 +411,7 @@ with tab4:
         {"Course": "Leopardstown", "Country": "🇮🇪 IRE", "Going": "Soft", "Updated": "12:30", "Trend": "Stable"},
         {"Course": "Sandown", "Country": "🇬🇧 UK", "Going": "Good", "Updated": "11:45", "Trend": "Drying"},
         {"Course": "Naas", "Country": "🇮🇪 IRE", "Going": "Heavy", "Updated": "12:00", "Trend": "Easing"},
-    ]), use_container_width=True, hide_index=True)
+    ]), width="stretch", hide_index=True)
 
 # ── Tab 4: Learning Engine ────────────────────────────────────
 with tab5:
@@ -444,7 +444,7 @@ with tab5:
         {"Signal": "Jockey Form",  "Initial Weight": "10%", "Current Weight": "9%",  "Change": "↓ -1%"},
         {"Signal": "Market Moves", "Initial Weight": "7%",  "Current Weight": "7%",  "Change": "—"},
         {"Signal": "Jump Index",   "Initial Weight": "3%",  "Current Weight": "3%",  "Change": "—"},
-    ]), use_container_width=True, hide_index=True)
+    ]), width="stretch", hide_index=True)
 
 # ── Tab 5: Results History ────────────────────────────────────
 with tab6:
@@ -458,7 +458,7 @@ with tab6:
 
     st.dataframe(
         results_df.style.map(colour_result, subset=["Result"]).format({"Confidence": "{:.0%}"}),
-        use_container_width=True, hide_index=True
+        width="stretch", hide_index=True
     )
 
     st.markdown("---")
