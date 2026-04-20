@@ -63,18 +63,16 @@ if "unlocked" not in st.session_state:
     st.session_state.unlocked = False
 
 if not st.session_state.unlocked:
-    st.markdown("""
-    <div class='pin-container'>
-        <h2 style='color:#ffffff; margin-bottom:0.2rem;'>🏇 Racing Engine</h2>
-        <p style='color:#888; margin-bottom:1.5rem;'>Enter PIN to access dashboard</p>
-    </div>
-    """, unsafe_allow_html=True)
-
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        st.markdown("<br>", unsafe_allow_html=True)
-        st.markdown("### 🏇 Racing Engine")
-        st.markdown("Enter your PIN to continue")
+        st.markdown("<br><br>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style='background:#1c1f2e; border-radius:16px; padding:2.5rem 2rem;
+                    border:1px solid #2e3250; text-align:center; margin-bottom:1.5rem;'>
+            <h2 style='color:#ffffff; margin-bottom:0.3rem;'>🏇 Racing Engine</h2>
+            <p style='color:#888; margin:0;'>Enter PIN to access dashboard</p>
+        </div>
+        """, unsafe_allow_html=True)
         pin_input = st.text_input(
             "PIN",
             type="password",
@@ -83,7 +81,6 @@ if not st.session_state.unlocked:
             label_visibility="collapsed"
         )
         unlock = st.button("Unlock", use_container_width=True, type="primary")
-
         if unlock or (len(pin_input) == 4):
             if pin_input == CORRECT_PIN:
                 st.session_state.unlocked = True
