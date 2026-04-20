@@ -6,3 +6,5 @@ pandas==2.1.0         # Data handling and analysis
 numpy==1.26.0         # Numerical calculations for confidence scoring
 schedule==1.2.0       # Task scheduling for daily brief and monitoring
 python-dotenv==1.0.0  # Secure handling of API keys
+streamlit==1.32.0     # Visual dashboard
+plotly==5.20.0        # Charts and graphs inside dashboard
