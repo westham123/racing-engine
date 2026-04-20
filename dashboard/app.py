@@ -11,6 +11,16 @@ from itertools import combinations
 import sys, os
 sys.path.insert(0, os.path.dirname(__file__))
 try:
+    import sys as _sys, os as _os
+    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
+    from engine.odds_model import OddsModel as _OddsModel
+    _ODDS_MODEL = _OddsModel()
+    MODEL_AVAILABLE = True
+except Exception:
+    MODEL_AVAILABLE = False
+    _ODDS_MODEL = None
+
+try:
     from live_data import (
         get_todays_selections as _live_selections,
         get_going_reports as _live_going,
@@ -352,7 +362,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v0.3**")
+    st.markdown("**Engine v1.0** — ML Model Active" if MODEL_AVAILABLE else "**Engine v1.0** — ML Model Loading")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
     if st.button("🔒 Lock Dashboard", width="stretch"):
@@ -438,12 +448,41 @@ with tab1:
 
     st.markdown("---")
     st.markdown("### Signal Breakdown")
-    signals = pd.DataFrame({
-        "Signal": ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
-        "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
-        "Score (Constitution Hill)": [0.92, 0.95, 0.88, 0.85, 0.97, 0.90, 0.96, 0.88]
-    })
-    st.dataframe(signals.style.format({"Weight": "{:.0%}", "Score (Constitution Hill)": "{:.0%}"}),
+    # Show live signal breakdown for top selection when model is active
+    if MODEL_AVAILABLE and _ODDS_MODEL is not None and _is_live and len(_live_df) > 0:
+        top_runner = _live_df.iloc[0]
+        breakdown = _ODDS_MODEL.get_signal_breakdown({
+            "odds":    top_runner.get("Odds", "N/A"),
+            "form":    top_runner.get("Form", "-"),
+            "going":   top_runner.get("Going", ""),
+            "trainer": top_runner.get("Trainer", ""),
+            "jockey":  top_runner.get("Jockey", ""),
+            "signal":  top_runner.get("Signal", "Stable"),
+        })
+        label = top_runner.get("Horse", "Top Selection")
+        signals = pd.DataFrame({
+            "Signal":       ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
+            "Weight":       [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
+            f"Score ({label})": [
+                breakdown["market_odds"],
+                breakdown["horse_form"],
+                breakdown["track_form"],
+                breakdown["going"],
+                breakdown["trainer_form"],
+                breakdown["jockey_form"],
+                breakdown["market_moves"],
+                breakdown["jump_index"],
+            ]
+        })
+        st.caption(f"Live signal breakdown for top-ranked selection: **{label}**")
+    else:
+        signals = pd.DataFrame({
+            "Signal": ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
+            "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
+            "Score (sample)": [0.92, 0.95, 0.33, 0.30, 0.33, 0.33, 0.75, 0.50]
+        })
+    col_name = [c for c in signals.columns if c.startswith("Score")][0]
+    st.dataframe(signals.style.format({"Weight": "{:.0%}", col_name: "{:.0%}"}),
                  width="stretch", hide_index=True)
 
 # ── Tab 2: Accumulator Permutations ───────────────────────────
