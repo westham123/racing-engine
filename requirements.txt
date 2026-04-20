@@ -1,0 +1,8 @@
+# Racing Engine — Python Dependencies
+# Install with: pip install -r requirements.txt
+
+requests==2.31.0      # HTTP requests to APIs
+pandas==2.1.0         # Data handling and analysis
+numpy==1.26.0         # Numerical calculations for confidence scoring
+schedule==1.2.0       # Task scheduling for daily brief and monitoring
+python-dotenv==1.0.0  # Secure handling of API keys
