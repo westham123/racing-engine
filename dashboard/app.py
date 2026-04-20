@@ -187,9 +187,10 @@ with col5:
 st.markdown("---")
 
 # ── Main Tabs ─────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
     "📋 Today's Selections",
     "🎰 Accumulator Permutations",
+    "📈 Acca Efficiency",
     "🚨 Live Alerts",
     "🧠 Learning Engine",
     "📊 Results History"
@@ -269,8 +270,132 @@ with tab2:
     with col2:
         st.info("Only horses above 65% confidence are included in accumulator builds. The learning engine adjusts this threshold automatically as it tracks hit rates over time.")
 
-# ── Tab 3: Live Alerts ────────────────────────────────────────
+
+# ── Tab 3: Accumulator Efficiency ────────────────────────────
 with tab3:
+    st.markdown("### Accumulator Efficiency Engine")
+    st.markdown("Analyses every selection for true probability, expected value, and coverage options.")
+
+    # Sample race data
+    sample_races = [
+        {"race": "14:00 Cheltenham", "runners": [
+            {"horse": "Constitution Hill", "odds": "5/4",  "confidence": 0.91},
+            {"horse": "Appreciate It",     "odds": "9/2",  "confidence": 0.52},
+            {"horse": "Dysart Dynamo",     "odds": "7/1",  "confidence": 0.38},
+        ]},
+        {"race": "14:35 Cheltenham", "runners": [
+            {"horse": "Energumene",        "odds": "2/1",  "confidence": 0.84},
+            {"horse": "Shishkin",          "odds": "5/2",  "confidence": 0.71},
+            {"horse": "El Fabiolo",        "odds": "4/1",  "confidence": 0.58},
+        ]},
+        {"race": "15:10 Cheltenham", "runners": [
+            {"horse": "Galopin Des Champs","odds": "4/6",  "confidence": 0.88},
+            {"horse": "Gerri Colombe",     "odds": "7/2",  "confidence": 0.62},
+            {"horse": "Bravemansgame",     "odds": "9/2",  "confidence": 0.48},
+        ]},
+        {"race": "14:20 Leopardstown", "runners": [
+            {"horse": "Brighterdaysahead", "odds": "9/4",  "confidence": 0.79},
+            {"horse": "Lossiemouth",       "odds": "3/1",  "confidence": 0.68},
+            {"horse": "Jade De Grugy",     "odds": "6/1",  "confidence": 0.44},
+        ]},
+    ]
+
+    from permutations.acca_efficiency import AccaEfficiencyEngine
+    engine = AccaEfficiencyEngine()
+    analysis = engine.full_day_analysis(sample_races)
+
+    # ── Summary Bar ───────────────────────────────────────────
+    st.markdown("---")
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Selections Analysed", analysis["summary"]["total_selections"])
+    with col2:
+        st.metric("Value Permutations", analysis["summary"]["value_perms"])
+    with col3:
+        st.metric("Avg Engine Edge", f"{analysis['summary']['avg_edge']}%")
+    with col4:
+        st.markdown(f"**Day Rating**")
+        st.markdown(f"### {analysis['summary']['overall_rating']}")
+
+    st.markdown("---")
+
+    # ── Selection Value Analysis ──────────────────────────────
+    st.markdown("#### Selection Value Analysis")
+    st.markdown("Compares the engine's confidence score against the bookmaker's implied probability to find true value.")
+
+    sel_df = pd.DataFrame(analysis["selections"])
+    display_cols = ["race", "horse", "odds", "bookie_prob", "engine_prob", "edge", "expected_value", "ev_rating"]
+    sel_df = sel_df[display_cols]
+    sel_df.columns = ["Race", "Horse", "Odds", "Bookie Prob %", "Engine Prob %", "Edge %", "Exp. Value", "Rating"]
+
+    def colour_ev(val):
+        if "Value" in str(val):
+            return "color: #00ff88; font-weight: bold"
+        elif "Marginal" in str(val):
+            return "color: #ffaa00"
+        return "color: #ff4444"
+
+    def colour_edge(val):
+        if isinstance(val, float):
+            if val > 5:
+                return "color: #00ff88; font-weight: bold"
+            elif val > 0:
+                return "color: #ffaa00"
+            return "color: #ff4444"
+        return ""
+
+    st.dataframe(
+        sel_df.style.map(colour_ev, subset=["Rating"]).map(colour_edge, subset=["Edge %"]),
+        use_container_width=True, hide_index=True
+    )
+
+    st.markdown("---")
+
+    # ── Top Permutations by Value ─────────────────────────────
+    st.markdown("#### Top Accumulator Permutations by Expected Value")
+    st.markdown("Ranked by expected value — how much profit the engine predicts per £1 staked over time.")
+
+    perm_df = pd.DataFrame(analysis["permutations"][:10])
+    display_perm = ["type", "selections", "combined_engine_prob", "combined_bookie_prob", "combined_odds", "expected_value", "ev_rating"]
+    perm_df = perm_df[display_perm]
+    perm_df.columns = ["Type", "Selections", "Engine Prob %", "Bookie Prob %", "Combined Odds", "Exp. Value", "Rating"]
+
+    st.dataframe(
+        perm_df.style.map(colour_ev, subset=["Rating"]),
+        use_container_width=True, hide_index=True
+    )
+
+    st.markdown("---")
+
+    # ── Coverage Options ──────────────────────────────────────
+    st.markdown("#### Coverage Options by Race")
+    st.markdown("Choose how many runners to cover per race. Covering more increases your probability of landing that leg but multiplies your stake.")
+
+    for race in sample_races:
+        with st.expander(f"🏇 {race['race']} — Coverage Options"):
+            options = engine.coverage_options(race, top_n=3)
+            opt_df = pd.DataFrame(options)
+            opt_df = opt_df[["label", "horses", "odds", "coverage_prob", "stake_multiplier", "recommendation"]]
+            opt_df.columns = ["Option", "Horses", "Odds", "Coverage Prob %", "Stake x", "Recommendation"]
+
+            def colour_rec(val):
+                if "Recommended" in str(val):
+                    return "color: #00ff88; font-weight: bold"
+                elif "Consider" in str(val):
+                    return "color: #ffaa00"
+                return "color: #888888"
+
+            st.dataframe(
+                opt_df.style.map(colour_rec, subset=["Recommendation"]),
+                use_container_width=True, hide_index=True
+            )
+
+    st.markdown("---")
+    st.info("Coverage options update automatically when non-runners are declared or significant market moves detected. The engine will suggest expanding coverage if your top selection drifts significantly or is at risk.")
+
+
+# ── Tab 4: Live Alerts ────────────────────────────────────────
+with tab4:
     st.markdown("### Live Alerts")
     for alert in get_sample_alerts():
         icon = "🔴" if alert["level"] == "high" else "🟠" if alert["level"] == "medium" else "🟢"
@@ -289,7 +414,7 @@ with tab3:
     ]), use_container_width=True, hide_index=True)
 
 # ── Tab 4: Learning Engine ────────────────────────────────────
-with tab4:
+with tab5:
     st.markdown("### Learning Engine Performance")
     learn_df = get_sample_learning()
 
@@ -322,7 +447,7 @@ with tab4:
     ]), use_container_width=True, hide_index=True)
 
 # ── Tab 5: Results History ────────────────────────────────────
-with tab5:
+with tab6:
     st.markdown("### Results History")
     results_df = get_sample_results()
 
