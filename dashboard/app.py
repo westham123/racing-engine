@@ -215,8 +215,8 @@ with tab1:
         return "color: #aaaaaa"
 
     styled = df.style\
-        .applymap(colour_confidence, subset=["Confidence"])\
-        .applymap(colour_signal, subset=["Signal"])\
+        .map(colour_confidence, subset=["Confidence"])\
+        .map(colour_signal, subset=["Signal"])\
         .format({"Confidence": "{:.0%}"})
 
     st.dataframe(styled, use_container_width=True, hide_index=True)
@@ -246,7 +246,7 @@ with tab2:
         return "background-color: #330000; color: #ff6666"
 
     st.dataframe(
-        acca_df.style.applymap(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
+        acca_df.style.map(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
         use_container_width=True, hide_index=True
     )
 
@@ -329,7 +329,7 @@ with tab5:
         return "background-color: #330000; color: #ff6666"
 
     st.dataframe(
-        results_df.style.applymap(colour_result, subset=["Result"]).format({"Confidence": "{:.0%}"}),
+        results_df.style.map(colour_result, subset=["Result"]).format({"Confidence": "{:.0%}"}),
         use_container_width=True, hide_index=True
     )
 
