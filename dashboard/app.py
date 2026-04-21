@@ -521,7 +521,8 @@ with tab1:
                 except Exception:
                     dec = 2.0
                 ev = (conf * dec) - 1
-                if ev <= 0:
+                # Exclude: negative EV, or EV < 0.50 (too short-priced to add multiple value)
+                if ev < 0.50:
                     continue
                 # Support both live df columns (Time/Course) and legacy Race column
                 _course = str(row.get("Course", ""))
@@ -542,28 +543,25 @@ with tab1:
                 })
             pool.sort(key=lambda x: x["ev"], reverse=True)
         else:
+            # Sample pool — multiples only, short-priced horses (EV < 0.50) excluded
+            # Crystal Island excluded: 4/6 price too compressed to add multiple value
             pool = [
                 {"horse": "Mister Mojito",   "course": "Yarmouth",       "time": "4:55", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.67, "ev": 4.03},
-                {"horse": "Beaune",          "course": "Wolverhampton",  "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
                 {"horse": "Yorkshire Glory", "course": "Pontefract",     "time": "4:02", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.67, "ev": 1.35},
+                {"horse": "Beaune",          "course": "Wolverhampton",  "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
                 {"horse": "Kaaranah",        "course": "Wolverhampton",  "time": "8:30", "odds_str": "13/8",  "decimal": 2.625, "confidence": 0.70, "ev": 0.84},
-                {"horse": "Crystal Island",  "course": "Ffos Las",       "time": "4:38", "odds_str": "4/6",   "decimal": 1.67,  "confidence": 0.79, "ev": 0.31},
                 {"horse": "Lady Youmzain",   "course": "Pontefract",     "time": "2:17", "odds_str": "11/10", "decimal": 2.10,  "confidence": 0.70, "ev": 0.47},
             ]
         if not pool:
             return [], [], {}
-        singles_budget  = round(budget * splits["singles_pct"], 2) if use_singles else 0
-        doubles_budget  = round(budget * splits["doubles_pct"], 2) if use_doubles else 0
-        trebles_budget  = round(budget * splits["trebles_pct"], 2) if use_trebles else 0
-        fourfold_budget = round(budget * splits["4fold_pct"],   2) if use_4fold   else 0
+        # Singles removed from staking plan — not viable as individual wagers at these price levels
+        # Full budget goes into multiples. EV filter also removes short-priced horses (e.g. 4/6) automatically.
+        singles_budget  = 0  # always zero — singles disabled
+        doubles_budget  = round(budget * (splits["doubles_pct"] + splits["singles_pct"] * 0.33), 2) if use_doubles else 0
+        trebles_budget  = round(budget * (splits["trebles_pct"] + splits["singles_pct"] * 0.33), 2) if use_trebles else 0
+        fourfold_budget = round(budget * (splits["4fold_pct"]   + splits["singles_pct"] * 0.34), 2) if use_4fold   else 0
         fivefold_budget = round(budget * splits["5fold_pct"],   2) if use_5fold   else 0
-        singles = []
-        if use_singles and singles_budget > 0:
-            top_conf = sorted(pool, key=lambda x: x["confidence"], reverse=True)[:2]
-            per_single = round(singles_budget / max(len(top_conf), 1), 2)
-            for s in top_conf:
-                ret = round(per_single * s["decimal"], 2)
-                singles.append({**s, "stake": per_single, "projected_return": ret, "projected_profit": round(ret - per_single, 2)})
+        singles = []  # always empty
         multiples = []
         all_legs = pool[:max_legs] if len(pool) > max_legs else pool
         def _add_combos(n_legs, budget_for_type, label_prefix):
