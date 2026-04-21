@@ -1,27 +1,43 @@
 # Racing Engine — Early Market Monitor
-# Purpose: Track next-day market moves from morning declarations onwards.
-# The "smart money" often backs big-priced horses early before prices shorten.
-# This module snapshots early morning odds, then compares hourly to detect
-# significant moves BEFORE they become obvious on-the-day shorteners.
+# Purpose: Track market moves from opening show prices onwards.
+#
+# Real-world timing:
+#   - Horses leave stables 05:00–06:00 BST. By 08:00 BST the card is settled.
+#   - First meaningful odds appear 07:30–08:30 BST on next-day races.
+#   - 10:00 BST is merely the administrative declarations deadline — not the
+#     practical start of market activity.
+#
+# Two snapshot types:
+#   OPENING  — taken at 08:00 BST (first tradeable prices of the day)
+#   SHOW     — taken afternoon/evening prior day when bookmakers release early
+#              show prices (typically 16:00–19:00 BST the day before)
 #
 # Workflow:
-#   1. ~10:00 BST: declarations published — take OPENING SNAPSHOT
-#   2. ~11:00, 12:00: compare vs snapshot — flag horses shortening > 20%
-#   3. ~13:00 onwards: cross-reference with next-day selections engine
+#   Prior afternoon/evening: take_show_snapshot() — captures early show prices
+#   08:00 BST next morning:  take_opening_snapshot() — captures firm morning prices
+#   Hourly checks:           get_market_movers() — flags >=15% moves vs opening
 #
-# "Drifters" going the other way are also flagged — avoid them.
+# "Steamers" shortening = money coming in = follow signal
+# "Drifters" lengthening = market cooling = avoid signal
 
 import os, json, datetime, zoneinfo
 import requests, re
 
-_LONDON = zoneinfo.ZoneInfo("Europe/London")
+_LONDON        = zoneinfo.ZoneInfo("Europe/London")
 _SNAPSHOT_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "early_market_snapshot.json")
+_SHOW_FILE     = os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json")
+
+
+# ── Helpers ──────────────────────────────────────────────────────────────────
 
 def _now_bst() -> str:
     return datetime.datetime.now(_LONDON).strftime("%H:%M")
 
 def _today_bst() -> str:
     return datetime.datetime.now(_LONDON).strftime("%Y-%m-%d")
+
+def _tomorrow_bst() -> str:
+    return (datetime.datetime.now(_LONDON).date() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
 
 def _to_decimal(odds_str) -> float:
     try:
@@ -45,30 +61,32 @@ def _get_page_json(url: str) -> dict:
         pass
     return {}
 
-def _load_snapshot() -> dict:
+def _load_json(path: str) -> dict:
     try:
-        if os.path.exists(_SNAPSHOT_FILE):
-            with open(_SNAPSHOT_FILE) as f:
+        if os.path.exists(path):
+            with open(path) as f:
                 return json.load(f)
     except Exception:
         pass
     return {}
 
-def _save_snapshot(snap: dict):
-    os.makedirs(os.path.dirname(_SNAPSHOT_FILE), exist_ok=True)
-    with open(_SNAPSHOT_FILE, "w") as f:
-        json.dump(snap, f, indent=2)
+def _save_json(path: str, data: dict):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+
+
+# ── Card Fetcher ──────────────────────────────────────────────────────────────
 
 def get_next_day_card(target_date: str = None) -> list:
     """
-    Fetch next day's race card from Sporting Life.
-    Returns list of races with runners and opening odds.
-    target_date: YYYY-MM-DD, defaults to tomorrow.
+    Fetch race card from Sporting Life for target_date (default: tomorrow).
+    Returns list of races with runners and current odds.
     """
     if not target_date:
-        target_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        target_date = _tomorrow_bst()
 
-    url = f"https://www.sportinglife.com/racing/racecards/{target_date}"
+    url  = f"https://www.sportinglife.com/racing/racecards/{target_date}"
     data = _get_page_json(url)
     meetings = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
@@ -76,24 +94,20 @@ def get_next_day_card(target_date: str = None) -> list:
     races_out = []
 
     for mt in meetings:
-        ms   = mt.get("meeting_summary", {})
-        date = ms.get("date", "")
+        ms      = mt.get("meeting_summary", {})
+        date    = ms.get("date", "")
         if date != target_date:
             continue
-
         course  = ms.get("course", {}).get("name", "")
         country = ms.get("course", {}).get("country", {}).get("short_name", "")
         if country not in UK_COUNTRIES:
             continue
-
-        going = ms.get("going", "TBC")
+        going   = ms.get("going", "TBC")
 
         for rc in mt.get("races", []):
             slug = rc.get("url", "") or rc.get("slug", "")
-            # Build slug from race_summary_reference if needed
             if not slug:
                 rc_id = rc.get("race_summary_reference", {}).get("id", "")
-                rc_name = rc.get("name", "")
                 if rc_id:
                     slug = f"/racing/racecards/{target_date}/{course.lower().replace(' ','-')}/{rc_id}"
 
@@ -102,174 +116,289 @@ def get_next_day_card(target_date: str = None) -> list:
             is_hcap  = rc.get("has_handicap", False) or "handicap" in name.lower() or "hcap" in name.lower()
             runners  = []
 
-            # Fetch runner list if slug available
             if slug:
                 full_url = f"https://www.sportinglife.com{slug}" if slug.startswith("/") else slug
-                rdata = _get_page_json(full_url)
+                rdata    = _get_page_json(full_url)
                 race_detail = rdata.get("props",{}).get("pageProps",{}).get("race",{})
-                rides = race_detail.get("rides", [])
-                for ride in rides:
+                for ride in race_detail.get("rides", []):
                     if ride.get("ride_status","") == "NON_RUNNER":
                         continue
-                    horse   = ride.get("horse",{}).get("name","Unknown")
-                    betting = ride.get("betting",{})
+                    horse     = ride.get("horse",{}).get("name","Unknown")
+                    betting   = ride.get("betting",{})
                     curr_odds = betting.get("current_odds","N/A")
                     tf_stars  = ride.get("timeform_stars","-")
                     form      = ride.get("horse",{}).get("formsummary",{}).get("display_text","-") or "-"
                     trainer   = ride.get("trainer",{}).get("name","-")
                     jockey    = ride.get("jockey",{}).get("name","-")
-                    dec       = _to_decimal(curr_odds)
                     runners.append({
-                        "horse":     horse,
-                        "odds":      curr_odds,
-                        "decimal":   dec,
-                        "tf_stars":  tf_stars,
-                        "form":      form,
-                        "trainer":   trainer,
-                        "jockey":    jockey,
+                        "horse":   horse,
+                        "odds":    curr_odds,
+                        "decimal": _to_decimal(curr_odds),
+                        "tf_stars":tf_stars,
+                        "form":    form,
+                        "trainer": trainer,
+                        "jockey":  jockey,
                     })
 
             races_out.append({
-                "date":       target_date,
-                "course":     course,
-                "time":       time_str,
-                "name":       name,
-                "going":      going,
-                "is_handicap":is_hcap,
-                "field_size": len(runners),
-                "runners":    runners,
+                "date":        target_date,
+                "course":      course,
+                "time":        time_str,
+                "name":        name,
+                "going":       going,
+                "is_handicap": is_hcap,
+                "field_size":  len(runners),
+                "runners":     runners,
             })
 
     return races_out
 
 
-def take_opening_snapshot(target_date: str = None) -> dict:
-    """
-    Take the opening market snapshot for tomorrow.
-    Call this once when declarations first appear (~10:00 BST).
-    Returns snapshot dict and saves to disk.
-    """
-    if not target_date:
-        target_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+# ── Snapshot Functions ────────────────────────────────────────────────────────
 
+def _build_snapshot(target_date: str, label: str, save_path: str) -> dict:
+    """Internal: fetch card and save snapshot to disk."""
     races = get_next_day_card(target_date)
-    snap = {
-        "date":      target_date,
-        "taken_at":  _now_bst(),
-        "horses":    {},
+    snap  = {
+        "date":     target_date,
+        "label":    label,
+        "taken_at": _now_bst(),
+        "horses":   {},
     }
-
     for race in races:
         for rn in race["runners"]:
             key = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
             snap["horses"][key] = {
-                "horse":   rn["horse"],
-                "course":  race["course"],
-                "time":    race["time"],
-                "opening_odds": rn["odds"],
-                "opening_dec":  rn["decimal"],
-                "tf_stars":     rn["tf_stars"],
-                "form":         rn["form"],
-                "is_handicap":  race["is_handicap"],
+                "horse":       rn["horse"],
+                "course":      race["course"],
+                "time":        race["time"],
+                "odds":        rn["odds"],
+                "decimal":     rn["decimal"],
+                "tf_stars":    rn["tf_stars"],
+                "form":        rn["form"],
+                "is_handicap": race["is_handicap"],
             }
-
-    _save_snapshot(snap)
-    print(f"Snapshot taken at {snap['taken_at']} BST — {len(snap['horses'])} runners logged for {target_date}")
+    _save_json(save_path, snap)
+    print(f"{label} snapshot taken at {snap['taken_at']} BST — {len(snap['horses'])} runners for {target_date}")
     return snap
 
 
-def get_market_movers(target_date: str = None, min_move_pct: float = 0.15) -> list:
+def take_show_snapshot(target_date: str = None) -> dict:
     """
-    Compare current odds vs opening snapshot.
-    Returns horses that have shortened >= min_move_pct (default 15%).
-    Also flags big drifters (>20% out).
+    Capture afternoon/evening show prices (16:00–19:00 BST, day before racing).
+    These are the bookmakers' first published prices — often before smart money moves.
+    Call this once in the afternoon/evening prior to race day.
     """
     if not target_date:
-        target_date = (datetime.date.today() + datetime.timedelta(days=1)).strftime("%Y-%m-%d")
+        target_date = _tomorrow_bst()
+    return _build_snapshot(target_date, "SHOW", _SHOW_FILE)
 
-    snap = _load_snapshot()
+
+def take_opening_snapshot(target_date: str = None) -> dict:
+    """
+    Capture firm morning prices at 08:00 BST on race day.
+    By this time horses have left stables and the card is settled.
+    This is the primary baseline for detecting intraday moves.
+    Call this once at ~08:00 BST.
+    """
+    if not target_date:
+        target_date = _tomorrow_bst()
+    return _build_snapshot(target_date, "OPENING", _SNAPSHOT_FILE)
+
+
+# ── Market Movers ─────────────────────────────────────────────────────────────
+
+def get_market_movers(target_date: str = None, min_move_pct: float = 0.15,
+                      vs: str = "opening") -> list:
+    """
+    Compare current odds vs baseline snapshot.
+    vs: "opening" (08:00 BST snapshot) or "show" (prior-day show prices).
+    Returns horses that have moved >= min_move_pct (default 15%).
+    Steamers (shortened) = STEAM, Drifters (lengthened) = DRIFT.
+    """
+    if not target_date:
+        target_date = _tomorrow_bst()
+
+    snap_path = _SHOW_FILE if vs == "show" else _SNAPSHOT_FILE
+    snap      = _load_json(snap_path)
+
     if not snap or snap.get("date") != target_date:
-        return [{"error": "No snapshot for this date — take opening snapshot first after 10:00 BST"}]
+        baseline_label = "show price" if vs == "show" else "opening"
+        return [{"error": f"No {baseline_label} snapshot for {target_date} — take snapshot first."}]
 
-    races = get_next_day_card(target_date)
-
+    races  = get_next_day_card(target_date)
     movers = []
+
     for race in races:
         for rn in race["runners"]:
-            key = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
+            key      = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
             baseline = snap["horses"].get(key)
             if not baseline:
                 continue
-
-            open_dec  = baseline.get("opening_dec", 0)
-            curr_dec  = rn["decimal"]
+            open_dec = baseline.get("decimal", 0)
+            curr_dec = rn["decimal"]
             if open_dec <= 0 or curr_dec <= 0:
                 continue
 
-            move_pct = (open_dec - curr_dec) / open_dec  # positive = shortened (steamed)
-
+            move_pct  = (open_dec - curr_dec) / open_dec   # positive = shortened
             if abs(move_pct) >= min_move_pct:
                 direction = "STEAM" if move_pct > 0 else "DRIFT"
                 movers.append({
-                    "horse":        rn["horse"],
-                    "course":       race["course"],
-                    "time":         race["time"],
-                    "opening_odds": baseline["opening_odds"],
-                    "current_odds": rn["odds"],
-                    "opening_dec":  open_dec,
-                    "current_dec":  curr_dec,
-                    "move_pct":     round(abs(move_pct) * 100, 1),
-                    "direction":    direction,
-                    "tf_stars":     baseline["tf_stars"],
-                    "form":         baseline["form"],
-                    "is_handicap":  race["is_handicap"],
-                    "snapshot_time": snap.get("taken_at","?"),
+                    "horse":          rn["horse"],
+                    "course":         race["course"],
+                    "time":           race["time"],
+                    "baseline_odds":  baseline["odds"],
+                    "baseline_dec":   open_dec,
+                    "current_odds":   rn["odds"],
+                    "current_dec":    curr_dec,
+                    "move_pct":       round(abs(move_pct) * 100, 1),
+                    "direction":      direction,
+                    "tf_stars":       baseline["tf_stars"],
+                    "form":           baseline["form"],
+                    "is_handicap":    race["is_handicap"],
+                    "snapshot_label": snap.get("label","?"),
+                    "snapshot_time":  snap.get("taken_at","?"),
                 })
 
-    # Sort: steamers first by move %, then drifters
     steamers = sorted([m for m in movers if m["direction"] == "STEAM"],
                       key=lambda x: x["move_pct"], reverse=True)
     drifters = sorted([m for m in movers if m["direction"] == "DRIFT"],
                       key=lambda x: x["move_pct"], reverse=True)
-
     return steamers + drifters
 
 
-def print_movers_report(target_date: str = None):
-    """Print a readable market movers report to console / for logging."""
-    movers = get_market_movers(target_date)
+def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.10) -> list:
+    """
+    Compare afternoon/evening SHOW prices vs 08:00 BST OPENING prices.
+    Reveals how much the market moved overnight — key intelligence for
+    identifying horses backed before the morning rush.
+    min_move_pct default 10% (tighter threshold — overnight moves are significant).
+    """
+    if not target_date:
+        target_date = _tomorrow_bst()
+
+    show_snap    = _load_json(_SHOW_FILE)
+    opening_snap = _load_json(_SNAPSHOT_FILE)
+
+    if not show_snap or show_snap.get("date") != target_date:
+        return [{"error": f"No show price snapshot for {target_date}."}]
+    if not opening_snap or opening_snap.get("date") != target_date:
+        return [{"error": f"No opening snapshot for {target_date}."}]
+
+    movers = []
+    for key, show_data in show_snap["horses"].items():
+        opening_data = opening_snap["horses"].get(key)
+        if not opening_data:
+            continue
+        show_dec    = show_data.get("decimal", 0)
+        opening_dec = opening_data.get("decimal", 0)
+        if show_dec <= 0 or opening_dec <= 0:
+            continue
+
+        move_pct  = (show_dec - opening_dec) / show_dec   # positive = shortened overnight
+        if abs(move_pct) >= min_move_pct:
+            direction = "STEAM" if move_pct > 0 else "DRIFT"
+            movers.append({
+                "horse":        show_data["horse"],
+                "course":       show_data["course"],
+                "time":         show_data["time"],
+                "show_odds":    show_data["odds"],
+                "show_dec":     show_dec,
+                "morning_odds": opening_data["odds"],
+                "morning_dec":  opening_dec,
+                "move_pct":     round(abs(move_pct) * 100, 1),
+                "direction":    direction,
+                "tf_stars":     show_data["tf_stars"],
+                "form":         show_data["form"],
+                "is_handicap":  show_data["is_handicap"],
+                "note":         "Backed overnight before morning open" if direction == "STEAM"
+                                else "Drifted overnight — market cooling",
+            })
+
+    steamers = sorted([m for m in movers if m["direction"] == "STEAM"],
+                      key=lambda x: x["move_pct"], reverse=True)
+    drifters = sorted([m for m in movers if m["direction"] == "DRIFT"],
+                      key=lambda x: x["move_pct"], reverse=True)
+    return steamers + drifters
+
+
+# ── Console Reports ───────────────────────────────────────────────────────────
+
+def print_movers_report(target_date: str = None, vs: str = "opening"):
+    """Print a readable market movers report to console."""
+    movers = get_market_movers(target_date, vs=vs)
     if not movers:
         print("No significant market moves detected yet.")
         return
-
-    if movers and "error" in movers[0]:
+    if "error" in movers[0]:
         print(movers[0]["error"])
         return
 
-    now = _now_bst()
-    print(f"\n{'='*65}")
-    print(f"EARLY MARKET MOVERS — {target_date or 'Tomorrow'}  (checked {now} BST)")
-    print(f"{'='*65}")
+    label    = "SHOW PRICES" if vs == "show" else "08:00 BST OPENING"
+    now      = _now_bst()
+    date_str = target_date or _tomorrow_bst()
+
+    print(f"\n{'='*70}")
+    print(f"MARKET MOVERS vs {label} — {date_str}  (checked {now} BST)")
+    print(f"{'='*70}")
 
     steamers = [m for m in movers if m["direction"] == "STEAM"]
     drifters = [m for m in movers if m["direction"] == "DRIFT"]
 
     if steamers:
-        print(f"\n  SHORTENERS (market backing these):")
-        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Open':<8} {'Now':<8} {'Move':>6}  TF")
-        print(f"  {'-'*75}")
+        print(f"\n  SHORTENERS — money coming in:")
+        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Was':<8} {'Now':<8} {'Move':>6}  TF")
+        print(f"  {'-'*72}")
         for m in steamers:
             print(f"  {m['horse']:<22} {m['course']:<14} {m['time']:<6} "
-                  f"{m['opening_odds']:<8} {m['current_odds']:<8} "
+                  f"{m['baseline_odds']:<8} {m['current_odds']:<8} "
                   f"{'+'+str(m['move_pct'])+'%':>6}  {m['tf_stars']}")
 
     if drifters:
-        print(f"\n  DRIFTERS (market cooling on these):")
-        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Open':<8} {'Now':<8} {'Move':>6}  TF")
-        print(f"  {'-'*75}")
+        print(f"\n  DRIFTERS — market cooling:")
+        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Was':<8} {'Now':<8} {'Move':>6}  TF")
+        print(f"  {'-'*72}")
         for m in drifters:
             print(f"  {m['horse']:<22} {m['course']:<14} {m['time']:<6} "
-                  f"{m['opening_odds']:<8} {m['current_odds']:<8} "
+                  f"{m['baseline_odds']:<8} {m['current_odds']:<8} "
                   f"{'-'+str(m['move_pct'])+'%':>6}  {m['tf_stars']}")
+    print()
 
+
+def print_show_vs_morning_report(target_date: str = None):
+    """Print overnight show→morning move report."""
+    movers = get_show_vs_morning_moves(target_date)
+    if not movers:
+        print("No significant overnight moves detected.")
+        return
+    if "error" in movers[0]:
+        print(movers[0]["error"])
+        return
+
+    date_str = target_date or _tomorrow_bst()
+    print(f"\n{'='*70}")
+    print(f"OVERNIGHT MOVES (Show → 08:00 BST) — {date_str}")
+    print(f"Key: these horses were backed BEFORE the morning market opened.")
+    print(f"{'='*70}")
+
+    steamers = [m for m in movers if m["direction"] == "STEAM"]
+    drifters = [m for m in movers if m["direction"] == "DRIFT"]
+
+    if steamers:
+        print(f"\n  BACKED OVERNIGHT (show price → morning):")
+        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Show':<8} {'8am':<8} {'Move':>6}  Note")
+        print(f"  {'-'*80}")
+        for m in steamers:
+            print(f"  {m['horse']:<22} {m['course']:<14} {m['time']:<6} "
+                  f"{m['show_odds']:<8} {m['morning_odds']:<8} "
+                  f"{'+'+str(m['move_pct'])+'%':>6}  {m['note']}")
+
+    if drifters:
+        print(f"\n  DRIFTED OVERNIGHT:")
+        print(f"  {'Horse':<22} {'Course':<14} {'Time':<6} {'Show':<8} {'8am':<8} {'Move':>6}  Note")
+        print(f"  {'-'*80}")
+        for m in drifters:
+            print(f"  {m['horse']:<22} {m['course']:<14} {m['time']:<6} "
+                  f"{m['show_odds']:<8} {m['morning_odds']:<8} "
+                  f"{'-'+str(m['move_pct'])+'%':>6}  {m['note']}")
     print()
