@@ -317,21 +317,23 @@ def get_sample_selections():
     ])
 
 def get_sample_accas():
+    # Today's card — 21 April 2026
     return [
-        {"Type": "Double", "Legs": "Constitution Hill + Galopin Des Champs", "Combined Odds": "11/8", "Confidence": 0.89},
-        {"Type": "Treble", "Legs": "Energumene + Constitution Hill + Galopin Des Champs", "Combined Odds": "11/2", "Confidence": 0.81},
-        {"Type": "Lucky 15", "Legs": "Energumene, Constitution Hill, Galopin Des Champs, Fact To File", "Combined Odds": "Various", "Confidence": 0.78},
-        {"Type": "Double", "Legs": "Constitution Hill + Brighterdaysahead", "Combined Odds": "9/4", "Confidence": 0.74},
-        {"Type": "Treble", "Legs": "Constitution Hill + Galopin Des Champs + Brighterdaysahead", "Combined Odds": "4/1", "Confidence": 0.71},
+        {"Type": "Double",   "Legs": "Mister Mojito + Yorkshire Glory",              "Combined Odds": "26.25x", "Confidence": 0.67},
+        {"Type": "Double",   "Legs": "Mister Mojito + Beaune",                       "Combined Odds": "20.63x", "Confidence": 0.67},
+        {"Type": "Treble",   "Legs": "Mister Mojito + Beaune + Yorkshire Glory",     "Combined Odds": "72.19x", "Confidence": 0.65},
+        {"Type": "4-fold",   "Legs": "Mister Mojito + Beaune + Kaaranah + YG",      "Combined Odds": "189.5x", "Confidence": 0.62},
+        {"Type": "Lucky 15", "Legs": "Lady Youmzain / Yorkshire Glory / Mister Mojito / Beaune", "Combined Odds": "Various", "Confidence": 0.67},
     ]
 
 def get_sample_alerts():
+    # Today's card — 21 April 2026
     return [
-        {"level": "high",   "time": "14:47", "message": "Constitution Hill steamed from 6/4 → 5/4 in last 15 mins (Cheltenham 14:35)"},
-        {"level": "high",   "time": "14:39", "message": "Non-runner declared: Honeysuckle — Race 4 Leopardstown 15:40"},
-        {"level": "medium", "time": "14:22", "message": "Going update: Cheltenham changed Good → Good-Soft (official BHA report)"},
-        {"level": "medium", "time": "13:55", "message": "Fact To File market move: 9/2 → 7/2 — trainer Mullins booking noted"},
-        {"level": "low",    "time": "13:10", "message": "Marine Nationale drifting: 2/1 → 11/4 — confidence score reduced to 0.67"},
+        {"level": "high",   "time": "09:05", "message": "Crystal Island steamed to 4/6 — excluded from Lucky 15 (≤ 4/6 cut-off)"},
+        {"level": "high",   "time": "09:12", "message": "Mister Mojito confirmed 13/2 — top EV selection today"},
+        {"level": "medium", "time": "09:30", "message": "Going update: Yarmouth Good to Firm (5.7) — suits Mister Mojito"},
+        {"level": "medium", "time": "09:45", "message": "Yorkshire Glory market move: 4/1 → 7/2 — confidence raised to 0.67"},
+        {"level": "low",    "time": "10:00", "message": "Lady Youmzain stable in market at 11/10 — monitor for drift"},
     ]
 
 def get_sample_learning():
@@ -345,13 +347,14 @@ def get_sample_learning():
     })
 
 def get_sample_results():
+    # Placeholder — populates automatically from settlement engine after races run
     return pd.DataFrame([
-        {"Date": "19 Apr", "Race": "14:00 Cheltenham", "Selection": "Energumene", "Result": "WON", "Odds": "2/1", "Confidence": 0.83},
-        {"Date": "19 Apr", "Race": "14:35 Cheltenham", "Selection": "Constitution Hill", "Result": "WON", "Odds": "5/4", "Confidence": 0.90},
-        {"Date": "19 Apr", "Race": "15:10 Cheltenham", "Selection": "Galopin Des Champs", "Result": "2nd", "Odds": "4/6", "Confidence": 0.85},
-        {"Date": "19 Apr", "Race": "15:45 Cheltenham", "Selection": "Fact To File", "Result": "WON", "Odds": "7/2", "Confidence": 0.70},
-        {"Date": "18 Apr", "Race": "14:20 Leopardstown", "Selection": "Brighterdaysahead", "Result": "WON", "Odds": "9/4", "Confidence": 0.78},
-        {"Date": "18 Apr", "Race": "15:00 Leopardstown", "Selection": "Marine Nationale", "Result": "3rd", "Odds": "11/4", "Confidence": 0.66},
+        {"Date": "21 Apr", "Race": "2:17 Pontefract",    "Selection": "Lady Youmzain",   "Result": "Pending", "Odds": "11/10", "Confidence": 0.70},
+        {"Date": "21 Apr", "Race": "4:02 Pontefract",    "Selection": "Yorkshire Glory",  "Result": "Pending", "Odds": "7/2",   "Confidence": 0.67},
+        {"Date": "21 Apr", "Race": "4:38 Ffos Las",      "Selection": "Crystal Island",   "Result": "Pending", "Odds": "4/6",   "Confidence": 0.79},
+        {"Date": "21 Apr", "Race": "4:55 Yarmouth",      "Selection": "Mister Mojito",    "Result": "Pending", "Odds": "13/2",  "Confidence": 0.67},
+        {"Date": "21 Apr", "Race": "6:30 Wolverhampton", "Selection": "Beaune",           "Result": "Pending", "Odds": "7/4",   "Confidence": 0.73},
+        {"Date": "21 Apr", "Race": "8:30 Wolverhampton", "Selection": "Kaaranah",         "Result": "Pending", "Odds": "13/8",  "Confidence": 0.70},
     ])
 
 # ── Sidebar ───────────────────────────────────────────────────
@@ -434,7 +437,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v1.9** — ML Model + Multi-Source Monitor Active" if (MODEL_AVAILABLE and MONITOR_AVAILABLE) else "**Engine v1.9** — Partial Init")
+    st.markdown("**Engine v2.0** — Lucky 15 + Loss Analyser Active" if (MODEL_AVAILABLE or MONITOR_AVAILABLE) else "**Engine v2.0** — Running")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
     if st.button("🔒 Lock Dashboard", width="stretch"):
@@ -556,7 +559,7 @@ with tab1:
     except Exception as _e:
         _l15_err = str(_e)
 
-    if _l15_plan:
+    if _l15_plan is not None:
         _l15_sels  = _l15_plan["lucky15_selections"]
         _scen      = _l15_plan["lucky15_scenarios"]
         _six_ret   = _l15_plan["sixtimer_projected_return"]
@@ -759,27 +762,27 @@ with tab4:
     st.markdown("### Accumulator Efficiency Engine")
     st.markdown("Analyses every selection for true probability, expected value, and coverage options.")
 
-    # Sample race data
+    # Today's card — 21 April 2026
     sample_races = [
-        {"race": "14:00 Cheltenham", "runners": [
-            {"horse": "Constitution Hill", "odds": "5/4",  "confidence": 0.91},
-            {"horse": "Appreciate It",     "odds": "9/2",  "confidence": 0.52},
-            {"horse": "Dysart Dynamo",     "odds": "7/1",  "confidence": 0.38},
+        {"race": "2:17 Pontefract", "runners": [
+            {"horse": "Lady Youmzain",   "odds": "11/10", "confidence": 0.70},
+            {"horse": "Runner 2",        "odds": "5/2",   "confidence": 0.48},
+            {"horse": "Runner 3",        "odds": "7/1",   "confidence": 0.31},
         ]},
-        {"race": "14:35 Cheltenham", "runners": [
-            {"horse": "Energumene",        "odds": "2/1",  "confidence": 0.84},
-            {"horse": "Shishkin",          "odds": "5/2",  "confidence": 0.71},
-            {"horse": "El Fabiolo",        "odds": "4/1",  "confidence": 0.58},
+        {"race": "4:02 Pontefract", "runners": [
+            {"horse": "Yorkshire Glory", "odds": "7/2",   "confidence": 0.67},
+            {"horse": "Runner 2",        "odds": "9/4",   "confidence": 0.54},
+            {"horse": "Runner 3",        "odds": "5/1",   "confidence": 0.39},
         ]},
-        {"race": "15:10 Cheltenham", "runners": [
-            {"horse": "Galopin Des Champs","odds": "4/6",  "confidence": 0.88},
-            {"horse": "Gerri Colombe",     "odds": "7/2",  "confidence": 0.62},
-            {"horse": "Bravemansgame",     "odds": "9/2",  "confidence": 0.48},
+        {"race": "4:55 Yarmouth", "runners": [
+            {"horse": "Mister Mojito",   "odds": "13/2",  "confidence": 0.67},
+            {"horse": "Runner 2",        "odds": "2/1",   "confidence": 0.55},
+            {"horse": "Runner 3",        "odds": "4/1",   "confidence": 0.41},
         ]},
-        {"race": "14:20 Leopardstown", "runners": [
-            {"horse": "Brighterdaysahead", "odds": "9/4",  "confidence": 0.79},
-            {"horse": "Lossiemouth",       "odds": "3/1",  "confidence": 0.68},
-            {"horse": "Jade De Grugy",     "odds": "6/1",  "confidence": 0.44},
+        {"race": "6:30 Wolverhampton", "runners": [
+            {"horse": "Beaune",          "odds": "7/4",   "confidence": 0.73},
+            {"horse": "Runner 2",        "odds": "3/1",   "confidence": 0.51},
+            {"horse": "Runner 3",        "odds": "8/1",   "confidence": 0.35},
         ]},
     ]
 
@@ -923,8 +926,10 @@ with tab5:
     else:
         st.warning("🟡 Sample going data shown")
         st.dataframe(pd.DataFrame([
-            {"Course": "Cheltenham", "Going": "Good to Soft", "Updated": "Sample", "Source": "Sample"},
-            {"Course": "Leopardstown", "Going": "Soft", "Updated": "Sample", "Source": "Sample"},
+            {"Course": "Pontefract",    "Going": "Good (8.0)",         "Updated": "08:00", "Source": "BHA"},
+            {"Course": "Yarmouth",      "Going": "Good to Firm (5.7)", "Updated": "08:00", "Source": "BHA"},
+            {"Course": "Wolverhampton", "Going": "Tapeta: Standard",   "Updated": "08:00", "Source": "BHA"},
+            {"Course": "Ffos Las",      "Going": "Good to Soft (5.0)", "Updated": "08:00", "Source": "BHA"},
         ]), use_container_width=True, hide_index=True)
 
 # ── Tab 6: Learning Engine ────────────────────────────────────
@@ -1027,7 +1032,7 @@ with tab7:
 
     col_course, col_time = st.columns(2)
     with col_course:
-        oc_course = st.text_input("Course", value="Cheltenham", key="oc_course")
+        oc_course = st.text_input("Course", value="Pontefract", key="oc_course")
     with col_time:
         oc_time = st.text_input("Race Time (HH:MM)", value="14:00", key="oc_time")
 
