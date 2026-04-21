@@ -562,15 +562,19 @@ with tab1:
                 "tier":       _assign_tier(round(_dec, 3)),
             })
     else:
-        # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf)
-        _six_pool = [
+        # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf, future races only)
+        _now_str = __import__('datetime').datetime.now().strftime("%H:%M")
+        _raw_sample = [
             {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "15:02", "odds_str": "5/2",  "decimal": 3.50,  "confidence": 0.683, "ev": 1.09, "tier": "MID"},
-            {"horse": "Beaune",          "course": "Wolverhampton", "time": "17:30", "odds_str": "6/4",  "decimal": 2.50,  "confidence": 0.670, "ev": 0.68, "tier": "BANKER"},
-            {"horse": "Daizen",          "course": "Pontefract",    "time": "13:52", "odds_str": "13/2", "decimal": 7.50,  "confidence": 0.649, "ev": 3.87, "tier": "VALUE"},
+            {"horse": "Beaune",          "course": "Wolverhampton", "time": "17:30", "odds_str": "7/4",  "decimal": 2.75,  "confidence": 0.664, "ev": 0.83, "tier": "MID"},
             {"horse": "Eightthreeone",   "course": "Yarmouth",      "time": "15:20", "odds_str": "4/1",  "decimal": 5.00,  "confidence": 0.645, "ev": 2.23, "tier": "MID"},
             {"horse": "Lillistar",       "course": "Pontefract",    "time": "15:32", "odds_str": "11/1", "decimal": 12.00, "confidence": 0.639, "ev": 6.67, "tier": "LONGSHOT"},
             {"horse": "Esperti",         "course": "Ffos Las",      "time": "17:42", "odds_str": "7/2",  "decimal": 4.50,  "confidence": 0.614, "ev": 1.76, "tier": "MID"},
+            {"horse": "Final Appeal",    "course": "Wolverhampton", "time": "16:00", "odds_str": "10/11","decimal": 1.91,  "confidence": 0.711, "ev": 0.36, "tier": "BANKER"},
+            {"horse": "Trust House",     "course": "Ffos Las",      "time": "17:12", "odds_str": "10/11","decimal": 1.91,  "confidence": 0.708, "ev": 0.35, "tier": "BANKER"},
+            {"horse": "Lady Youmzain",   "course": "Pontefract",    "time": "13:17", "odds_str": "1/1",  "decimal": 2.00,  "confidence": 0.812, "ev": 0.62, "tier": "BANKER"},
         ]
+        _six_pool = [s for s in _raw_sample if s["time"] >= _now_str]
 
     # ── Main display ────────────────────────────────────────────────────────
     if len(_six_pool) == 0:

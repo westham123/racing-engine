@@ -413,6 +413,17 @@ def get_todays_selections():
 
     df = pd.DataFrame(all_rows)
     df = df.sort_values("Confidence", ascending=False)
+
+    # ── Strip races that have already started (past race times) ──────────
+    now_str = datetime.now().strftime("%H:%M")
+    def _race_is_future(t):
+        try:
+            return str(t).strip() >= now_str
+        except Exception:
+            return True  # keep if unparseable
+    if "Time" in df.columns:
+        df = df[df["Time"].apply(_race_is_future)].reset_index(drop=True)
+
     return df
 
 
