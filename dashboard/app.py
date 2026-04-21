@@ -534,18 +534,15 @@ with tab1:
         return "LONGSHOT"
 
     if _is_live and len(_live_df) > 0:
-        # Load the odds model fresh so Tab 1 always uses the latest scoring logic
-        # This bypasses any stale confidence scores in the cached dataframe
+        # Rescore each row from _live_df using the fresh model.
+        # We use _live_df (cached, consistent) rather than making new HTTP calls,
+        # so Streamlit Cloud and the server see identical data.
         try:
             from engine.odds_model import OddsModel as _OddsModel
             _tab1_model = _OddsModel()
         except Exception:
             _tab1_model = None
 
-        # Rebuild runner dicts from live_df for rescoring
-        from dashboard.live_data import get_todays_meetings as _get_meetings
-        from dashboard.live_data import get_race_runners as _get_runners
-        from dashboard.live_data import _utc_to_bst as _to_bst
         try:
             import zoneinfo as _zi2
             _now_live = __import__('datetime').datetime.now(
@@ -553,52 +550,61 @@ with tab1:
         except Exception:
             _now_live = __import__('datetime').datetime.utcnow().strftime('%H:%M')
 
-        _meetings_live = _get_meetings()
-        for _ml in _meetings_live:
-            for _rl in _ml['races']:
-                _tl = _to_bst(_rl.get('time',''))
-                if _tl < _now_live:
-                    continue  # skip past races
-                _sl = _rl.get('slug')
-                if not _sl:
-                    continue
-                for _rn in _get_runners(_sl):
-                    if _rn.get('status') == 'NON_RUNNER':
-                        continue
-                    # Score with current model
-                    if _tab1_model:
-                        _conf = _tab1_model.calculate_confidence(_rn)
-                    else:
-                        _conf = float(_rn.get('confidence', 0.5))
-                    if _conf < _conf_threshold:
-                        continue
-                    # Current odds for cut-off
-                    _curr = _rn.get('current_odds') or _rn.get('odds','Evs')
-                    _odds_str = str(_curr) if _curr and str(_curr) not in ('','N/A','None') \
-                                else str(_rn.get('odds','Evs'))
-                    _disp_odds = str(_rn.get('odds', _odds_str))
-                    try:
-                        if '/' in _odds_str:
-                            _n2, _d2 = _odds_str.split('/')
-                            _dec = float(_n2) / float(_d2) + 1
-                        else:
-                            _dec = float(_odds_str)
-                    except Exception:
-                        _dec = 2.0
-                    if _dec <= 1.67:
-                        continue
-                    _ev = round(_conf * _dec - 1, 3)
-                    _six_pool.append({
-                        'horse':      _rn['horse'],
-                        'course':     _ml['course'],
-                        'time':       _tl,
-                        'odds_str':   _disp_odds,
-                        'decimal':    round(_dec, 3),
-                        'confidence': round(_conf, 3),
-                        'ev':         _ev,
-                        'tier':       _assign_tier(round(_dec, 3)),
-                    })
-        # Sort by confidence descending
+        for _, _row in _live_df.iterrows():
+            _time = str(_row.get('Time', ''))
+            if _time < _now_live:
+                continue  # skip past races
+
+            # Build runner dict from dataframe row for rescoring
+            _runner_dict = {
+                'odds':         str(_row.get('Odds', 'N/A')),
+                'current_odds': str(_row.get('Current Odds', '')) or str(_row.get('Odds', 'N/A')),
+                'form':         str(_row.get('Form', '-')),
+                'going':        str(_row.get('Going', '')),
+                'trainer':      str(_row.get('Trainer', '')),
+                'jockey':       str(_row.get('Jockey', '')),
+                'signal':       str(_row.get('Signal', 'Stable')),
+                'tf_stars':     _row.get('TF Stars'),
+                'bet_movements': [],
+            }
+            # Rescore with current model, or fall back to cached confidence
+            if _tab1_model:
+                _conf = _tab1_model.calculate_confidence(_runner_dict)
+            else:
+                _conf = float(_row.get('Confidence', 0))
+
+            if _conf < _conf_threshold:
+                continue
+
+            # Use Current Odds for cut-off; display best bk Odds
+            _curr_str = str(_row.get('Current Odds', '')).strip()
+            _odds_for_filter = _curr_str if _curr_str and _curr_str not in ('', 'N/A', 'None', 'nan') \
+                               else str(_row.get('Odds', 'Evs'))
+            _disp_odds = str(_row.get('Odds', _odds_for_filter))
+            try:
+                if '/' in _odds_for_filter:
+                    _n2, _d2 = _odds_for_filter.split('/')
+                    _dec = float(_n2) / float(_d2) + 1
+                else:
+                    _dec = float(_odds_for_filter)
+            except Exception:
+                _dec = 2.0
+            if _dec <= 1.67:
+                continue
+
+            _ev = round(_conf * _dec - 1, 3)
+            _course = str(_row.get('Course', ''))
+            _six_pool.append({
+                'horse':      str(_row.get('Horse', 'Unknown')),
+                'course':     _course,
+                'time':       _time,
+                'odds_str':   _disp_odds,
+                'decimal':    round(_dec, 3),
+                'confidence': round(_conf, 3),
+                'ev':         _ev,
+                'tier':       _assign_tier(round(_dec, 3)),
+            })
+
         _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
     else:
         # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf, future races only)
