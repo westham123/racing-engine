@@ -537,7 +537,12 @@ with tab1:
             _conf = float(_row.get("Confidence", 0))
             if _conf < _conf_threshold:
                 continue
-            _odds_str = str(_row.get("Odds", "Evs"))
+            # Use Current Odds (live market price) for the 4/6 cut-off and EV
+            # Fall back to Odds (best bk price) if Current Odds not available
+            _curr_odds = str(_row.get("Current Odds", "")).strip()
+            _odds_str  = _curr_odds if _curr_odds and _curr_odds not in ("", "N/A", "None") \
+                         else str(_row.get("Odds", "Evs"))
+            _disp_odds = str(_row.get("Odds", _odds_str))  # display best bk price
             try:
                 if "/" in _odds_str:
                     _n, _d = _odds_str.split("/")
@@ -546,7 +551,7 @@ with tab1:
                     _dec = float(_odds_str)
             except Exception:
                 _dec = 2.0
-            if _dec <= 1.67:  # Hard 4/6 cut-off
+            if _dec <= 1.67:  # Hard 4/6 cut-off on current market price
                 continue
             _ev = round(_conf * _dec - 1, 3)
             _course = str(_row.get("Course", ""))
@@ -559,7 +564,7 @@ with tab1:
                 "horse":      str(_row.get("Horse", _row.get("Selection", "Unknown"))),
                 "course":     _course,
                 "time":       _time,
-                "odds_str":   _odds_str,
+                "odds_str":   _disp_odds,
                 "decimal":    round(_dec, 3),
                 "confidence": round(_conf, 3),
                 "ev":         _ev,

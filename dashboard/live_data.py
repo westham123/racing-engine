@@ -417,6 +417,7 @@ def get_todays_selections():
                     "Form":        rn["form"],
                     "Going":       going,
                     "Odds":        odds_str,
+                    "Current Odds": rn.get("current_odds", odds_str),
                     "Confidence":  confidence,
                     "Signal":      signal,
                     "TF Stars":    rn.get("tf_stars", "-"),
