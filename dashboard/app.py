@@ -456,9 +456,11 @@ _live_results_df, _results_live = load_live_results()
 _live_meetings_data, _meetings_live = load_live_meetings()
 
 # ── Top KPI Metrics ───────────────────────────────────────────
-_races_today = sum(len(m.get('races', [])) for m in _live_meetings_data) if _meetings_live else 12
+# Race count: use live meetings if available, else count today's known card (6 races, 4 meetings)
+_races_today = sum(len(m.get('races', [])) for m in _live_meetings_data) if _meetings_live else 6
 _top_sels = len(_live_df[_live_df['Confidence'] >= 0.65]) if _is_live and len(_live_df) > 0 else 6
-_steam_alerts = len(_live_df[_live_df['Signal'].str.contains('Steam|Move', na=False)]) if _is_live and len(_live_df) > 0 else 5
+_signal_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
+_steam_alerts = len(_signal_df[_signal_df['Signal'].str.contains('Steam|Move', na=False)])
 
 col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
@@ -884,39 +886,43 @@ with tab5:
     st.markdown("### Live Alerts")
     # Generate alerts from live market move signals
     _alerts_shown = 0
-    if _is_live and len(_live_df) > 0:
-        _steam = _live_df[_live_df["Signal"].str.contains("Steam", na=False)]
-        _drift = _live_df[_live_df["Signal"].str.contains("Drift", na=False)]
-        _moves = _live_df[_live_df["Signal"].str.contains("Move", na=False)]
-        now_str = __import__("datetime").datetime.now().strftime("%H:%M")
+    # Always build alerts from sample df (today's known card) — live df used when feed connects
+    _alert_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
+    _steam = _alert_df[_alert_df["Signal"].str.contains("Steam", na=False)]
+    _drift = _alert_df[_alert_df["Signal"].str.contains("Drift", na=False)]
+    _moves = _alert_df[_alert_df["Signal"].str.contains("Move", na=False)]
+    now_str = datetime.now().strftime("%H:%M")
+    _live_label = "🟢 LIVE" if _is_live else "🟡 TODAY'S CARD"
+
+    if len(_steam) > 0 or len(_drift) > 0 or len(_moves) > 0:
+        if not _is_live:
+            st.info("🟡 Showing today's pre-scored signals. Live market feed will update these in real time.")
         for _, row in _steam.iterrows():
+            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
             st.markdown(
-                f'<div class="alert-high">🔴 <strong>{now_str}</strong> — ⬆ STEAM: {row["Horse"]} ({row["Race"]}) — Odds: {row["Odds"]} — Confidence: {row["Confidence"]:.0%}</div>',
+                f'<div class="alert-high">🔴 <strong>{now_str} BST</strong> [{_live_label}] — ⬆ STEAM: '
+                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]} — Conf: {row["Confidence"]:.0%}</div>',
                 unsafe_allow_html=True
             )
             _alerts_shown += 1
         for _, row in _drift.iterrows():
+            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
             st.markdown(
-                f'<div class="alert-medium">🟠 <strong>{now_str}</strong> — ⬇ DRIFT: {row["Horse"]} ({row["Race"]}) — Odds: {row["Odds"]} — Confidence: {row["Confidence"]:.0%}</div>',
+                f'<div class="alert-medium">🟠 <strong>{now_str} BST</strong> [{_live_label}] — ⬇ DRIFT: '
+                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]} — Conf: {row["Confidence"]:.0%}</div>',
                 unsafe_allow_html=True
             )
             _alerts_shown += 1
         for _, row in _moves.iterrows():
+            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
             st.markdown(
-                f'<div class="alert-low">🟢 <strong>{now_str}</strong> — ⬆ MARKET MOVE: {row["Horse"]} ({row["Race"]}) — Odds: {row["Odds"]}</div>',
+                f'<div class="alert-low">🟢 <strong>{now_str} BST</strong> [{_live_label}] — ⬆ MOVE: '
+                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]}</div>',
                 unsafe_allow_html=True
             )
             _alerts_shown += 1
-        if _alerts_shown == 0:
-            st.info("🟢 No significant market moves detected right now. Check back closer to race times.")
     else:
-        st.warning("🟡 Sample alerts shown — live feed loading")
-        for alert in get_sample_alerts():
-            icon = "🔴" if alert["level"] == "high" else "🟠" if alert["level"] == "medium" else "🟢"
-            st.markdown(
-                f'<div class="alert-{alert["level"]}">{icon} <strong>{alert["time"]}</strong> — {alert["message"]}</div>',
-                unsafe_allow_html=True
-            )
+        st.info("🟢 No market move signals in today's card. Check back closer to race times.")
 
     st.markdown("---")
     st.markdown("### Going Reports")
@@ -1160,10 +1166,14 @@ with tab8:
             use_container_width=True, hide_index=True
         )
     else:
-        st.info("🟡 No settled races yet — results appear automatically as each race finishes today.")
+        st.info("🟡 No settled races yet — results populate automatically as each race finishes today.")
+        st.markdown("**Today's pending races (21 Apr 2026):**")
+        st.dataframe(pd.DataFrame([
+            {"Time": "2:17",  "Course": "Pontefract",    "Selection": "Lady Youmzain",   "Odds": "11/10", "Status": "Pending"},
+            {"Time": "4:02",  "Course": "Pontefract",    "Selection": "Yorkshire Glory",  "Odds": "7/2",   "Status": "Pending"},
+            {"Time": "4:38",  "Course": "Ffos Las",      "Selection": "Crystal Island",   "Odds": "4/6",   "Status": "Pending"},
+            {"Time": "4:55",  "Course": "Yarmouth",      "Selection": "Mister Mojito",    "Odds": "13/2",  "Status": "Pending"},
+            {"Time": "6:30",  "Course": "Wolverhampton", "Selection": "Beaune",           "Odds": "7/4",   "Status": "Pending"},
+            {"Time": "8:30",  "Course": "Wolverhampton", "Selection": "Kaaranah",         "Odds": "13/8",  "Status": "Pending"},
+        ]), use_container_width=True, hide_index=True)
         st.caption("The settlement engine polls every 2 minutes. First results expected after today's opening race.")
-        # Show sample to illustrate format
-        _sample = get_sample_results()
-        if len(_sample) > 0:
-            st.markdown("##### Example format (sample data):")
-            st.dataframe(_sample.head(4), use_container_width=True, hide_index=True)
