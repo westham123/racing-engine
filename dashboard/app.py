@@ -415,7 +415,7 @@ with st.sidebar:
 
     _conf_threshold = st.slider(
         "Min Confidence Threshold",
-        min_value=0.55, max_value=0.80, value=st.session_state.get("conf_threshold", 0.60),
+        min_value=0.55, max_value=0.80, value=st.session_state.get("conf_threshold", 0.55),
         step=0.05, format="%.0%%",
         help="Slide left to 55% to bring in more selections, right to tighten the filter. Default is 60%."
     )
@@ -522,10 +522,10 @@ with tab1:
     if _t1col2.button("🔄 Refresh", help="Clear cache and reload live data"):
         st.cache_data.clear()
         st.rerun()
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Six-timer is main bet | Lucky 15 shown only if 4+ horses qualify | Min confidence: **{st.session_state.get('conf_threshold', 0.60):.0%}** | Adjust in sidebar ←")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Six-timer is main bet | Lucky 15 shown only if 4+ horses qualify | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
 
     # ── Build pool from live data or sample ────────────────────────────────
-    _conf_threshold = st.session_state.get("conf_threshold", 0.60)
+    _conf_threshold = st.session_state.get("conf_threshold", 0.55)
     _six_pool = []  # All qualifying selections
 
     def _assign_tier(dec):
