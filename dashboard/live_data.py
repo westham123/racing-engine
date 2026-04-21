@@ -58,15 +58,36 @@ UK_IRE_MEETING_NAMES = {
 
 
 def _get_page_json(url):
-    """Fetch a Sporting Life page and return the __NEXT_DATA__ JSON."""
+    """Fetch a Sporting Life page and return the embedded page JSON."""
     try:
         r = requests.get(url, headers=HEADERS, timeout=12)
         if r.status_code != 200:
             return None
+
+        # Method 1: <script id="__NEXT_DATA__"> (old format)
         soup = BeautifulSoup(r.text, "html.parser")
         nd = soup.find("script", id="__NEXT_DATA__")
         if nd:
             return json.loads(nd.get_text())
+
+        # Method 2: plain <script> tag containing {"props":{"pageProps": (new format)
+        for script in soup.find_all("script"):
+            txt = script.get_text(strip=True)
+            if txt.startswith('{"props"') and '"pageProps"' in txt:
+                try:
+                    return json.loads(txt)
+                except Exception:
+                    pass
+
+        # Method 3: any script block containing meetings/races JSON
+        for script in soup.find_all("script"):
+            txt = script.get_text(strip=True)
+            if '"meetings"' in txt and '"races"' in txt and txt.startswith('{'):
+                try:
+                    return json.loads(txt)
+                except Exception:
+                    pass
+
     except Exception:
         pass
     return None
