@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.2** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.3** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -653,13 +653,25 @@ with tab1:
 
         st.markdown("---")
 
-        # ── Staking Plan ────────────────────────────────────────────────
-        _budget        = float(st.session_state.get("daily_budget", 50))
-        _l15_available = len(_l15_eligible) >= 4
-        # Budget split: if L15 available, 60% acc + 40% L15. Otherwise 100% acc.
+        # ══════════════════════════════════════════════════════════════
+        # STAKING PLAN v2.0 — Clear options, profit maximisation logic
+        # ══════════════════════════════════════════════════════════════
+        import itertools as _it
+
+        _budget         = float(st.session_state.get("daily_budget", 50))
+        _n_sel          = len(_six_pool)
+        _l15_available  = len(_l15_eligible) >= 4
+
+        # ── What qualifies? ────────────────────────────────────────
+        # L15-eligible = above 4/6 cut-off (decimal > 1.67) AND above conf threshold
+        # All _six_pool horses are already above conf threshold and 4/6 cut-off
+
+        # ── Budget allocation ─────────────────────────────────────
+        # Rule: if 4+ horses → 60% accumulator + 40% Lucky 15
+        #       if <4 horses  → 100% accumulator only
         if _l15_available:
             _acc_stake_plan = round(_budget * 0.60, 2)
-            _l15_stake_plan = round(_budget * 0.40, 2)   # 40% split across 15 bets
+            _l15_stake_plan = round(_budget * 0.40, 2)
             _l15_bet_size   = round(_l15_stake_plan / 15, 2)
         else:
             _acc_stake_plan = round(_budget, 2)
@@ -667,20 +679,64 @@ with tab1:
             _l15_bet_size   = 0.0
         _acc_return_plan = round(_acc_stake_plan * _combined_dec, 2)
 
-        st.markdown("#### 💳 Staking Plan")
-        _sp1, _sp2, _sp3 = st.columns(3)
-        _sp1.metric("Daily Budget", f"£{_budget:.2f}")
-        _sp2.metric("🎰 Accumulator Stake", f"£{_acc_stake_plan:.2f}",
-                    f"Return if all win: £{_acc_return_plan:,.2f}")
+        # ── Staking Summary ────────────────────────────────────────
+        st.markdown("#### 💳 Today's Staking Plan")
+
+        # Colour-coded recommendation banner
         if _l15_available:
-            _sp3.metric("♥ Lucky 15 Stake", f"£{_l15_stake_plan:.2f}",
-                        f"£{_l15_bet_size:.2f} per bet × 15")
+            st.success(
+                f"**PLAN: Accumulator + Lucky 15** — {_n_sel} horses qualify. "
+                f"Budget £{_budget:.2f} split: **£{_acc_stake_plan:.2f} accumulator** (main bet) "
+                f"+ **£{_l15_stake_plan:.2f} Lucky 15** (safety net across 4 best horses)."
+            )
         else:
-            _sp3.metric("♥ Lucky 15", "N/A", "Need 4+ horses")
+            st.info(
+                f"**PLAN: Accumulator only** — {_n_sel} horse(s) qualify. "
+                f"Full budget **£{_acc_stake_plan:.2f}** on accumulator. "
+                f"Lucky 15 unlocks when 4+ horses clear the 4/6 price cut-off."
+            )
+
+        # KPI row
+        _kpi1, _kpi2, _kpi3, _kpi4 = st.columns(4)
+        _kpi1.metric("Daily Budget",          f"£{_budget:.2f}")
+        _kpi2.metric("Accumulator Stake",      f"£{_acc_stake_plan:.2f}")
+        _kpi2.caption(f"Return if ALL win: £{_acc_return_plan:,.2f}")
+        if _l15_available:
+            _kpi3.metric("Lucky 15 Stake",     f"£{_l15_stake_plan:.2f}")
+            _kpi3.caption(f"£{_l15_bet_size:.2f} per bet × 15 bets")
+        else:
+            _kpi3.metric("Lucky 15",            "Not available")
+            _kpi3.caption(f"Need 4+ horses above 4/6 — {len(_l15_eligible)} qualify so far")
+        _kpi4.metric("Combined Acc Odds",      f"{_combined_dec:,.0f}x")
+        _kpi4.caption("All selections must win")
+
+        # ── Bet type explainer ─────────────────────────────────────
+        with st.expander("What do these bets mean? (click to expand)"):
+            st.markdown("""
+**Accumulator** — All your selections combined into one bet. Every horse must win.
+- Maximum return, maximum risk.
+- £{acc:.2f} wins £{ret:,.2f} if every horse wins.
+- One loser = entire stake lost.
+
+**Lucky 15** — 4 horses, 15 separate bets (4 singles + 6 doubles + 4 trebles + 1 four-fold).
+- Partial returns even if only 1 or 2 horses win — it's your safety net.
+- Costs more per horse but covers you when the accumulator fails.
+- Only placed when 4+ horses qualify above the 4/6 cut-off.
+
+**Why split the budget?**
+The accumulator is where the big money is. The Lucky 15 is insurance — it often returns
+part of your stake when the accumulator loses due to one result. Today, 60% rides the
+accumulator and 40% protects you through the Lucky 15.
+            """.format(acc=_acc_stake_plan, ret=_acc_return_plan))
 
         st.markdown("---")
-        st.markdown("#### 🎰 Accumulator — All Selections")
-        st.caption(f"★ Main bet — stake £{_acc_stake_plan:.2f} on all {len(_six_pool)} selections as one accumulator. All must win.")
+
+        # ── Accumulator detail ─────────────────────────────────────
+        st.markdown("#### 🎰 Accumulator — All Qualifying Selections")
+        st.caption(
+            f"Stake £{_acc_stake_plan:.2f} on all {_n_sel} horses as one accumulator. "
+            f"All must win. Combined odds: {_combined_dec:,.0f}x."
+        )
         _acc_rows = []
         for i, _s in enumerate(_six_pool):
             _acc_rows.append({
@@ -689,28 +745,45 @@ with tab1:
                 "Horse":      _s["horse"],
                 "Course":     _s["course"],
                 "Odds":       _s["odds_str"],
-                "Dec":        f"{_s['decimal']:.2f}x",
+                "Decimal":    f"{_s['decimal']:.2f}x",
                 "Confidence": f"{_s['confidence']:.1%}",
                 "Tier":       _s["tier"],
             })
         st.dataframe(pd.DataFrame(_acc_rows), use_container_width=True, hide_index=True)
         st.success(
-            f"💰 Stake **£{_acc_stake_plan:.2f}** on accumulator | "
-            f"Combined odds: **{_combined_dec:,.0f}x** | "
-            f"Projected return if all win: **£{_acc_return_plan:,.2f}**"
+            f"Stake **£{_acc_stake_plan:.2f}** on accumulator | "
+            f"Odds: **{_combined_dec:,.0f}x** | "
+            f"Return if all win: **£{_acc_return_plan:,.2f}**"
         )
 
-        # ── Lucky 15 — optional, only if >= 4 horses qualify ──
+        # ── Lucky 15 detail — only when 4+ qualify ─────────────────
         if _l15_available:
             st.markdown("---")
-            st.markdown("#### ♥ Lucky 15 — Optional Side Bet")
-            st.caption("4 horses selected from your qualifying list. Lucky 15 = 15 bets (4 singles, 6 doubles, 4 trebles, 1 four-fold). Only place this if you want part-return safety net.")
+            st.markdown("#### ♥ Lucky 15 — Safety Net Bet")
+            st.caption(
+                f"4 highest-value horses from your qualifying list. "
+                f"15 bets at £{_l15_bet_size:.2f} each = £{_l15_stake_plan:.2f} total. "
+                f"Pays out even if only 1 horse wins."
+            )
 
-            # Use budget-derived stake per bet
-            _l15_plan = None
-            _l15_err  = None
-            import itertools as _it
-            def _l15_scenarios_budget(quartet, bet_size):
+            _quartet = sorted(_l15_eligible, key=lambda s: s["ev"], reverse=True)[:4]
+
+            # L15 selections table
+            _l15_rows = []
+            for _s in _quartet:
+                _l15_rows.append({
+                    "Horse":       _s["horse"],
+                    "Course":      _s["course"],
+                    "Time":        _s["time"],
+                    "Odds":        _s["odds_str"],
+                    "Decimal":     f"{_s['decimal']:.2f}x",
+                    "Confidence":  f"{_s['confidence']:.1%}",
+                    "Why selected": "Highest EV" if _s == _quartet[0] else "Qualifies 4/6+",
+                })
+            st.dataframe(pd.DataFrame(_l15_rows), use_container_width=True, hide_index=True)
+
+            # Return scenarios
+            def _l15_scenarios(quartet, bet_size, total_stake):
                 decs = [s["decimal"] for s in quartet]
                 def _combret(n):
                     flat = []
@@ -718,63 +791,104 @@ with tab1:
                         r = bet_size
                         for d in c: r *= d
                         flat.append(round(r, 2))
-                    return {"min_return": round(min(flat), 2), "max_return": round(max(flat), 2),
-                            "min_profit": round(min(flat) - _l15_stake_plan, 2)}
+                    return {
+                        "min_return":  round(min(flat), 2),
+                        "max_return":  round(max(flat), 2),
+                        "net_vs_stake": round(min(flat) - total_stake, 2),
+                    }
                 s1_rets = [round(bet_size * d, 2) for d in decs]
-                s1 = {"min_return": min(s1_rets), "max_return": max(s1_rets),
-                      "min_profit": round(min(s1_rets) - _l15_stake_plan, 2)}
-                return {"1_winner": s1, "2_winners": _combret(2),
-                        "3_winners": _combret(3), "4_winners": _combret(4)}
-            _quartet = sorted(_l15_eligible, key=lambda s: s["ev"], reverse=True)[:4]
-            _l15_plan = {
-                "lucky15_selections": [{"horse": s["horse"], "course": s["course"], "time": s["time"],
-                                        "tier": s["tier"], "odds_str": s["odds_str"], "decimal": s["decimal"]}
-                                       for s in _quartet],
-                "lucky15_scenarios":  _l15_scenarios_budget(_quartet, _l15_bet_size),
-                "total_staked":       _l15_stake_plan,
-            }
+                return {
+                    "1_winner": {
+                        "min_return":   min(s1_rets),
+                        "max_return":   max(s1_rets),
+                        "net_vs_stake": round(min(s1_rets) - total_stake, 2),
+                    },
+                    "2_winners": _combret(2),
+                    "3_winners": _combret(3),
+                    "4_winners": _combret(4),
+                }
 
-            if _l15_plan is not None:
-                _l15_sels = _l15_plan["lucky15_selections"]
-                _scen     = _l15_plan["lucky15_scenarios"]
+            _scen = _l15_scenarios(_quartet, _l15_bet_size, _l15_stake_plan)
 
-                _tier_df_rows = []
-                for _s in _l15_sels:
-                    _tier_df_rows.append({
-                        "Tier":    _s["tier"],
-                        "Horse":   _s["horse"],
-                        "Course":  _s["course"],
-                        "Time":    _s["time"],
-                        "Odds":    _s["odds_str"],
-                        "Decimal": f"{_s['decimal']:.2f}x",
+            st.markdown(f"##### Return Scenarios — Lucky 15 (£{_l15_stake_plan:.2f} staked)")
+            _scen_rows = [
+                {
+                    "Winners": "1 horse wins",
+                    "Min Return": f"£{_scen['1_winner']['min_return']:.2f}",
+                    "Max Return": f"£{_scen['1_winner']['max_return']:.2f}",
+                    "Net vs Stake": f"£{_scen['1_winner']['net_vs_stake']:.2f}",
+                    "Note": "Partial recovery — likely a loss but cushioned",
+                },
+                {
+                    "Winners": "2 horses win",
+                    "Min Return": f"£{_scen['2_winners']['min_return']:.2f}",
+                    "Max Return": f"£{_scen['2_winners']['max_return']:.2f}",
+                    "Net vs Stake": f"£{_scen['2_winners']['net_vs_stake']:.2f}",
+                    "Note": "Likely breaks even or small profit",
+                },
+                {
+                    "Winners": "3 horses win",
+                    "Min Return": f"£{_scen['3_winners']['min_return']:.2f}",
+                    "Max Return": f"£{_scen['3_winners']['max_return']:.2f}",
+                    "Net vs Stake": f"£{_scen['3_winners']['net_vs_stake']:.2f}",
+                    "Note": "Good profit",
+                },
+                {
+                    "Winners": "ALL 4 win",
+                    "Min Return": f"£{_scen['4_winners']['min_return']:.2f}",
+                    "Max Return": f"£{_scen['4_winners']['max_return']:.2f}",
+                    "Net vs Stake": f"+£{_scen['4_winners']['net_vs_stake']:.2f}",
+                    "Note": "Maximum return",
+                },
+            ]
+            st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
+            st.caption("Net vs Stake = profit or loss on the Lucky 15 alone, after deducting the £{:.2f} total stake.".format(_l15_stake_plan))
+
+            # ── Full day P&L summary ────────────────────────────────
+            st.markdown("---")
+            st.markdown("#### 📊 Full Day P&L — All Scenarios")
+            st.caption("What the whole day looks like depending on how many horses win.")
+            _full_rows = []
+            # Accumulator can only win or lose entirely
+            _acc_scenarios = [
+                ("Acc loses (any horse fails)",  -_acc_stake_plan),
+                ("Acc wins (all win)",            _acc_return_plan - _acc_stake_plan),
+            ]
+            for _acc_label, _acc_pnl in _acc_scenarios:
+                for _sw, _sdata in [
+                    ("1 L15 winner",  _scen["1_winner"]),
+                    ("2 L15 winners", _scen["2_winners"]),
+                    ("3 L15 winners", _scen["3_winners"]),
+                    ("4 L15 winners", _scen["4_winners"]),
+                ]:
+                    _total_net = round(_acc_pnl + _sdata["net_vs_stake"], 2)
+                    _full_rows.append({
+                        "Accumulator":   _acc_label,
+                        "Lucky 15":      _sw,
+                        "Acc P&L":       f"£{_acc_pnl:+.2f}",
+                        "L15 Net":       f"£{_sdata['net_vs_stake']:+.2f}",
+                        "TOTAL P&L":     f"£{_total_net:+.2f}",
                     })
-                st.dataframe(pd.DataFrame(_tier_df_rows), use_container_width=True, hide_index=True)
+            _full_df = pd.DataFrame(_full_rows)
 
-                st.markdown(f"##### Return Scenarios (Lucky 15 — £{_l15_stake_plan:.2f} stake = 15 bets × £{_l15_bet_size:.2f})")
-                _scen_rows = [
-                    {"Scenario": "1 winner (best single)",
-                     "Min Return": f"£{_scen['1_winner']['min_return']:.2f}",
-                     "Max Return": f"£{_scen['1_winner']['max_return']:.2f}",
-                     "vs stake": f"£{_scen['1_winner']['min_profit']:.2f}"},
-                    {"Scenario": "2 winners",
-                     "Min Return": f"£{_scen['2_winners']['min_return']:.2f}",
-                     "Max Return": f"£{_scen['2_winners']['max_return']:.2f}",
-                     "vs stake": f"£{_scen['2_winners']['min_profit']:.2f}"},
-                    {"Scenario": "3 winners",
-                     "Min Return": f"£{_scen['3_winners']['min_return']:.2f}",
-                     "Max Return": f"£{_scen['3_winners']['max_return']:.2f}",
-                     "vs stake": f"£{_scen['3_winners']['min_profit']:.2f}"},
-                    {"Scenario": "ALL 4 winners",
-                     "Min Return": f"£{_scen['4_winners']['max_return']:.2f}",
-                     "Max Return": f"£{_scen['4_winners']['max_return']:.2f}",
-                     "vs stake": f"+£{_scen['4_winners']['min_profit']:.2f}"},
-                ]
-                st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
-            else:
-                if _l15_err:
-                    st.warning(f"Lucky 15 builder note: {_l15_err}")
+            def _colour_pnl(val):
+                try:
+                    v = float(str(val).replace("£","").replace("+",""))
+                    if v > 0:  return "color: green; font-weight: bold"
+                    if v < 0:  return "color: red"
+                    return ""
+                except Exception:
+                    return ""
+
+            st.dataframe(
+                _full_df.style.applymap(_colour_pnl, subset=["Acc P&L", "L15 Net", "TOTAL P&L"]),
+                use_container_width=True, hide_index=True
+            )
         else:
-            st.info(f"✖ Lucky 15 not available today — only {len(_l15_eligible)} horse(s) qualify (need 4+). Accumulator is the main bet.")
+            st.info(
+                f"Lucky 15 not available today — {len(_l15_eligible)} of 4 horses needed clear the 4/6 cut-off. "
+                f"Running accumulator only at £{_acc_stake_plan:.2f}."
+            )
 
         st.markdown("---")
 
