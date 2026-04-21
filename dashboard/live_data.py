@@ -106,24 +106,35 @@ def get_todays_meetings():
 
     meetings_raw = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
-    # Also get race links from the HTML
+    # UK + Irish country codes as used by Sporting Life
+    UK_IRE_COUNTRIES_LIVE = {"ENG", "SCO", "IRE", "IE", "WAL", "Wale", "Wales",
+                              "GB", "UK", "Northern Ireland", "NI"}
+
+    # Build a slug lookup from HTML links: race_id -> full path
+    slug_map = {}
     try:
         r = requests.get(url, headers=HEADERS, timeout=12)
         soup = BeautifulSoup(r.text, "html.parser")
-        links = [
-            a["href"] for a in soup.find_all("a", href=True)
-            if f"/racecards/{today}/" in a["href"] and "/racecard/" in a["href"]
-        ]
+        for a in soup.find_all("a", href=True):
+            href = a["href"]
+            if f"/racecards/{today}/" in href and "/racecard/" in href:
+                # Extract race id from path: .../racecard/{id}/...
+                parts = href.split("/racecard/")
+                if len(parts) == 2:
+                    race_id = parts[1].split("/")[0]
+                    slug_map[race_id] = href
     except Exception:
-        links = []
+        pass
 
     meetings = []
     for m in meetings_raw:
         ms = m.get("meeting_summary", {})
-        course = ms.get("course", {}).get("name", "")
+        course_data = ms.get("course", {})
+        course  = course_data.get("name", "")
+        country = course_data.get("country", {}).get("short_name", "")
 
-        # Filter to UK + Irish only
-        if course not in UK_IRE_MEETING_NAMES:
+        # Filter to UK + Irish only — use country code, not course name
+        if country not in UK_IRE_COUNTRIES_LIVE:
             continue
 
         going = ms.get("going", "Unknown")
@@ -131,18 +142,20 @@ def get_todays_meetings():
 
         races = []
         for rc in races_raw:
-            rc_id = rc.get("race_summary_reference", {}).get("id", "")
+            rc_id = str(rc.get("race_summary_reference", {}).get("id", ""))
             stage = rc.get("race_stage", "")
-            time = rc.get("time", "")
-            name = rc.get("name", "")
+            time  = rc.get("time", "")
+            name  = rc.get("name", "")
 
-            # Find the URL slug for this race
-            match = [l for l in links if str(rc_id) in l]
-            slug = match[0] if match else None
+            # Build slug from map (HTML links) — fall back to constructing it
+            slug = slug_map.get(rc_id)
+            if not slug and rc_id:
+                course_slug = course.lower().replace(" ", "-").replace("'", "")
+                slug = f"/racing/racecards/{today}/{course_slug}/racecard/{rc_id}"
 
             races.append({
-                "id": rc_id,
-                "time": time,
+                "id":    rc_id,
+                "time":  time,
                 "name": name,
                 "stage": stage,
                 "slug": slug,
