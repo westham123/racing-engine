@@ -412,27 +412,38 @@ def build_pdf(corrected_path: str, out_path: str):
     # ── What this means for the engine ──
     story.append(Paragraph("What This Means For The Engine", styles["h1"]))
 
+    finding_style = ParagraphStyle("finding", fontName=HEADING_FONT if HEADING_FONT != "Helvetica-Bold" else "Helvetica-Bold",
+        fontSize=8, leading=11, textColor=TEXT)
+    impl_style = ParagraphStyle("impl", fontName=BODY_FONT,
+        fontSize=8, leading=11, textColor=TEXT)
+    hdr_style = ParagraphStyle("hdr", fontName=HEADING_FONT if HEADING_FONT != "Helvetica-Bold" else "Helvetica-Bold",
+        fontSize=8, leading=11, textColor=white)
+
+    col_a = 62 * mm
+    col_b = PAGE_W - 2 * MARGIN - col_a
+
     interpretation = [
-        ["Finding", "Implication"],
-        ["Favourites win ~34.9% of races (adjusted)", "Consistent with industry data. Baseline ROI is slightly negative, which is expected."],
-        ["Singles ROI: -4.4% (conservative) to +47.6% (biased sample)", "Target: engine should identify the 40-50% of favourites worth backing, not all."],
-        ["Doubles/trebles show strong compounding", "Combination bets amplify edge — the permutation engine's value lies in selecting only high-confidence combinations."],
-        ["Lucky 15 profitable 52% of days", "4-selection accumulators work often due to compounding, but need a confidence filter to avoid poor-value legs."],
-        ["826 races across 28 days", "Healthy volume (avg 29.5 races/day). The live engine will tip selections daily across this level of volume."],
+        [Paragraph("Finding", hdr_style), Paragraph("Implication", hdr_style)],
+        [Paragraph("Favourites win ~34.9% of races (adjusted)", finding_style),
+         Paragraph("Consistent with industry data. Baseline ROI is slightly negative, which is expected.", impl_style)],
+        [Paragraph("Singles ROI: -4.4% conservative / +47.6% biased sample", finding_style),
+         Paragraph("Target: engine should identify the 40-50% of favourites worth backing, not all.", impl_style)],
+        [Paragraph("Doubles/trebles show strong compounding", finding_style),
+         Paragraph("Combination bets amplify edge. Permutation engine value lies in selecting only high-confidence combinations.", impl_style)],
+        [Paragraph("Lucky 15 profitable 52% of days", finding_style),
+         Paragraph("4-selection accumulators work well due to compounding, but need a confidence filter to avoid poor-value legs.", impl_style)],
+        [Paragraph("826 races across 28 days", finding_style),
+         Paragraph("Healthy volume (avg 29.5 races/day). The live engine will tip selections daily across this level of volume.", impl_style)],
     ]
 
-    t = Table(interpretation, colWidths=[70*mm, PAGE_W - 2*MARGIN - 70*mm])
+    t = Table(interpretation, colWidths=[col_a, col_b])
     t.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), HEADER_BG),
-        ("TEXTCOLOR", (0, 0), (-1, 0), white),
-        ("FONTNAME", (0, 0), (-1, 0), HEADING_FONT if HEADING_FONT != "Helvetica-Bold" else "Helvetica-Bold"),
-        ("FONTSIZE", (0, 0), (-1, 0), 8),
-        ("FONTNAME", (0, 1), (0, -1), HEADING_FONT if HEADING_FONT != "Helvetica-Bold" else "Helvetica-Bold"),
-        ("FONTNAME", (1, 1), (1, -1), BODY_FONT),
-        ("FONTSIZE", (0, 1), (-1, -1), 8),
+        ("FONTSIZE", (0, 0), (-1, -1), 8),
         ("TOPPADDING", (0, 0), (-1, -1), 6),
         ("BOTTOMPADDING", (0, 0), (-1, -1), 6),
         ("LEFTPADDING", (0, 0), (-1, -1), 8),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 8),
         ("VALIGN", (0, 0), (-1, -1), "TOP"),
         ("ROWBACKGROUNDS", (0, 1), (-1, -1), [SURFACE, BG]),
         ("LINEBELOW", (0, 0), (-1, -1), 0.3, BORDER),

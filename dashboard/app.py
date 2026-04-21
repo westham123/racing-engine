@@ -1,5 +1,5 @@
 # Racing Engine — Visual Dashboard
-# Version: 0.3 — PIN lock added
+# Version: 1.9 — Today's Plan tab + Configurable Staking Settings
 # Built with Streamlit
 # Date: 20 April 2026
 
@@ -357,6 +357,65 @@ with st.sidebar:
     st.markdown(f"**Date:** {datetime.now().strftime('%A %d %B %Y')}")
     st.markdown(f"**Time:** {datetime.now().strftime('%H:%M')} BST")
     st.markdown("---")
+
+    # ── Staking Settings ──────────────────────────────────────
+    st.markdown("### ⚙️ Staking Settings")
+    st.caption("Adjust anytime — saved for this session")
+
+    _daily_budget = st.number_input(
+        "Daily Budget (£)",
+        min_value=5, max_value=500, value=st.session_state.get("daily_budget", 50), step=5,
+        help="Total amount to allocate across all bets today"
+    )
+    st.session_state["daily_budget"] = _daily_budget
+
+    _risk_profile = st.select_slider(
+        "Risk Profile",
+        options=["Conservative", "Balanced", "Aggressive"],
+        value=st.session_state.get("risk_profile", "Balanced"),
+        help="Conservative = more singles, smaller multiples. Aggressive = concentrate on high-odds multiples."
+    )
+    st.session_state["risk_profile"] = _risk_profile
+
+    st.markdown("**Bet Types**")
+    _use_singles   = st.toggle("Singles",   value=st.session_state.get("use_singles", True))
+    _use_doubles   = st.toggle("Doubles",   value=st.session_state.get("use_doubles", True))
+    _use_trebles   = st.toggle("Trebles",   value=st.session_state.get("use_trebles", True))
+    _use_4fold     = st.toggle("4-folds",   value=st.session_state.get("use_4fold", True))
+    _use_5fold     = st.toggle("5-folds+",  value=st.session_state.get("use_5fold", True))
+    _use_lucky15   = st.toggle("Lucky 15/31/63", value=st.session_state.get("use_lucky15", False))
+    st.session_state["use_singles"]  = _use_singles
+    st.session_state["use_doubles"]  = _use_doubles
+    st.session_state["use_trebles"]  = _use_trebles
+    st.session_state["use_4fold"]    = _use_4fold
+    st.session_state["use_5fold"]    = _use_5fold
+    st.session_state["use_lucky15"]  = _use_lucky15
+
+    _conf_threshold = st.slider(
+        "Min Confidence Threshold",
+        min_value=0.50, max_value=0.85, value=st.session_state.get("conf_threshold", 0.55),
+        step=0.01, format="%.2f",
+        help="Only selections above this score are included"
+    )
+    st.session_state["conf_threshold"] = _conf_threshold
+
+    _max_legs = st.slider(
+        "Max Accumulator Legs",
+        min_value=2, max_value=6, value=st.session_state.get("max_legs", 6), step=1,
+        help="Maximum number of selections in a single multiple bet"
+    )
+    st.session_state["max_legs"] = _max_legs
+
+    # Stake split ratios by risk profile
+    _risk_splits = {
+        "Conservative": {"singles_pct": 0.50, "doubles_pct": 0.25, "trebles_pct": 0.15, "4fold_pct": 0.07, "5fold_pct": 0.03},
+        "Balanced":     {"singles_pct": 0.20, "doubles_pct": 0.20, "trebles_pct": 0.27, "4fold_pct": 0.24, "5fold_pct": 0.09},
+        "Aggressive":   {"singles_pct": 0.10, "doubles_pct": 0.10, "trebles_pct": 0.20, "4fold_pct": 0.35, "5fold_pct": 0.25},
+    }
+    _split = _risk_splits[_risk_profile]
+    st.session_state["stake_splits"] = _split
+
+    st.markdown("---")
     st.markdown("**Coverage**")
     st.markdown("🇬🇧 UK Racing")
     st.markdown("🇮🇪 Irish Racing")
@@ -370,7 +429,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v1.2** — ML Model + Multi-Source Monitor Active" if (MODEL_AVAILABLE and MONITOR_AVAILABLE) else "**Engine v1.2** — Partial Init")
+    st.markdown("**Engine v1.9** — ML Model + Multi-Source Monitor Active" if (MODEL_AVAILABLE and MONITOR_AVAILABLE) else "**Engine v1.9** — Partial Init")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
     if st.button("🔒 Lock Dashboard", width="stretch"):
@@ -419,7 +478,8 @@ with col5:
 st.markdown("---")
 
 # ── Main Tabs ─────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
+    "💰 Today's Plan",
     "📋 Today's Selections",
     "🎰 Accumulator Permutations",
     "📈 Acca Efficiency",
@@ -429,8 +489,194 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📉 Odds Comparison"
 ])
 
-# ── Tab 1: Today's Selections ─────────────────────────────────
+# ── Tab 1: Today's Plan ──────────────────────────────────────
 with tab1:
+    st.markdown("### 💰 Today's Staking Plan")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Risk: **{st.session_state.get('risk_profile', 'Balanced')}** | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
+
+    def _build_todays_plan(live_df, is_live, budget, risk_profile, conf_threshold, max_legs,
+                           use_singles, use_doubles, use_trebles, use_4fold, use_5fold):
+        splits = st.session_state.get("stake_splits", {
+            "singles_pct": 0.20, "doubles_pct": 0.20,
+            "trebles_pct": 0.27, "4fold_pct": 0.24, "5fold_pct": 0.09
+        })
+        if is_live and len(live_df) > 0:
+            pool = []
+            for _, row in live_df.iterrows():
+                conf = float(row.get("Confidence", 0))
+                if conf < conf_threshold:
+                    continue
+                odds_str = str(row.get("Odds", "Evs"))
+                try:
+                    if "/" in odds_str:
+                        n, d = odds_str.split("/")
+                        dec = float(n) / float(d) + 1
+                    else:
+                        dec = float(odds_str)
+                except Exception:
+                    dec = 2.0
+                ev = (conf * dec) - 1
+                if ev <= 0:
+                    continue
+                pool.append({
+                    "horse": str(row.get("Horse", row.get("Selection", "Unknown"))),
+                    "course": str(row.get("Course", row.get("Race", ""))),
+                    "time": str(row.get("Time", "")),
+                    "odds_str": odds_str,
+                    "decimal": round(dec, 3),
+                    "confidence": round(conf, 3),
+                    "ev": round(ev, 3),
+                })
+            pool.sort(key=lambda x: x["ev"], reverse=True)
+        else:
+            pool = [
+                {"horse": "Mister Mojito",   "course": "Yarmouth",       "time": "4:55", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.67, "ev": 4.03},
+                {"horse": "Beaune",          "course": "Wolverhampton",  "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
+                {"horse": "Yorkshire Glory", "course": "Pontefract",     "time": "4:02", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.67, "ev": 1.35},
+                {"horse": "Kaaranah",        "course": "Wolverhampton",  "time": "8:30", "odds_str": "13/8",  "decimal": 2.625, "confidence": 0.70, "ev": 0.84},
+                {"horse": "Crystal Island",  "course": "Ffos Las",       "time": "4:38", "odds_str": "4/6",   "decimal": 1.67,  "confidence": 0.79, "ev": 0.31},
+                {"horse": "Lady Youmzain",   "course": "Pontefract",     "time": "2:17", "odds_str": "11/10", "decimal": 2.10,  "confidence": 0.70, "ev": 0.47},
+            ]
+        if not pool:
+            return [], [], {}
+        singles_budget  = round(budget * splits["singles_pct"], 2) if use_singles else 0
+        doubles_budget  = round(budget * splits["doubles_pct"], 2) if use_doubles else 0
+        trebles_budget  = round(budget * splits["trebles_pct"], 2) if use_trebles else 0
+        fourfold_budget = round(budget * splits["4fold_pct"],   2) if use_4fold   else 0
+        fivefold_budget = round(budget * splits["5fold_pct"],   2) if use_5fold   else 0
+        singles = []
+        if use_singles and singles_budget > 0:
+            top_conf = sorted(pool, key=lambda x: x["confidence"], reverse=True)[:2]
+            per_single = round(singles_budget / max(len(top_conf), 1), 2)
+            for s in top_conf:
+                ret = round(per_single * s["decimal"], 2)
+                singles.append({**s, "stake": per_single, "projected_return": ret, "projected_profit": round(ret - per_single, 2)})
+        multiples = []
+        all_legs = pool[:max_legs] if len(pool) > max_legs else pool
+        def _add_combos(n_legs, budget_for_type, label_prefix):
+            combos = list(combinations(all_legs, n_legs))
+            if not combos or budget_for_type <= 0:
+                return
+            combos.sort(key=lambda c: np.prod([x["ev"] for x in c]), reverse=True)
+            n_show = min(len(combos), max(1, round(budget_for_type / 2)))
+            per_bet = round(budget_for_type / max(n_show, 1), 2)
+            for combo in combos[:n_show]:
+                comb_dec = round(np.prod([x["decimal"] for x in combo]), 2)
+                ret = round(per_bet * comb_dec, 2)
+                multiples.append({
+                    "type": label_prefix,
+                    "legs": n_legs,
+                    "selections": " + ".join([x["horse"] for x in combo]),
+                    "courses": " | ".join([f"{x['time']} {x['course']}" for x in combo]),
+                    "combined_decimal": comb_dec,
+                    "stake": per_bet,
+                    "projected_return": ret,
+                    "projected_profit": round(ret - per_bet, 2),
+                })
+        if use_doubles: _add_combos(2, doubles_budget,  "Double")
+        if use_trebles: _add_combos(3, trebles_budget,  "Treble")
+        if use_4fold:   _add_combos(4, fourfold_budget, "4-fold")
+        if use_5fold and len(all_legs) >= 5: _add_combos(5, fivefold_budget, "5-fold")
+        multiples.sort(key=lambda x: x["projected_return"], reverse=True)
+        top_ev_horse = pool[0] if pool else None
+        scenarios = {}
+        if top_ev_horse:
+            support = [x for x in pool[1:] if x["horse"] != top_ev_horse["horse"]][:2]
+            sa_wins = [top_ev_horse] + support
+            sa_return = sum(
+                m["projected_return"] for m in multiples
+                if all(h["horse"] in m["selections"] for h in sa_wins)
+            ) + sum(s["projected_return"] for s in singles if s["horse"] in [x["horse"] for x in sa_wins])
+            scenarios["A"] = {"label": f"{top_ev_horse['horse']} wins + 2 others", "return": round(sa_return, 2), "profit": round(sa_return - budget, 2)}
+            sb_return = sum(m["projected_return"] for m in multiples) + sum(s["projected_return"] for s in singles)
+            scenarios["B"] = {"label": "All selections win", "return": round(sb_return, 2), "profit": round(sb_return - budget, 2)}
+            sc_return = sum(s["projected_return"] for s in singles if s["horse"] != top_ev_horse["horse"])
+            scenarios["C"] = {"label": f"{top_ev_horse['horse']} loses — singles salvage", "return": round(sc_return, 2), "profit": round(sc_return - budget, 2)}
+        return singles, multiples, scenarios
+
+    _plan_singles, _plan_multiples, _plan_scenarios = _build_todays_plan(
+        _live_df, _is_live,
+        st.session_state.get("daily_budget", 50),
+        st.session_state.get("risk_profile", "Balanced"),
+        st.session_state.get("conf_threshold", 0.55),
+        st.session_state.get("max_legs", 6),
+        st.session_state.get("use_singles", True),
+        st.session_state.get("use_doubles", True),
+        st.session_state.get("use_trebles", True),
+        st.session_state.get("use_4fold", True),
+        st.session_state.get("use_5fold", True),
+    )
+
+    if _plan_singles or _plan_multiples:
+        if _plan_singles and st.session_state.get("use_singles", True):
+            st.markdown("#### Singles (insurance layer)")
+            _sing_rows = []
+            for s in _plan_singles:
+                _sing_rows.append({
+                    "Time": s["time"], "Course": s["course"], "Horse": s["horse"],
+                    "Odds": s["odds_str"], "Confidence": f"{s['confidence']:.0%}",
+                    "EV": f"+{s['ev']:.2f}", "Stake (£)": f"£{s['stake']:.2f}",
+                    "To Return (£)": f"£{s['projected_return']:.2f}",
+                    "Profit (£)": f"£{s['projected_profit']:.2f}"
+                })
+            st.dataframe(pd.DataFrame(_sing_rows), use_container_width=True, hide_index=True)
+        if _plan_multiples:
+            st.markdown("#### Multiples (profit engine)")
+            _mult_rows = []
+            for m in _plan_multiples[:15]:
+                _mult_rows.append({
+                    "Type": m["type"],
+                    "Selections": m["selections"],
+                    "Times/Courses": m["courses"],
+                    "Comb. Odds": f"{m['combined_decimal']:.2f}x",
+                    "Stake (£)": f"£{m['stake']:.2f}",
+                    "To Return (£)": f"£{m['projected_return']:.2f}",
+                    "Profit (£)": f"£{m['projected_profit']:.2f}",
+                })
+            _mult_df = pd.DataFrame(_mult_rows)
+            def _colour_profit(val):
+                try:
+                    v = float(str(val).replace("£",""))
+                    if v > 100: return "background-color: #002200; color: #00ff88; font-weight: bold"
+                    if v > 20:  return "background-color: #001a00; color: #66ff66"
+                    if v > 0:   return "background-color: #001100; color: #aaffaa"
+                    return ""
+                except Exception: return ""
+            st.dataframe(
+                _mult_df.style.map(_colour_profit, subset=["Profit (£)"]),
+                use_container_width=True, hide_index=True
+            )
+        _total_staked = sum(s["stake"] for s in _plan_singles) + sum(m["stake"] for m in _plan_multiples)
+        st.markdown("---")
+        _sc1, _sc2, _sc3 = st.columns(3)
+        with _sc1:
+            st.metric("Total Staked", f"£{_total_staked:.2f}", f"Budget: £{st.session_state.get('daily_budget',50)}")
+        with _sc2:
+            st.metric("Total Bets", str(len(_plan_singles) + len(_plan_multiples)),
+                      f"{len(_plan_singles)} singles + {len(_plan_multiples)} multiples")
+        with _sc3:
+            _best_return = max((m["projected_return"] for m in _plan_multiples), default=0)
+            st.metric("Best Case Return", f"£{_best_return:.2f}", "If top multiple lands")
+        if _plan_scenarios:
+            st.markdown("#### Return Scenarios")
+            _scen_rows = []
+            for k, v in _plan_scenarios.items():
+                _scen_rows.append({
+                    "Scenario": v["label"],
+                    "Return (£)": f"£{v['return']:.2f}",
+                    "Profit/Loss (£)": f"+£{v['profit']:.2f}" if v['profit'] >= 0 else f"-£{abs(v['profit']):.2f}"
+                })
+            st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
+        if not _is_live:
+            st.info("📌 Showing today's manually-scored selections. Live data will populate automatically when the market feed connects.")
+    else:
+        st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
+    st.markdown("---")
+    st.caption("All figures are research estimates only. Phase 1 personal research tool.")
+
+
+# ── Tab 2: Today's Selections ─────────────────────────────────
+with tab2:
     st.markdown("### Today's Top Selections")
     if _is_live:
         st.success(f"🟢 Live data — {len(_live_df)} runners across {_races_today} UK + Irish races — refreshes every 5 min")
@@ -505,8 +751,8 @@ with tab1:
     st.dataframe(signals.style.format({"Weight": "{:.0%}", col_name: "{:.0%}"}),
                  width="stretch", hide_index=True)
 
-# ── Tab 2: Accumulator Permutations ───────────────────────────
-with tab2:
+# ── Tab 3: Accumulator Permutations ───────────────────────────
+with tab3:
     st.markdown("### Recommended Accumulator Permutations")
     st.markdown("Built from today's top-confidence runners. Ranked by combined confidence score.")
 
@@ -541,8 +787,8 @@ with tab2:
         st.info("Only horses above 65% confidence are included in accumulator builds. The learning engine adjusts this threshold automatically as it tracks hit rates over time.")
 
 
-# ── Tab 3: Accumulator Efficiency ────────────────────────────
-with tab3:
+# ── Tab 4: Accumulator Efficiency ────────────────────────────
+with tab4:
     st.markdown("### Accumulator Efficiency Engine")
     st.markdown("Analyses every selection for true probability, expected value, and coverage options.")
 
@@ -663,8 +909,8 @@ with tab3:
     st.info("Coverage options update automatically when non-runners are declared or significant market moves detected. The engine will suggest expanding coverage if your top selection drifts significantly or is at risk.")
 
 
-# ── Tab 4: Live Alerts ────────────────────────────────────────
-with tab4:
+# ── Tab 5: Live Alerts ────────────────────────────────────────
+with tab5:
     st.markdown("### Live Alerts")
     # Generate alerts from live market move signals
     _alerts_shown = 0
@@ -714,8 +960,8 @@ with tab4:
             {"Course": "Leopardstown", "Going": "Soft", "Updated": "Sample", "Source": "Sample"},
         ]), use_container_width=True, hide_index=True)
 
-# ── Tab 4: Learning Engine ────────────────────────────────────
-with tab5:
+# ── Tab 6: Learning Engine ────────────────────────────────────
+with tab6:
     st.markdown("### Learning Engine Performance")
 
     # Load live stats from learning loop
@@ -807,7 +1053,7 @@ with tab5:
             for s, w in _default_weights.items()
         ]), use_container_width=True, hide_index=True)
 
-# ── Tab 5: Results History ────────────────────────────────────
+# ── Tab 7: Odds Comparison ────────────────────────────────────
 with tab7:
     st.markdown("## Odds Comparison — All Bookmakers")
     st.caption("Live odds from Betfair Exchange, The Racing API, and Oddschecker across all UK and Irish bookmakers")
@@ -863,7 +1109,8 @@ with tab7:
     except Exception:
         st.info("Alert history unavailable.")
 
-with tab6:
+# ── Tab 8: Results History ────────────────────────────────────
+with tab8:
     st.markdown("### Results History")
     st.caption("Every settled race — engine tip cross-checked against the actual winner automatically.")
 
