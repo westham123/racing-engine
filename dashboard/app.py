@@ -451,7 +451,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.3.8** — Live rescore | BST times | Outlier filter")
+    st.markdown("**Engine v2.4.1** — Live rescore | BST times | Outlier filter | Cache fix")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
