@@ -171,20 +171,18 @@ def build_brief_data():
             {"course": "Ffos Las",      "going": "Good to Soft (5.0)",   "trend": "Official", "updated": TIME},
         ]
 
-    # Staking plan summary (£50 multiples only — no singles, Crystal Island excluded as too short)
-    # Pool: Mister Mojito 13/2 (7.50), Yorkshire Glory 7/2 (4.50), Beaune 7/4 (2.75), Kaaranah 13/8 (2.625), Lady Youmzain 11/10 (2.10)
-    # Budget split: Doubles £10, Trebles £15, 4-folds £15, 5-fold £10
+    # Staking plan — two groups to ensure coverage if top EV horse (Mister Mojito) loses
+    # Group A (60% budget — ★): MM-anchored, high upside
+    # Group B (40% budget): Non-MM cover multiples, pay out independently
     staking_summary = [
-        {"bet": "Mister Mojito + Yorkshire Glory",           "stake": "£3.50", "odds": "26.25x",  "return": "£91.88"},
-        {"bet": "Mister Mojito + Beaune",                   "stake": "£3.50", "odds": "20.63x",  "return": "£72.19"},
-        {"bet": "Mister Mojito + Kaaranah",                 "stake": "£3.00", "odds": "19.69x",  "return": "£59.06"},
-        {"bet": "MM + Beaune + Yorkshire Glory (treble)",   "stake": "£5.00", "odds": "72.19x",  "return": "£360.94"},
-        {"bet": "MM + Kaaranah + Yorkshire Glory (treble)", "stake": "£5.00", "odds": "68.91x",  "return": "£344.53"},
-        {"bet": "MM + Beaune + Kaaranah (treble)",          "stake": "£5.00", "odds": "54.14x",  "return": "£270.70"},
-        {"bet": "MM + Beaune + Kaaranah + YG (4-fold)",    "stake": "£7.00", "odds": "189.49x", "return": "£1326.45"},
-        {"bet": "MM + Beaune + YG + Lady Y (4-fold)",      "stake": "£4.00", "odds": "151.59x", "return": "£606.38"},
-        {"bet": "MM + Kaaranah + YG + Lady Y (4-fold)",    "stake": "£4.00", "odds": "144.77x", "return": "£579.06"},
-        {"bet": "All 5 (5-fold accumulator)",              "stake": "£10.00","odds": "397.41x", "return": "£3974.06"},
+        {"bet": "★ MM + Yorkshire Glory (double)",           "stake": "£4.00", "odds": "26.25x",  "return": "£105.00",  "group": "A"},
+        {"bet": "★ MM + Beaune (double)",                   "stake": "£4.00", "odds": "20.63x",  "return": "£82.50",   "group": "A"},
+        {"bet": "★ MM + Beaune + Yorkshire Glory (treble)", "stake": "£6.00", "odds": "72.19x",  "return": "£433.13",  "group": "A"},
+        {"bet": "★ MM + Kaaranah + Yorkshire Glory",        "stake": "£6.00", "odds": "68.91x",  "return": "£413.44",  "group": "A"},
+        {"bet": "★ MM + Beaune + Kaaranah + YG (4-fold)",  "stake": "£8.00", "odds": "189.49x", "return": "£1515.94", "group": "A"},
+        {"bet": "COVER: Beaune + Yorkshire Glory (double)",  "stake": "£4.00", "odds": "12.38x",  "return": "£49.50",   "group": "B"},
+        {"bet": "COVER: Kaaranah + Yorkshire Glory (double)","stake": "£4.00", "odds": "11.81x",  "return": "£47.25",   "group": "B"},
+        {"bet": "COVER: Beaune + Kaaranah + YG (treble)",   "stake": "£14.00","odds": "32.39x",  "return": "£453.47",  "group": "B"},
     ]
 
     return {
@@ -257,13 +255,23 @@ def build_html(data):
 
     def staking_rows():
         rows = ""
+        last_group = None
         for b in data.get("staking_summary", []):
+            grp = b.get("group", "A")
+            # Insert group header row when group changes
+            if grp != last_group:
+                if grp == "A":
+                    rows += '<tr><td colspan="4" style="padding:8px 6px;color:#ffcc00;font-weight:bold;background:#1a1600;">&#9733; Group A — Anchor multiples (60% budget). Need Mister Mojito to win.</td></tr>'
+                else:
+                    rows += '<tr><td colspan="4" style="padding:8px 6px;color:#00c8ff;font-weight:bold;background:#001a22;">&#9632; Group B — Cover multiples (40% budget). Pay out even if Mister Mojito loses.</td></tr>'
+                last_group = grp
             ret_val = b['return'].replace("£","")
             try:
-                rc = "#00ff88" if float(ret_val) > 50 else "#66ff66" if float(ret_val) > 15 else "#aaffaa"
+                rc = "#00ff88" if float(ret_val) > 200 else "#66ff66" if float(ret_val) > 50 else "#aaffaa"
             except Exception:
                 rc = "#aaffaa"
-            rows += f"""<tr>
+            bg = "#1a1600" if grp == "A" else "#001a22"
+            rows += f"""<tr style="background:{bg}">
               <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;">{b['bet']}</td>
               <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;font-weight:bold;color:#fff;">{b['stake']}</td>
               <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;">{b['odds']}</td>
@@ -314,10 +322,10 @@ def build_html(data):
       <tbody>{staking_rows()}</tbody>
     </table>
     <p style="margin:12px 0 0;color:#888;font-size:12px;">
-      Key bet: MM + Beaune + Kaaranah + Yorkshire Glory 4-fold — £947 from £5 if all land.<br>
-      Key: MM = Mister Mojito (13/2), YG = Yorkshire Glory (7/2), Lady Y = Lady Youmzain (11/10).<br>
-      Crystal Island excluded — price too short to add value in multiples.<br>
-      Worst case (Mister Mojito loses): all multiples lose. Doubles/trebles not involving MM still live.
+      ★ Group A (yellow): MM-anchored multiples — high upside, need Mister Mojito to win.<br>
+      &#9632; Group B (blue): Cover multiples — Beaune/Kaaranah/Yorkshire Glory only. Pay out even if MM loses.<br>
+      Total staked: £50. If MM wins + 2 others: ~£500+. If MM loses: Group B treble still live (£453 return on £14 stake).<br>
+      Crystal Island excluded — 4/6 price too short to add multiple value.
     </p>
   </div>
 

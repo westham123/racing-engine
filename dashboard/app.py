@@ -521,8 +521,10 @@ with tab1:
                 except Exception:
                     dec = 2.0
                 ev = (conf * dec) - 1
-                # Exclude: negative EV, or EV < 0.50 (too short-priced to add multiple value)
-                if ev < 0.50:
+                # Exclude horses priced at 4/6 (1.67) or shorter — too compressed to add multiple value
+                if dec <= 1.67:
+                    continue
+                if ev <= 0:
                     continue
                 # Support both live df columns (Time/Course) and legacy Race column
                 _course = str(row.get("Course", ""))
@@ -561,11 +563,21 @@ with tab1:
         trebles_budget  = round(budget * (splits["trebles_pct"] + splits["singles_pct"] * 0.33), 2) if use_trebles else 0
         fourfold_budget = round(budget * (splits["4fold_pct"]   + splits["singles_pct"] * 0.34), 2) if use_4fold   else 0
         fivefold_budget = round(budget * splits["5fold_pct"],   2) if use_5fold   else 0
-        singles = []  # always empty
+        singles = []  # always empty — singles disabled
         multiples = []
         all_legs = pool[:max_legs] if len(pool) > max_legs else pool
-        def _add_combos(n_legs, budget_for_type, label_prefix):
-            combos = list(combinations(all_legs, n_legs))
+
+        # Identify the top EV horse (likely the highest-odds value pick e.g. Mister Mojito)
+        top_ev = all_legs[0] if all_legs else None
+        non_anchor = [x for x in all_legs if x != top_ev]
+
+        # Split budget: 60% on anchor-inclusive multiples, 40% on independent non-anchor multiples
+        # This ensures if the anchor loses, non-anchor multiples still pay out
+        anchor_ratio   = 0.60
+        noanchor_ratio = 0.40
+
+        def _add_combos(legs_pool, n_legs, budget_for_type, label_prefix, group_tag=""):
+            combos = list(combinations(legs_pool, n_legs))
             if not combos or budget_for_type <= 0:
                 return
             combos.sort(key=lambda c: np.prod([x["ev"] for x in c]), reverse=True)
@@ -575,7 +587,7 @@ with tab1:
                 comb_dec = round(np.prod([x["decimal"] for x in combo]), 2)
                 ret = round(per_bet * comb_dec, 2)
                 multiples.append({
-                    "type": label_prefix,
+                    "type": f"{label_prefix}{' ★' if group_tag == 'anchor' else ''}",
                     "legs": n_legs,
                     "selections": " + ".join([x["horse"] for x in combo]),
                     "courses": " | ".join([f"{x['time']} {x['course']}" for x in combo]),
@@ -583,11 +595,27 @@ with tab1:
                     "stake": per_bet,
                     "projected_return": ret,
                     "projected_profit": round(ret - per_bet, 2),
+                    "group": group_tag,
                 })
-        if use_doubles: _add_combos(2, doubles_budget,  "Double")
-        if use_trebles: _add_combos(3, trebles_budget,  "Treble")
-        if use_4fold:   _add_combos(4, fourfold_budget, "4-fold")
-        if use_5fold and len(all_legs) >= 5: _add_combos(5, fivefold_budget, "5-fold")
+
+        # Group A — anchor-inclusive (high upside, needs anchor to win)
+        if top_ev and len(all_legs) >= 2:
+            anchor_pool = all_legs  # includes anchor
+            if use_doubles: _add_combos(anchor_pool, 2, round(doubles_budget  * anchor_ratio, 2), "Double",  "anchor")
+            if use_trebles: _add_combos(anchor_pool, 3, round(trebles_budget  * anchor_ratio, 2), "Treble",  "anchor")
+            if use_4fold:   _add_combos(anchor_pool, 4, round(fourfold_budget * anchor_ratio, 2), "4-fold",  "anchor")
+            if use_5fold and len(anchor_pool) >= 5:
+                            _add_combos(anchor_pool, 5, round(fivefold_budget * anchor_ratio, 2), "5-fold",  "anchor")
+
+        # Group B — non-anchor independent (pays out even if anchor loses)
+        if len(non_anchor) >= 2:
+            if use_doubles and len(non_anchor) >= 2:
+                            _add_combos(non_anchor, 2, round(doubles_budget  * noanchor_ratio, 2), "Double",  "cover")
+            if use_trebles and len(non_anchor) >= 3:
+                            _add_combos(non_anchor, 3, round(trebles_budget  * noanchor_ratio, 2), "Treble",  "cover")
+            if use_4fold   and len(non_anchor) >= 4:
+                            _add_combos(non_anchor, 4, round(fourfold_budget * noanchor_ratio, 2), "4-fold",  "cover")
+
         multiples.sort(key=lambda x: x["projected_return"], reverse=True)
         top_ev_horse = pool[0] if pool else None
         scenarios = {}
@@ -632,18 +660,25 @@ with tab1:
                 })
             st.dataframe(pd.DataFrame(_sing_rows), use_container_width=True, hide_index=True)
         if _plan_multiples:
-            st.markdown("#### Multiples (profit engine)")
-            _mult_rows = []
-            for m in _plan_multiples[:15]:
-                _mult_rows.append({
+            st.markdown("#### ★ Anchor Multiples — high upside, need top EV horse to win")
+            st.caption("If the top EV horse loses, these lose. 60% of budget.")
+            _anchor_rows = []
+            _cover_rows  = []
+            for m in _plan_multiples[:20]:
+                row = {
                     "Type": m["type"],
                     "Selections": m["selections"],
-                    "Times/Courses": m["courses"],
+                    "Times": m["courses"],
                     "Comb. Odds": f"{m['combined_decimal']:.2f}x",
                     "Stake (£)": f"£{m['stake']:.2f}",
                     "To Return (£)": f"£{m['projected_return']:.2f}",
                     "Profit (£)": f"£{m['projected_profit']:.2f}",
-                })
+                }
+                if m.get("group") == "cover":
+                    _cover_rows.append(row)
+                else:
+                    _anchor_rows.append(row)
+            _mult_rows = _anchor_rows  # for colour styling below
             _mult_df = pd.DataFrame(_mult_rows)
             def _colour_profit(val):
                 try:
@@ -653,10 +688,18 @@ with tab1:
                     if v > 0:   return "background-color: #001100; color: #aaffaa"
                     return ""
                 except Exception: return ""
-            st.dataframe(
-                _mult_df.style.map(_colour_profit, subset=["Profit (£)"]),
-                use_container_width=True, hide_index=True
-            )
+            if _anchor_rows:
+                st.dataframe(
+                    pd.DataFrame(_anchor_rows).style.map(_colour_profit, subset=["Profit (£)"]),
+                    use_container_width=True, hide_index=True
+                )
+            if _cover_rows:
+                st.markdown("#### Cover Multiples — independent of top EV horse")
+                st.caption("These pay out even if the top EV horse loses. 40% of budget.")
+                st.dataframe(
+                    pd.DataFrame(_cover_rows).style.map(_colour_profit, subset=["Profit (£)"]),
+                    use_container_width=True, hide_index=True
+                )
         _total_staked = sum(s["stake"] for s in _plan_singles) + sum(m["stake"] for m in _plan_multiples)
         st.markdown("---")
         _sc1, _sc2, _sc3 = st.columns(3)
