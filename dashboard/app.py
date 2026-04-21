@@ -21,6 +21,14 @@ except Exception:
     _ODDS_MODEL = None
 
 try:
+    from alerts.market_monitor import MultiSourceMarketMonitor as _MultiMonitor
+    _MULTI_MONITOR = _MultiMonitor()
+    MONITOR_AVAILABLE = True
+except Exception:
+    MONITOR_AVAILABLE = False
+    _MULTI_MONITOR = None
+
+try:
     from live_data import (
         get_todays_selections as _live_selections,
         get_going_reports as _live_going,
@@ -362,7 +370,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v1.0** — ML Model Active" if MODEL_AVAILABLE else "**Engine v1.0** — ML Model Loading")
+    st.markdown("**Engine v1.2** — ML Model + Multi-Source Monitor Active" if (MODEL_AVAILABLE and MONITOR_AVAILABLE) else "**Engine v1.2** — Partial Init")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
     if st.button("🔒 Lock Dashboard", width="stretch"):
@@ -400,7 +408,7 @@ with col5:
 st.markdown("---")
 
 # ── Main Tabs ─────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "📋 Today's Selections",
     "🎰 Accumulator Permutations",
     "📈 Acca Efficiency",
@@ -728,6 +736,61 @@ with tab5:
     ]), width="stretch", hide_index=True)
 
 # ── Tab 5: Results History ────────────────────────────────────
+with tab7:
+    st.markdown("## Odds Comparison — All Bookmakers")
+    st.caption("Live odds from Betfair Exchange, The Racing API, and Oddschecker across all UK and Irish bookmakers")
+
+    col_course, col_time = st.columns(2)
+    with col_course:
+        oc_course = st.text_input("Course", value="Cheltenham", key="oc_course")
+    with col_time:
+        oc_time = st.text_input("Race Time (HH:MM)", value="14:00", key="oc_time")
+
+    if st.button("Fetch Odds", key="fetch_odds_btn"):
+        if MONITOR_AVAILABLE and _MULTI_MONITOR is not None:
+            with st.spinner("Fetching odds from all bookmakers..."):
+                try:
+                    summary = _MULTI_MONITOR.get_current_odds_summary(oc_course, oc_time)
+                    if summary:
+                        oc_df = pd.DataFrame(summary)
+                        display_cols = ["horse", "best_price", "best_bookie",
+                                        "betfair_back", "betfair_lay", "betfair_vol",
+                                        "bet365", "william_hill", "ladbrokes",
+                                        "paddy_power", "coral", "sky_bet"]
+                        available_cols = [c for c in display_cols if c in oc_df.columns]
+                        st.dataframe(oc_df[available_cols].rename(columns={
+                            "horse": "Horse", "best_price": "Best Price",
+                            "best_bookie": "Best Bookie", "betfair_back": "Betfair Back",
+                            "betfair_lay": "Betfair Lay", "betfair_vol": "Betfair Vol",
+                            "bet365": "Bet365", "william_hill": "William Hill",
+                            "ladbrokes": "Ladbrokes", "paddy_power": "Paddy Power",
+                            "coral": "Coral", "sky_bet": "Sky Bet",
+                        }), width=None, hide_index=True)
+                    else:
+                        st.info("No odds data found for this race. Check course name and time.")
+                except Exception as _e:
+                    st.error(f"Could not fetch odds: {_e}")
+        else:
+            st.warning("Odds monitor not available — check configuration.")
+
+    st.markdown("---")
+    st.markdown("### Recent Market Move Alerts")
+    try:
+        import json as _json
+        _state_path = _os.path.join(_os.path.dirname(__file__), "..", "learning", "market_state.json")
+        if _os.path.exists(_state_path):
+            with open(_state_path) as _sf:
+                _mstate = _json.load(_sf)
+            _fired = _mstate.get("alerts_fired", [])
+            if _fired:
+                st.caption(f"{len(_fired)} total alerts fired today")
+            else:
+                st.info("No market move alerts fired yet today.")
+        else:
+            st.info("Monitor state not yet initialised — will populate once scheduler starts.")
+    except Exception:
+        st.info("Alert history unavailable.")
+
 with tab6:
     st.markdown("### Results History")
     if _results_live and _live_results_df is not None and len(_live_results_df) > 0:
