@@ -320,35 +320,16 @@ def load_live_meetings():
 
 # ── Sample Data ───────────────────────────────────────────────
 def get_sample_selections():
-    # Today's scored selections — updated daily
-    return pd.DataFrame([
-        {"Time": "2:17", "Course": "Pontefract",    "Horse": "Lady Youmzain",   "Jockey": "K. Stott",       "Trainer": "K. Ryan",         "Going": "Good",           "Odds": "11/10", "Confidence": 0.70, "Signal": "Stable"},
-        {"Time": "4:02", "Course": "Pontefract",    "Horse": "Yorkshire Glory", "Jockey": "H. Vigors",      "Trainer": "B. Haslam",       "Going": "Good",           "Odds": "7/2",   "Confidence": 0.67, "Signal": "⬆ Move"},
-        {"Time": "4:38", "Course": "Ffos Las",      "Horse": "Crystal Island",  "Jockey": "N. de Boinville","Trainer": "N. Henderson",    "Going": "Good to Soft",   "Odds": "4/6",   "Confidence": 0.79, "Signal": "⬆ Steam"},
-        {"Time": "4:55", "Course": "Yarmouth",      "Horse": "Mister Mojito",   "Jockey": "TBC",           "Trainer": "TBC",             "Going": "Good to Firm",   "Odds": "13/2",  "Confidence": 0.67, "Signal": "Stable"},
-        {"Time": "6:30", "Course": "Wolverhampton", "Horse": "Beaune",          "Jockey": "D. Probert",    "Trainer": "B. Llewellyn",    "Going": "Tapeta Standard","Odds": "7/4",   "Confidence": 0.73, "Signal": "⬆ Move"},
-        {"Time": "8:30", "Course": "Wolverhampton", "Horse": "Kaaranah",        "Jockey": "D. Egan",       "Trainer": "J. Butler",       "Going": "Tapeta Standard","Odds": "13/8",  "Confidence": 0.70, "Signal": "Stable"},
-    ])
+    # Fallback only — shown when live feed is unavailable. No hardcoded horses.
+    return pd.DataFrame(columns=["Time","Course","Horse","Jockey","Trainer","Going","Odds","Confidence","Signal"])
 
 def get_sample_accas():
-    # Today's card — 21 April 2026
-    return [
-        {"Type": "Double",   "Legs": "Mister Mojito + Yorkshire Glory",              "Combined Odds": "26.25x", "Confidence": 0.67},
-        {"Type": "Double",   "Legs": "Mister Mojito + Beaune",                       "Combined Odds": "20.63x", "Confidence": 0.67},
-        {"Type": "Treble",   "Legs": "Mister Mojito + Beaune + Yorkshire Glory",     "Combined Odds": "72.19x", "Confidence": 0.65},
-        {"Type": "4-fold",   "Legs": "Mister Mojito + Beaune + Kaaranah + YG",      "Combined Odds": "189.5x", "Confidence": 0.62},
-        {"Type": "Lucky 15", "Legs": "Lady Youmzain / Yorkshire Glory / Mister Mojito / Beaune", "Combined Odds": "Various", "Confidence": 0.67},
-    ]
+    # Returns empty — acca tab builds from live selections only
+    return []
 
 def get_sample_alerts():
-    # Today's card — 21 April 2026
-    return [
-        {"level": "high",   "time": "09:05", "message": "Crystal Island steamed to 4/6 — excluded from Lucky 15 (≤ 4/6 cut-off)"},
-        {"level": "high",   "time": "09:12", "message": "Mister Mojito confirmed 13/2 — top EV selection today"},
-        {"level": "medium", "time": "09:30", "message": "Going update: Yarmouth Good to Firm (5.7) — suits Mister Mojito"},
-        {"level": "medium", "time": "09:45", "message": "Yorkshire Glory market move: 4/1 → 7/2 — confidence raised to 0.67"},
-        {"level": "low",    "time": "10:00", "message": "Lady Youmzain stable in market at 11/10 — monitor for drift"},
-    ]
+    # Returns empty — alerts build from live feed signals only
+    return []
 
 def get_sample_learning():
     dates = pd.date_range(end=date.today(), periods=30).tolist()
@@ -361,23 +342,17 @@ def get_sample_learning():
     })
 
 def get_sample_results():
-    # Placeholder — populates automatically from settlement engine after races run
-    return pd.DataFrame([
-        {"Date": "21 Apr", "Race": "2:17 Pontefract",    "Selection": "Lady Youmzain",   "Result": "Pending", "Odds": "11/10", "Confidence": 0.70},
-        {"Date": "21 Apr", "Race": "4:02 Pontefract",    "Selection": "Yorkshire Glory",  "Result": "Pending", "Odds": "7/2",   "Confidence": 0.67},
-        {"Date": "21 Apr", "Race": "4:38 Ffos Las",      "Selection": "Crystal Island",   "Result": "Pending", "Odds": "4/6",   "Confidence": 0.79},
-        {"Date": "21 Apr", "Race": "4:55 Yarmouth",      "Selection": "Mister Mojito",    "Result": "Pending", "Odds": "13/2",  "Confidence": 0.67},
-        {"Date": "21 Apr", "Race": "6:30 Wolverhampton", "Selection": "Beaune",           "Result": "Pending", "Odds": "7/4",   "Confidence": 0.73},
-        {"Date": "21 Apr", "Race": "8:30 Wolverhampton", "Selection": "Kaaranah",         "Result": "Pending", "Odds": "13/8",  "Confidence": 0.70},
-    ])
+    # Returns empty — results populate from live settlement engine only
+    return pd.DataFrame(columns=["Date","Race","Selection","Result","Odds","Confidence"])
 
 # ── Sidebar ───────────────────────────────────────────────────
 with st.sidebar:
     st.markdown("## 🏇 Racing Engine")
     st.markdown("**Phase 1 — Personal Research Tool**")
     st.markdown("---")
-    st.markdown(f"**Date:** {datetime.now().strftime('%A %d %B %Y')}")
-    st.markdown(f"**Time:** {datetime.now().strftime('%H:%M')} BST")
+    _now_bst_sb = __import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('Europe/London'))
+    st.markdown(f"**Date:** {_now_bst_sb.strftime('%A %d %B %Y')}")
+    st.markdown(f"**Time:** {_now_bst_sb.strftime('%H:%M')} BST")
     st.markdown("---")
 
     # ── Staking Settings ──────────────────────────────────────
@@ -452,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.4.1** — Live rescore | BST times | Outlier filter | Cache fix")
+    st.markdown("**Engine v2.5.0** — Live data only | BST times | Outlier filter | No stale data")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -615,20 +590,8 @@ with tab1:
             _now_str = __import__('datetime').datetime.now(_zi.ZoneInfo('Europe/London')).strftime("%H:%M")
         except Exception:
             _now_str = __import__('datetime').datetime.utcnow().strftime("%H:%M")
-        # All times are BST (UTC+1) — matching what UK users see
-        _raw_sample = [
-            {"horse": "Lady Youmzain",   "course": "Pontefract",    "time": "14:17", "odds_str": "1/1",   "decimal": 2.00,  "confidence": 0.812, "ev": 0.62, "tier": "BANKER"},
-            {"horse": "Brilliant Star",  "course": "Yarmouth",      "time": "14:35", "odds_str": "3/10",  "decimal": 1.30,  "confidence": 0.748, "ev": -0.03, "tier": "BANKER"},
-            {"horse": "Final Appeal",    "course": "Wolverhampton", "time": "17:00", "odds_str": "10/11", "decimal": 1.91,  "confidence": 0.711, "ev": 0.36, "tier": "BANKER"},
-            {"horse": "Trust House",     "course": "Ffos Las",      "time": "18:12", "odds_str": "10/11", "decimal": 1.91,  "confidence": 0.708, "ev": 0.35, "tier": "BANKER"},
-            {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "16:02", "odds_str": "5/2",   "decimal": 3.50,  "confidence": 0.683, "ev": 1.09, "tier": "MID"},
-            {"horse": "Beaune",          "course": "Wolverhampton", "time": "18:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.664, "ev": 0.83, "tier": "MID"},
-            {"horse": "Daizen",          "course": "Pontefract",    "time": "14:52", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.649, "ev": 3.87, "tier": "VALUE"},
-            {"horse": "Eightthreeone",   "course": "Yarmouth",      "time": "16:20", "odds_str": "4/1",   "decimal": 5.00,  "confidence": 0.645, "ev": 2.23, "tier": "MID"},
-            {"horse": "Lillistar",       "course": "Pontefract",    "time": "16:32", "odds_str": "11/1",  "decimal": 12.00, "confidence": 0.639, "ev": 6.67, "tier": "LONGSHOT"},
-            {"horse": "Esperti",         "course": "Ffos Las",      "time": "18:42", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.614, "ev": 1.76, "tier": "MID"},
-        ]
-        _six_pool = [s for s in _raw_sample if s["time"] >= _now_str]
+        # No hardcoded fallback — if live feed is down, pool is empty
+        _six_pool = []
 
     # ── Main display ────────────────────────────────────────────────────────
     if len(_six_pool) == 0:
@@ -932,29 +895,25 @@ with tab4:
     st.markdown("### Accumulator Efficiency Engine")
     st.markdown("Analyses every selection for true probability, expected value, and coverage options.")
 
-    # Today's card — 21 April 2026
-    sample_races = [
-        {"race": "2:17 Pontefract", "runners": [
-            {"horse": "Lady Youmzain",   "odds": "11/10", "confidence": 0.70},
-            {"horse": "Runner 2",        "odds": "5/2",   "confidence": 0.48},
-            {"horse": "Runner 3",        "odds": "7/1",   "confidence": 0.31},
-        ]},
-        {"race": "4:02 Pontefract", "runners": [
-            {"horse": "Yorkshire Glory", "odds": "7/2",   "confidence": 0.67},
-            {"horse": "Runner 2",        "odds": "9/4",   "confidence": 0.54},
-            {"horse": "Runner 3",        "odds": "5/1",   "confidence": 0.39},
-        ]},
-        {"race": "4:55 Yarmouth", "runners": [
-            {"horse": "Mister Mojito",   "odds": "13/2",  "confidence": 0.67},
-            {"horse": "Runner 2",        "odds": "2/1",   "confidence": 0.55},
-            {"horse": "Runner 3",        "odds": "4/1",   "confidence": 0.41},
-        ]},
-        {"race": "6:30 Wolverhampton", "runners": [
-            {"horse": "Beaune",          "odds": "7/4",   "confidence": 0.73},
-            {"horse": "Runner 2",        "odds": "3/1",   "confidence": 0.51},
-            {"horse": "Runner 3",        "odds": "8/1",   "confidence": 0.35},
-        ]},
-    ]
+    # Build from live data only — no hardcoded races
+    sample_races = []
+    if _is_live and len(_live_df) > 0:
+        for _ae_course in _live_df['Course'].unique():
+            _ae_cdf = _live_df[_live_df['Course'] == _ae_course]
+            for _ae_time in _ae_cdf['Time'].unique():
+                _ae_rdf = _ae_cdf[_ae_cdf['Time'] == _ae_time]
+                _ae_runners = []
+                for _, _ae_row in _ae_rdf.iterrows():
+                    _ae_runners.append({
+                        'horse': str(_ae_row.get('Horse','')),
+                        'odds': str(_ae_row.get('Odds','2/1')),
+                        'confidence': float(_ae_row.get('Confidence', 0.5))
+                    })
+                if _ae_runners:
+                    sample_races.append({'race': f"{_ae_time} {_ae_course}", 'runners': _ae_runners})
+    if not sample_races:
+        st.info('Live feed unavailable — accumulator efficiency analysis will appear once today\'s markets load.')
+        st.stop()
 
     engine = AccaEfficiencyEngine()
     analysis = engine.full_day_analysis(sample_races)
@@ -1059,7 +1018,7 @@ with tab5:
     _steam = _alert_df[_alert_df["Signal"].str.contains("Steam", na=False)]
     _drift = _alert_df[_alert_df["Signal"].str.contains("Drift", na=False)]
     _moves = _alert_df[_alert_df["Signal"].str.contains("Move", na=False)]
-    now_str = datetime.now().strftime("%H:%M")
+    now_str = __import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('Europe/London')).strftime('%H:%M')
     _live_label = "🟢 LIVE" if _is_live else "🟡 TODAY'S CARD"
 
     if len(_steam) > 0 or len(_drift) > 0 or len(_moves) > 0:
@@ -1095,7 +1054,7 @@ with tab5:
     st.markdown("---")
     st.markdown("### Going Reports")
     if _going_live and _live_going_df is not None and len(_live_going_df) > 0:
-        st.success(f"🟢 Live going data — {len(_live_going_df)} UK + Irish courses — updated {__import__('datetime').datetime.now().strftime('%H:%M')} BST")
+        st.success(f"🟢 Live going data — {len(_live_going_df)} UK + Irish courses — updated {__import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('Europe/London')).strftime('%H:%M')} BST")
         st.dataframe(_live_going_df, use_container_width=True, hide_index=True)
     else:
         st.warning("🟡 Sample going data shown")
@@ -1335,13 +1294,10 @@ with tab8:
         )
     else:
         st.info("🟡 No settled races yet — results populate automatically as each race finishes today.")
-        st.markdown("**Today's pending races (21 Apr 2026):**")
-        st.dataframe(pd.DataFrame([
-            {"Time": "2:17",  "Course": "Pontefract",    "Selection": "Lady Youmzain",   "Odds": "11/10", "Status": "Pending"},
-            {"Time": "4:02",  "Course": "Pontefract",    "Selection": "Yorkshire Glory",  "Odds": "7/2",   "Status": "Pending"},
-            {"Time": "4:38",  "Course": "Ffos Las",      "Selection": "Crystal Island",   "Odds": "4/6",   "Status": "Pending"},
-            {"Time": "4:55",  "Course": "Yarmouth",      "Selection": "Mister Mojito",    "Odds": "13/2",  "Status": "Pending"},
-            {"Time": "6:30",  "Course": "Wolverhampton", "Selection": "Beaune",           "Odds": "7/4",   "Status": "Pending"},
-            {"Time": "8:30",  "Course": "Wolverhampton", "Selection": "Kaaranah",         "Odds": "13/8",  "Status": "Pending"},
-        ]), use_container_width=True, hide_index=True)
-        st.caption("The settlement engine polls every 2 minutes. First results expected after today's opening race.")
+        if _is_live and len(_live_df) > 0:
+            _pending_rows = [{
+                "Time": str(r.get('Time','')), "Course": str(r.get('Course','')),
+                "Horse": str(r.get('Horse','')), "Odds": str(r.get('Odds','')), "Status": "Pending"
+            } for _, r in _live_df.iterrows()]
+            st.dataframe(pd.DataFrame(_pending_rows), use_container_width=True, hide_index=True)
+        st.caption("Results populate automatically as each race finishes. Refresh to update.")
