@@ -6,3 +6,4 @@ python-dotenv
 plotly
 beautifulsoup4
 lxml
+setuptools

@@ -9,10 +9,24 @@ import numpy as np
 from datetime import datetime, date
 from itertools import combinations
 import sys, os
-sys.path.insert(0, os.path.dirname(__file__))
+
+# ── Bulletproof sys.path for Streamlit Cloud ──────────────────
+# Strategy 1: relative to __file__
+_here = os.path.dirname(os.path.abspath(__file__))
+_repo_root_a = os.path.dirname(_here)
+# Strategy 2: walk up from cwd until we find requirements.txt
+_cwd = os.getcwd()
+_repo_root_b = _cwd
+for _p in [_cwd, os.path.dirname(_cwd)]:
+    if os.path.exists(os.path.join(_p, "requirements.txt")):
+        _repo_root_b = _p
+        break
+for _rp in [_repo_root_a, _repo_root_b, _here, _cwd]:
+    if _rp not in sys.path:
+        sys.path.insert(0, _rp)
+# ─────────────────────────────────────────────────────────────
+
 try:
-    import sys as _sys, os as _os
-    _sys.path.insert(0, _os.path.join(_os.path.dirname(__file__), ".."))
     from engine.odds_model import OddsModel as _OddsModel
     _ODDS_MODEL = _OddsModel()
     MODEL_AVAILABLE = True
