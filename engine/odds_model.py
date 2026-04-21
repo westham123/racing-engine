@@ -73,7 +73,7 @@ class OddsModel:
         track_runs = runner_data.get("track_runs", None)
         if track_wins is not None and track_runs and track_runs > 0:
             return round(min(track_wins / track_runs, 1.0), 4)
-        return 0.33   # Neutral
+        return 0.50   # Neutral
 
     # ── Signal 4: Going ───────────────────────────────────────
     def _score_going(self, today_going: str, runner_data: dict) -> float:
@@ -91,22 +91,40 @@ class OddsModel:
         return result["score"]
 
     # ── Signal 5: Trainer Form ────────────────────────────────
-    def _score_trainer_form(self, trainer_name: str) -> float:
+    def _score_trainer_form(self, trainer_name: str, tf_stars=None) -> float:
         """
         Rolling 14/30-day win rate for this trainer.
         Uses form_scorer.py with the local results store.
+        Falls back to Timeform stars proxy while results store is building up.
         """
         result = score_trainer_form(trainer_name)
+        if result.get("note") in ("unknown", "insufficient_data"):
+            # Proxy: top trainers (Mullins, Henderson, O'Brien etc) get slight boost
+            # via Timeform stars until real data exists
+            return self._tf_stars_to_score(tf_stars, default=0.50)
         return result["score"]
 
     # ── Signal 6: Jockey Form ─────────────────────────────────
-    def _score_jockey_form(self, jockey_name: str) -> float:
+    def _score_jockey_form(self, jockey_name: str, tf_stars=None) -> float:
         """
         Rolling 14/30-day win rate for this jockey.
         Uses form_scorer.py with the local results store.
+        Falls back to Timeform stars proxy while results store is building up.
         """
         result = score_jockey_form(jockey_name)
+        if result.get("note") in ("unknown", "insufficient_data"):
+            return self._tf_stars_to_score(tf_stars, default=0.50)
         return result["score"]
+
+    def _tf_stars_to_score(self, tf_stars, default=0.50) -> float:
+        """Convert Timeform stars (1-5) to a 0-1 score proxy."""
+        try:
+            stars = int(str(tf_stars).strip())
+            # 5 stars = 0.80, 4 = 0.65, 3 = 0.50, 2 = 0.35, 1 = 0.25
+            mapping = {5: 0.80, 4: 0.65, 3: 0.50, 2: 0.35, 1: 0.25}
+            return mapping.get(min(max(stars, 1), 5), default)
+        except Exception:
+            return default
 
     # ── Signal 7: Market Moves ────────────────────────────────
     def _score_market_moves(self, signal: str, bet_movements: list = None) -> float:
@@ -193,8 +211,9 @@ class OddsModel:
             runner_data.get("going", ""),
             runner_data
         )
-        s5 = self._score_trainer_form(runner_data.get("trainer", ""))
-        s6 = self._score_jockey_form(runner_data.get("jockey", ""))
+        _tf = runner_data.get("tf_stars")
+        s5 = self._score_trainer_form(runner_data.get("trainer", ""), tf_stars=_tf)
+        s6 = self._score_jockey_form(runner_data.get("jockey", ""), tf_stars=_tf)
         s7 = self._score_market_moves(
             runner_data.get("signal", "Stable"),
             runner_data.get("bet_movements")
@@ -228,8 +247,8 @@ class OddsModel:
             "horse_form":   round(self._score_horse_form(runner_data.get("form", "-"), runner_data.get("last_ran_days")), 3),
             "track_form":   round(self._score_track_form(runner_data.get("course", ""), runner_data), 3),
             "going":        round(self._score_going(runner_data.get("going", ""), runner_data), 3),
-            "trainer_form": round(self._score_trainer_form(runner_data.get("trainer", "")), 3),
-            "jockey_form":  round(self._score_jockey_form(runner_data.get("jockey", "")), 3),
+            "trainer_form": round(self._score_trainer_form(runner_data.get("trainer", ""), runner_data.get("tf_stars")), 3),
+            "jockey_form":  round(self._score_jockey_form(runner_data.get("jockey", ""), runner_data.get("tf_stars")), 3),
             "market_moves": round(self._score_market_moves(runner_data.get("signal", "Stable"), runner_data.get("bet_movements")), 3),
             "jump_index":   round(self._score_jump_index(runner_data), 3),
         }

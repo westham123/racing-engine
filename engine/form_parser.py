@@ -120,7 +120,7 @@ def parse_form(form_string: str, last_ran_days: int = None) -> dict:
 
 def _empty_result():
     return {
-        "score": 0.33,   # No form data — neutral score
+        "score": 0.50,   # No form data — neutral score
         "runs": 0,
         "wins": 0,
         "places": 0,

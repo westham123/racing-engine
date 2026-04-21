@@ -29,7 +29,7 @@ WEIGHTS = {
 
 # ── Accumulator Settings ─────────────────────────────────────
 MAX_RACES_PER_DAY = 8
-MIN_CONFIDENCE_FOR_ACCA = 0.65  # Only include horses above 65% confidence
+MIN_CONFIDENCE_FOR_ACCA = 0.55  # Only include horses above 65% confidence
 
 # ── Alert Thresholds ─────────────────────────────────────────
 MARKET_MOVE_THRESHOLD = 0.20  # Flag if odds move more than 20%

@@ -104,7 +104,7 @@ def score_trainer_form(trainer_name: str) -> dict:
         dict with score (0–1), wins_14d, wins_30d
     """
     if not trainer_name or trainer_name in ("-", "Unknown", ""):
-        return {"score": 0.33, "wins_14d": 0, "wins_30d": 0, "note": "unknown"}
+        return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "unknown"}
 
     results_14d = _get_results_since(14)
     results_30d = _get_results_since(30)
@@ -122,7 +122,7 @@ def score_trainer_form(trainer_name: str) -> dict:
 
     # If store is empty / very new, return neutral
     if wins_30d == 0 and len(_get_results_since(30)) < 5:
-        return {"score": 0.33, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
+        return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
 
     return {
         "score": round(combined, 4),
@@ -140,7 +140,7 @@ def score_jockey_form(jockey_name: str) -> dict:
         dict with score (0–1), wins_14d, wins_30d
     """
     if not jockey_name or jockey_name in ("-", "Unknown", ""):
-        return {"score": 0.33, "wins_14d": 0, "wins_30d": 0, "note": "unknown"}
+        return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "unknown"}
 
     results_14d = _get_results_since(14)
     results_30d = _get_results_since(30)
@@ -156,7 +156,7 @@ def score_jockey_form(jockey_name: str) -> dict:
     combined = score_14d + score_30d
 
     if wins_30d == 0 and len(_get_results_since(30)) < 5:
-        return {"score": 0.33, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
+        return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
 
     return {
         "score": round(combined, 4),

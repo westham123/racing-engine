@@ -146,7 +146,7 @@ def score_going_preference(
 def _unknown_result(today_going: str):
     """No going history — return neutral result."""
     return {
-        "score": 0.30,   # Neutral — no evidence either way
+        "score": 0.50,   # Neutral — no evidence either way
         "best_result": "unknown",
         "runs_on_similar": 0,
         "wins_on_similar": 0,

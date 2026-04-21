@@ -15,8 +15,16 @@ from datetime import datetime, date
 
 # ── Email Config ──────────────────────────────────────────────
 RECIPIENT       = "richardking123@outlook.com"
-SENDER_EMAIL    = os.getenv("SENDER_EMAIL", "")
-SENDER_PASSWORD = os.getenv("SENDER_APP_PASSWORD", "")   # Gmail App Password
+# Read from Streamlit secrets (cloud) or environment variables (local)
+def _get_secret(key, default=""):
+    try:
+        import streamlit as st
+        return st.secrets.get(key, os.getenv(key, default))
+    except Exception:
+        return os.getenv(key, default)
+
+SENDER_EMAIL    = _get_secret("SENDER_EMAIL", "racingengine.sender@gmail.com")
+SENDER_PASSWORD = _get_secret("SENDER_APP_PASSWORD", "")   # Gmail App Password
 
 
 # ── Live Data Builder ─────────────────────────────────────────
