@@ -401,7 +401,18 @@ with col2:
 with col3:
     st.metric("Acca Permutations", "Auto", "From live runners")
 with col4:
-    st.metric("Data Feed", "🟢 Live" if _is_live else "🟡 Sample", "Sporting Life")
+    # Pull real hit rate from settlement engine
+    try:
+        import sys as _s3
+        _s3.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
+        from settlement.settle import SettlementEngine as _SE
+        _kpi_stats = _SE().get_summary_stats()
+        _hit_rate_kpi = f"{_kpi_stats['hit_rate']:.1f}%" if _kpi_stats.get("total",0) > 0 else "—"
+        _hit_delta = f"{_kpi_stats['total']} races settled"
+    except Exception:
+        _hit_rate_kpi = "—"
+        _hit_delta = "Building..."
+    st.metric("Hit Rate", _hit_rate_kpi, _hit_delta)
 with col5:
     st.metric("Steam Moves", str(_steam_alerts), "Runners shortening")
 
@@ -854,33 +865,86 @@ with tab7:
 
 with tab6:
     st.markdown("### Results History")
-    if _results_live and _live_results_df is not None and len(_live_results_df) > 0:
-        st.success(f"🟢 Live results — {len(_live_results_df)} races settled today")
-        results_df = _live_results_df
-        # Adapt columns if needed
-        if "Result" not in results_df.columns:
-            results_df["Result"] = "WON"
-        if "Confidence" not in results_df.columns:
-            results_df["Confidence"] = 0.75
-    else:
-        st.info("🟡 Showing previous results — live results appear after each race")
-        results_df = get_sample_results()
+    st.caption("Every settled race — engine tip cross-checked against the actual winner automatically.")
 
-    def colour_result(val):
-        if val == "WON":
-            return "background-color: #003300; color: #00ff88; font-weight: bold"
-        return "background-color: #330000; color: #ff6666"
+    @st.cache_data(ttl=120)
+    def _load_settlement_data():
+        try:
+            import sys as _s2
+            _s2.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
+            from settlement.settle import SettlementEngine
+            se = SettlementEngine()
+            return se.get_results_for_dashboard(days=14), se.get_summary_stats()
+        except Exception:
+            return [], {}
 
-    st.dataframe(
-        results_df.style.map(colour_result, subset=["Result"]).format({"Confidence": "{:.0%}"}),
-        width="stretch", hide_index=True
-    )
+    _settled_races, _settle_stats = _load_settlement_data()
+
+    # KPI row
+    _total_s  = _settle_stats.get("total", 0)
+    _hits_s   = _settle_stats.get("hits", 0)
+    _rate_s   = _settle_stats.get("hit_rate", 0.0)
+    _rate_7d  = _settle_stats.get("hit_rate_7d", 0.0)
+    _exc_s    = _settle_stats.get("exceptions", 0)
+    _last_win = _settle_stats.get("last_winner")
+
+    col1, col2, col3, col4 = st.columns(4)
+    with col1:
+        st.metric("Races Settled", str(_total_s), "All-time")
+    with col2:
+        st.metric("Engine Hit Rate", f"{_rate_s:.1f}%" if _total_s > 0 else "—", "Top selection wins")
+    with col3:
+        st.metric("Hit Rate (7-day)", f"{_rate_7d:.1f}%" if _total_s > 0 else "—", "Rolling window")
+    with col4:
+        st.metric("Last Winner", _last_win or "—", "Engine-tipped")
 
     st.markdown("---")
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("Winners", "4 / 6", "Last 2 days")
-    with col2:
-        st.metric("Strike Rate", "66.7%", "Last 2 days")
-    with col3:
-        st.metric("Best Call", "Constitution Hill 90%", "Won at 5/4")
+
+    if _settled_races:
+        st.success(f"🟢 {_total_s} races settled — {_hits_s} engine hits")
+        if _exc_s > 0:
+            st.warning(f"⚠️ {_exc_s} races flagged for review (dead heats / DQs)")
+
+        # Build display dataframe
+        _rows = []
+        for r in _settled_races:
+            _rows.append({
+                "Date":       r.get("date",""),
+                "Time":       r.get("time",""),
+                "Course":     r.get("course",""),
+                "Going":      r.get("going",""),
+                "Winner":     r.get("winner",""),
+                "SP Odds":    r.get("winner_odds","N/A"),
+                "2nd":        r.get("second","-"),
+                "3rd":        r.get("third","-"),
+                "Engine Tip": "✅ HIT" if r.get("engine_tipped") else "❌ MISS",
+                "Confidence": f"{r['engine_confidence']:.0%}" if r.get("engine_confidence") else "—",
+                "⚠️ Flag":    ", ".join(r.get("exceptions",[])) or "Clean",
+            })
+        _res_df = pd.DataFrame(_rows)
+
+        def _colour_tip(val):
+            if "HIT" in str(val):
+                return "background-color: #003300; color: #00ff88; font-weight: bold"
+            if "MISS" in str(val):
+                return "background-color: #330000; color: #ff6666"
+            return ""
+        def _colour_flag(val):
+            if val != "Clean":
+                return "background-color: #332200; color: #ffaa00"
+            return ""
+
+        st.dataframe(
+            _res_df.style
+                .map(_colour_tip,  subset=["Engine Tip"])
+                .map(_colour_flag, subset=["⚠️ Flag"]),
+            use_container_width=True, hide_index=True
+        )
+    else:
+        st.info("🟡 No settled races yet — results appear automatically as each race finishes today.")
+        st.caption("The settlement engine polls every 2 minutes. First results expected after today's opening race.")
+        # Show sample to illustrate format
+        _sample = get_sample_results()
+        if len(_sample) > 0:
+            st.markdown("##### Example format (sample data):")
+            st.dataframe(_sample.head(4), use_container_width=True, hide_index=True)
