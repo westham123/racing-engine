@@ -415,10 +415,11 @@ with st.sidebar:
 
     _conf_threshold = st.slider(
         "Min Confidence Threshold",
-        min_value=0.50, max_value=0.85, value=st.session_state.get("conf_threshold", 0.60),
-        step=0.01, format="%.2f",
-        help="Only selections above this score are included"
+        min_value=0.55, max_value=0.80, value=st.session_state.get("conf_threshold", 0.60),
+        step=0.05, format="%.0%%",
+        help="Slide left to 55% to bring in more selections, right to tighten the filter. Default is 60%."
     )
+    st.caption(f"Currently: **{_conf_threshold:.0%}** — {'⚠️ Relaxed filter (more selections)' if _conf_threshold < 0.60 else '✅ Standard filter' if _conf_threshold == 0.60 else '🔒 Tight filter (fewer, higher-confidence only)'}")
     st.session_state["conf_threshold"] = _conf_threshold
 
     _max_legs = st.slider(
