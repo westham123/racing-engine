@@ -7,9 +7,33 @@ import json
 import json as _json
 import re
 from bs4 import BeautifulSoup
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
 import pandas as pd
 import sys, os
+
+# ── Timezone helper ───────────────────────────────────────────────────
+# Feed from Sporting Life provides times in UTC. Convert to BST (Europe/London).
+try:
+    import zoneinfo as _zoneinfo
+    _LONDON = _zoneinfo.ZoneInfo("Europe/London")
+except Exception:
+    _LONDON = None
+
+def _utc_to_bst(utc_time_str):
+    """Convert a HH:MM UTC string to HH:MM BST (Europe/London). Returns original on failure."""
+    if not utc_time_str:
+        return utc_time_str
+    try:
+        if _LONDON:
+            _dt = datetime.strptime(utc_time_str, "%H:%M").replace(tzinfo=timezone.utc)
+            return _dt.astimezone(_LONDON).strftime("%H:%M")
+        else:
+            # Fallback: manual UTC+1 (correct for BST/summer)
+            _h, _m = map(int, utc_time_str.split(":"))
+            _bst_h = (_h + 1) % 24
+            return f"{_bst_h:02d}:{_m:02d}"
+    except Exception:
+        return utc_time_str  # return as-is if anything fails
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -318,7 +342,7 @@ def get_todays_selections():
 
         for race in meeting["races"]:
             stage = race.get("stage", "")
-            time  = race.get("time", "")
+            time  = _utc_to_bst(race.get("time", ""))  # UTC → BST
             slug  = race.get("slug")
             if not slug:
                 continue
@@ -460,7 +484,7 @@ def get_non_runners():
             for rn in runners:
                 if rn.get("status") == "NON_RUNNER":
                     nrs.append({
-                        "Race":    f"{race['time']} {meeting['course']}",
+                        "Race":    f"{_utc_to_bst(race['time'])} {meeting['course']}",
                         "Horse":   rn["horse"],
                         "Jockey":  rn["jockey"],
                         "Trainer": rn["trainer"],
@@ -490,7 +514,7 @@ def get_todays_results():
             if finishers:
                 winner = finishers[0]
                 results.append({
-                    "Race":    f"{race['time']} {meeting['course']}",
+                    "Race":    f"{_utc_to_bst(race['time'])} {meeting['course']}",
                     "Winner":  winner["horse"],
                     "Jockey":  winner["jockey"],
                     "Trainer": winner["trainer"],
