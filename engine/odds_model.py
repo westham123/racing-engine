@@ -88,12 +88,15 @@ class OddsModel:
         """
         Timeform stars: official quality rating from racing's most
         trusted form analyst. Directly usable, no history needed.
-        5★ = elite (0.90), 4★ = good (0.72), 3★ = average (0.50),
-        2★ = below average (0.30), 1★ = poor (0.15), None = neutral (0.45)
+        5★ = Timeform tip for the race (one per race). Treated as a
+        corroborating signal only — cannot push a horse over 0.60 threshold
+        without supporting form/market evidence. Recalibrated downward.
+        5★ = tip (0.72), 4★ = good (0.60), 3★ = average (0.50),
+        2★ = below average (0.35), 1★ = poor (0.20), None = neutral (0.45)
         """
         try:
             stars = int(str(tf_stars).strip())
-            mapping = {5: 0.90, 4: 0.72, 3: 0.50, 2: 0.30, 1: 0.15}
+            mapping = {5: 0.72, 4: 0.60, 3: 0.50, 2: 0.35, 1: 0.20}
             return mapping.get(min(max(stars, 1), 5), 0.45)
         except Exception:
             return 0.45  # Slightly below neutral — unknown quality
@@ -164,13 +167,13 @@ class OddsModel:
         return result["score"]
 
     def _tf_stars_to_trainer_score(self, tf_stars) -> float:
-        """tf_stars proxy for trainer/jockey when no results data exists."""
-        try:
-            stars = int(str(tf_stars).strip())
-            mapping = {5: 0.75, 4: 0.62, 3: 0.50, 2: 0.38, 1: 0.25}
-            return mapping.get(min(max(stars, 1), 5), 0.50)
-        except Exception:
-            return 0.50
+        """
+        Previously used tf_stars as a proxy for trainer/jockey — removed.
+        tf_stars already carries 20% weight; using it again in trainer/jockey
+        (8% + 7%) caused one tip signal to dominate 35% of the score.
+        Return neutral 0.50 until real results data builds up.
+        """
+        return 0.50
 
     # ── Placeholder Signals (all return 0.50) ─────────────────
     def _score_track_form(self, course: str, runner_data: dict) -> float:
@@ -255,6 +258,32 @@ class OddsModel:
         # Race type: if it's a chase/hurdle, form on flat is irrelevant
         # (we don't have race_type per runner yet — parked for next build)
 
+        # ── OUTLIER CROSS-CHECK ───────────────────────────────
+        # tf_stars=5 (Timeform tip) but contradicted by other signals:
+        # big price + poor form + no market move = likely false positive
+        try:
+            stars = int(str(tf_stars).strip())
+            if stars == 5:
+                odds_dec = 0.0
+                try:
+                    _o = str(runner_data.get("current_odds") or runner_data.get("odds","N/A"))
+                    if "/" in _o:
+                        _n,_d = _o.split("/"); odds_dec = float(_n)/float(_d)+1
+                    else:
+                        odds_dec = float(_o)
+                except Exception:
+                    pass
+                _contradictions = 0
+                if odds_dec >= 6.0:                          _contradictions += 1  # big price
+                if runs >= 3 and wins == 0:                  _contradictions += 1  # winless
+                if form_score < 0.45:                        _contradictions += 1  # poor form score
+                if "drift" in signal:                        _contradictions += 1  # market going cold
+                if "stable" in signal and odds_dec >= 8.0:   _contradictions += 1  # big price, no move
+                if _contradictions >= 2:
+                    delta -= (0.04 * _contradictions)  # -0.08 for 2, -0.12 for 3 etc
+        except Exception:
+            pass
+
         # ── BONUSES ───────────────────────────────────────────
         # Perfect or near-perfect recent form
         if runs >= 4 and wins >= 3:
@@ -291,8 +320,10 @@ class OddsModel:
         bet_moves   = runner_data.get("bet_movements", [])
         trainer     = runner_data.get("trainer", "")
         jockey      = runner_data.get("jockey", "")
-        odds_str    = runner_data.get("odds", "N/A")
-        last_ran    = runner_data.get("last_ran_days")
+        # Use current_odds (live market price) if available; fall back to best bk odds
+        _raw_odds  = runner_data.get("current_odds") or runner_data.get("odds", "N/A")
+        odds_str   = str(_raw_odds) if _raw_odds and str(_raw_odds) not in ("None","N/A","") else runner_data.get("odds", "N/A")
+        last_ran   = runner_data.get("last_ran_days")
 
         s_form    = self._score_horse_form(form_str, last_ran)
         s_tf      = self._score_tf_stars(tf_stars)
