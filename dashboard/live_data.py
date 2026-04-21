@@ -1,7 +1,7 @@
 # Racing Engine — Live Data Fetcher
-# Version: 1.0 — 20 April 2026
+# Version: 1.1 — 21 April 2026
 # Fetches real-time UK + Irish racing data from Sporting Life public pages
-# No API key required — uses publicly accessible JSON embedded in pages
+# Now enriched with Betfair BSP signal per runner
 
 import requests
 import json
@@ -18,6 +18,50 @@ try:
 except Exception as _model_err:
     MODEL_AVAILABLE = False
     _odds_model = None
+
+# ── Betfair BSP client (lazy init) ───────────────────────────────────────────
+_bsp_client = None
+_bsp_logged_in = False
+
+def _get_bsp_client():
+    """Return an authenticated BetfairBSP client, or None if unavailable."""
+    global _bsp_client, _bsp_logged_in
+    if _bsp_logged_in:
+        return _bsp_client
+    try:
+        import streamlit as st
+        app_key = st.secrets.get("BETFAIR_APP_KEY", "1Bj49mxBZBQ961WM")
+        username = st.secrets.get("BETFAIR_USERNAME", "")
+        password = st.secrets.get("BETFAIR_PASSWORD", "")
+    except Exception:
+        # Outside Streamlit context — try environment / settings directly
+        try:
+            from config.settings import BETFAIR_APP_KEY, BETFAIR_USERNAME, BETFAIR_PASSWORD
+            app_key = BETFAIR_APP_KEY
+            username = BETFAIR_USERNAME
+            password = BETFAIR_PASSWORD
+        except Exception:
+            return None
+
+    if not username or not password:
+        return None
+
+    try:
+        from data.betfair_bsp import BetfairBSP
+        _bsp_client = BetfairBSP(app_key, username, password)
+        if _bsp_client.login():
+            _bsp_logged_in = True
+            print("[live_data] Betfair BSP login successful")
+            return _bsp_client
+        else:
+            print("[live_data] Betfair BSP login failed — BSP signal will be neutral")
+            return None
+    except Exception as e:
+        print(f"[live_data] Betfair BSP init error: {e}")
+        return None
+
+# Per-race BSP cache — avoids repeated API calls for same race
+_bsp_race_cache: dict = {}
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -287,43 +331,81 @@ def get_todays_selections():
 
             runners = get_race_runners(slug)
 
+            # ── Fetch Betfair BSP data for this race (cached per race) ──────────
+            bsp_race_key = f"{course}|{time}"
+            bsp_race_data = None
+            if bsp_race_key not in _bsp_race_cache:
+                try:
+                    bsp_cli = _get_bsp_client()
+                    if bsp_cli:
+                        bsp_race_data = bsp_cli.get_race_bsp(course, time)
+                        _bsp_race_cache[bsp_race_key] = bsp_race_data
+                except Exception:
+                    _bsp_race_cache[bsp_race_key] = None
+            else:
+                bsp_race_data = _bsp_race_cache[bsp_race_key]
+
             for rn in runners:
                 if rn.get("status") == "NON_RUNNER":
                     continue
 
-                # Derive confidence using full ML model (or proxy if model unavailable)
                 odds_str = rn.get("odds", "N/A")
+
+                # ── Enrich runner with BSP signal ─────────────────────────────
+                bsp_result = None
+                if bsp_race_data:
+                    try:
+                        bsp_cli = _get_bsp_client()
+                        if bsp_cli:
+                            bsp_result = bsp_cli.score_bsp_signal(
+                                rn["horse"], odds_str, bsp_race_data
+                            )
+                    except Exception:
+                        pass
+
+                # ── Derive confidence using full ML model (or proxy if unavailable) ──
                 if MODEL_AVAILABLE and _odds_model is not None:
                     runner_input = {
-                        "odds":     odds_str,
-                        "form":     rn.get("form", "-"),
-                        "going":    going,
-                        "trainer":  rn.get("trainer", ""),
-                        "jockey":   rn.get("jockey", ""),
-                        "signal":   rn.get("signal", "Stable"),
+                        "odds":          odds_str,
+                        "form":          rn.get("form", "-"),
+                        "going":         going,
+                        "trainer":       rn.get("trainer", ""),
+                        "jockey":        rn.get("jockey", ""),
+                        "signal":        rn.get("signal", "Stable"),
                         "bet_movements": rn.get("bet_movements", []),
-                        "tf_stars": rn.get("tf_stars"),
-                        "course":   course,
+                        "tf_stars":      rn.get("tf_stars"),
+                        "course":        course,
+                        "bsp_result":    bsp_result,    # NEW: Betfair BSP signal
                     }
                     confidence = _odds_model.calculate_confidence(runner_input)
                 else:
                     confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
 
+                # BSP display fields
+                bsp_price  = bsp_result.get("bsp_price")    if bsp_result else None
+                bsp_flag   = bsp_result.get("value_flag")   if bsp_result else ""
+                bsp_vol    = bsp_result.get("vol_signal")   if bsp_result else ""
+                bsp_matched= bsp_result.get("total_matched")if bsp_result else None
+
                 all_rows.append({
-                    "Race": f"{time} {course}",
-                    "Horse": rn["horse"],
-                    "Jockey": rn["jockey"],
-                    "Trainer": rn["trainer"],
-                    "Form": rn["form"],
-                    "Going": going,
-                    "Odds": odds_str,
-                    "Confidence": confidence,
-                    "Signal": rn["signal"],
-                    "TF Stars": rn.get("tf_stars", "-"),
-                    "Stage": stage,
-                    "Cloth": rn.get("cloth", "-"),
-                    "Draw": rn.get("draw", "-"),
-                    "Finish": rn.get("finish_position"),
+                    "Race":          f"{time} {course}",
+                    "Horse":         rn["horse"],
+                    "Jockey":        rn["jockey"],
+                    "Trainer":       rn["trainer"],
+                    "Form":          rn["form"],
+                    "Going":         going,
+                    "Odds":          odds_str,
+                    "Confidence":    confidence,
+                    "Signal":        rn["signal"],
+                    "TF Stars":      rn.get("tf_stars", "-"),
+                    "Stage":         stage,
+                    "Cloth":         rn.get("cloth", "-"),
+                    "Draw":          rn.get("draw", "-"),
+                    "Finish":        rn.get("finish_position"),
+                    "BSP Price":     bsp_price,
+                    "BSP Flag":      bsp_flag,
+                    "BSP Volume":    bsp_vol,
+                    "BSP Matched":   bsp_matched,
                 })
 
     if not all_rows:

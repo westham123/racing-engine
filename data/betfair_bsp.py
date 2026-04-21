@@ -60,22 +60,36 @@ class BetfairBSP:
         """
         Log in to Betfair and retrieve a session token.
         Returns True if successful.
-        Betfair credentials must be provided (username/password).
+
+        Notes:
+          - Uses the identitysso non-cert endpoint (works from UK/IE IPs).
+          - Betfair blocks API logins from non-UK/IE server IPs with
+            BETTING_RESTRICTED_LOCATION. This is expected in dev/CI environments.
+          - On Streamlit Cloud (UK servers) this will succeed automatically.
         """
         if not self.username or not self.password:
-            print("[BetfairBSP] No credentials provided — BSP signals unavailable.")
+            print("[BetfairBSP] No credentials provided — BSP signals neutral.")
             return False
         try:
-            resp = requests.post(LOGIN_URL, data={
-                "username": self.username,
-                "password": self.password,
-            }, headers={
-                "X-Application": self.app_key,
-                "Accept": "application/json",
-            }, timeout=10)
+            resp = requests.post(
+                LOGIN_URL,
+                data={"username": self.username, "password": self.password},
+                headers={
+                    "X-Application": self.app_key,
+                    "Accept": "application/json",
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                timeout=10,
+            )
+            if resp.status_code != 200 or not resp.text.strip():
+                print(f"[BetfairBSP] Login HTTP {resp.status_code} — BSP neutral.")
+                return False
+
             data = resp.json()
-            if data.get("status") == "SUCCESS":
-                self.session_token = data["token"]
+            status = data.get("status", data.get("loginStatus", ""))
+
+            if status == "SUCCESS":
+                self.session_token = data.get("token") or data.get("sessionToken")
                 self._headers = {
                     "X-Application": self.app_key,
                     "X-Authentication": self.session_token,
@@ -83,11 +97,14 @@ class BetfairBSP:
                     "Accept": "application/json",
                 }
                 return True
+            elif status == "BETTING_RESTRICTED_LOCATION":
+                print("[BetfairBSP] Geo-restricted IP — BSP will activate on Streamlit Cloud.")
+                return False
             else:
-                print(f"[BetfairBSP] Login failed: {data.get('error', 'Unknown error')}")
+                print(f"[BetfairBSP] Login failed: {status}")
                 return False
         except Exception as e:
-            print(f"[BetfairBSP] Login error: {e}")
+            print(f"[BetfairBSP] Login error: {e} — BSP neutral.")
             return False
 
     def _post(self, endpoint: str, payload: dict) -> dict:

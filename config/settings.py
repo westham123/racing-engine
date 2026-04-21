@@ -9,8 +9,8 @@ RACING_API_PASSWORD = ""  # Add after email verification
 
 # Betfair
 BETFAIR_APP_KEY = "1Bj49mxBZBQ961WM"  # Delay key (free dev)
-BETFAIR_USERNAME = ""  # Your Betfair username
-BETFAIR_PASSWORD = ""  # Your Betfair password
+BETFAIR_USERNAME = "richardking123@outlook.com"
+BETFAIR_PASSWORD = "Pa55word2018!"
 
 # ── Scope ────────────────────────────────────────────────────
 COUNTRIES = ["GB", "IE"]  # UK and Irish racing only
