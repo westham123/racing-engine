@@ -40,6 +40,11 @@ def morning_reset():
 def morning_brief():
     print(f"\n[Scheduler] ── Morning Brief ({datetime.now().strftime('%H:%M')}) ──")
     brief.send_morning_brief()
+    # Auto-record all today's runners as recommendations
+    try:
+        learner.auto_record_day()
+    except Exception as e:
+        print(f"[Scheduler] Auto-record failed: {e}")
 
 
 # ── Rolling Update ────────────────────────────────────────────
@@ -78,6 +83,11 @@ def settlement_poll():
         settler.run_settlement_poll()
     except Exception as e:
         print(f"[Scheduler] Settlement poll error: {e}")
+    # Auto-settle recommendations against live results
+    try:
+        learner.auto_settle()
+    except Exception as e:
+        print(f"[Scheduler] Auto-settle failed: {e}")
 
 
 # ── Daily Learning Adjustment ─────────────────────────────────

@@ -706,35 +706,95 @@ with tab4:
 # ── Tab 4: Learning Engine ────────────────────────────────────
 with tab5:
     st.markdown("### Learning Engine Performance")
-    learn_df = get_sample_learning()
 
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        st.metric("30-Day Hit Rate", "68.4%", "+2.1% this week")
-    with col2:
-        st.metric("Total Recommendations", "284", "Last 30 days")
-    with col3:
-        st.metric("Highest Signal", "Trainer Form", "Most predictive")
+    # Load live stats from learning loop
+    @st.cache_data(ttl=120)
+    def _get_learning_stats():
+        try:
+            import sys as _sys
+            _sys.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
+            from learning.loop import LearningLoop
+            return LearningLoop().get_performance_stats()
+        except Exception:
+            return None
 
-    st.markdown("---")
-    st.markdown("#### Hit Rate Over Time")
-    st.line_chart(learn_df.set_index("Date")["Hit Rate %"])
+    _stats = _get_learning_stats()
+    _default_weights = {
+        "market_odds": 0.25, "horse_form": 0.20, "track_form": 0.15,
+        "going": 0.10, "trainer_form": 0.10, "jockey_form": 0.10,
+        "market_moves": 0.07, "jump_index": 0.03,
+    }
 
-    st.markdown("#### Signal Weightings — Adjusted by Learning Loop")
-    st.line_chart(learn_df.set_index("Date")[["Horse Form Weight", "Trainer Form Weight", "Market Moves Weight"]])
+    if _stats:
+        _settled = _stats.get("settled_races", 0)
+        _hit     = _stats.get("hit_rate_pct", 0.0)
+        _7d_hit  = _stats.get("hit_rate_7d_pct", 0.0)
+        _total   = _stats.get("total_recommendations", 0)
+        _winners = _stats.get("winners", 0)
+        _days_left = _stats.get("days_until_first_adjust", 20)
+        _adj     = _stats.get("weight_adjustments", 0)
+        _cw      = _stats.get("current_weights", _default_weights)
 
-    st.markdown("---")
-    st.markdown("#### Current Signal Weightings")
-    st.dataframe(pd.DataFrame([
-        {"Signal": "Market Odds",  "Initial Weight": "25%", "Current Weight": "25%", "Change": "—"},
-        {"Signal": "Horse Form",   "Initial Weight": "20%", "Current Weight": "22%", "Change": "↑ +2%"},
-        {"Signal": "Track Form",   "Initial Weight": "15%", "Current Weight": "14%", "Change": "↓ -1%"},
-        {"Signal": "Going",        "Initial Weight": "10%", "Current Weight": "10%", "Change": "—"},
-        {"Signal": "Trainer Form", "Initial Weight": "10%", "Current Weight": "13%", "Change": "↑ +3%"},
-        {"Signal": "Jockey Form",  "Initial Weight": "10%", "Current Weight": "9%",  "Change": "↓ -1%"},
-        {"Signal": "Market Moves", "Initial Weight": "7%",  "Current Weight": "7%",  "Change": "—"},
-        {"Signal": "Jump Index",   "Initial Weight": "3%",  "Current Weight": "3%",  "Change": "—"},
-    ]), width="stretch", hide_index=True)
+        if _settled == 0:
+            st.info(f"🟡 Learning loop active — tracking starts today. Needs 20 settled races before first weight adjustment. ({_total} runners recorded so far)")
+        else:
+            st.success(f"🟢 Live — {_settled} settled races tracked across {_stats.get('note','')}")
+
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Hit Rate (All)", f"{_hit:.1f}%" if _settled > 0 else "—", "Top selections only")
+        with col2:
+            st.metric("Hit Rate (7-day)", f"{_7d_hit:.1f}%" if _settled > 0 else "—", "Rolling window")
+        with col3:
+            st.metric("Recommendations", str(_total), "Logged today")
+        with col4:
+            st.metric("Weight Adjustments", str(_adj), f"{_days_left} races to first" if _adj == 0 else "Active")
+
+        st.markdown("---")
+        st.markdown("#### Current Signal Weightings")
+        st.caption("Initial weights shown alongside current. As data accumulates, the learning loop nudges these automatically.")
+
+        weight_rows = []
+        for sig, init_w in _default_weights.items():
+            curr_w = _cw.get(sig, init_w)
+            change = curr_w - init_w
+            arrow  = "↑" if change > 0.001 else "↓" if change < -0.001 else "—"
+            label  = sig.replace("_", " ").title()
+            weight_rows.append({
+                "Signal":         label,
+                "Initial Weight": f"{init_w*100:.0f}%",
+                "Current Weight": f"{curr_w*100:.1f}%",
+                "Change":         f"{arrow} {abs(change)*100:.1f}%" if change != 0 else "—",
+                "Status":         "🟢 Adjusted" if abs(change) > 0.005 else "🟡 Default",
+            })
+        st.dataframe(pd.DataFrame(weight_rows), use_container_width=True, hide_index=True)
+
+        if _stats.get("recent_winners"):
+            st.markdown("---")
+            st.markdown("#### Recent Winners Tracked")
+            rw_df = pd.DataFrame(_stats["recent_winners"])
+            if "winner" in rw_df.columns:
+                st.dataframe(rw_df[["date","winner","course","odds"]].rename(columns={
+                    "date":"Date","winner":"Winner","course":"Course","odds":"Odds"
+                }), use_container_width=True, hide_index=True)
+
+        if _settled >= 5:
+            st.markdown("---")
+            st.markdown("#### Confidence vs Outcome")
+            st.caption(f"Avg confidence on winners: {_stats['avg_confidence_winners']:.0%} | "
+                      f"Avg confidence on losers: {_stats['avg_confidence_losers']:.0%}")
+            _gap = _stats["avg_confidence_winners"] - _stats["avg_confidence_losers"]
+            if _gap > 0:
+                st.success(f"✅ Model is predictive — confidence scores {_gap:.0%} higher on winners than losers")
+            else:
+                st.warning("⚠️ Not yet enough data to assess model predictiveness")
+    else:
+        st.info("🟡 Learning loop initialising — data will appear here as races complete today.")
+        st.markdown("#### Default Signal Weightings (pre-learning)")
+        st.dataframe(pd.DataFrame([
+            {"Signal": s.replace("_"," ").title(), "Weight": f"{w*100:.0f}%"}
+            for s, w in _default_weights.items()
+        ]), use_container_width=True, hide_index=True)
 
 # ── Tab 5: Results History ────────────────────────────────────
 with tab7:

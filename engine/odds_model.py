@@ -28,7 +28,12 @@ class OddsModel:
     """
 
     def __init__(self):
-        self.weights = WEIGHTS
+        # Use learned weights if available, fall back to config defaults
+        try:
+            from learning.loop import LearningLoop
+            self.weights = LearningLoop.get_current_weights()
+        except Exception:
+            self.weights = WEIGHTS
 
     # ── Signal 1: Market Odds ─────────────────────────────────
     def _score_market_odds(self, odds_str) -> float:
