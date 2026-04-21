@@ -264,6 +264,13 @@ def get_race_runners(slug):
     rides        = race.get("rides", [])
     race_summary = race.get("race_summary", {})
     going        = race_summary.get("going", "")
+    # Extra race metadata for filter layer
+    field_size   = len([r for r in rides if r.get("ride_status","") != "NON_RUNNER"])
+    race_type    = str(race_summary.get("race_type",  "")).lower()   # flat/hurdle/chase/bumper
+    race_class   = str(race_summary.get("race_class", "")).lower()   # class 1-6, group 1-3 etc
+    is_handicap  = any(x in str(race_summary.get("race_name","")).lower()
+                       for x in ["handicap", "hcap", "h'cap"])
+    race_dist_f  = race_summary.get("distance_furlongs", 0)  # distance in furlongs
 
     runners = []
     for ride in rides:
@@ -322,6 +329,12 @@ def get_race_runners(slug):
             "status":         ride.get("ride_status", "RUNNER"),
             "finish_position":finish_pos,
             "bet_movements":  bm,
+            # Filter layer fields
+            "field_size":     field_size,
+            "race_type":      race_type,
+            "race_class":     race_class,
+            "is_handicap":    is_handicap,
+            "race_dist_f":    race_dist_f,
         })
 
     return runners
@@ -397,6 +410,12 @@ def get_todays_selections():
                         "bet_movements": rn.get("bet_movements", []),
                         "tf_stars": rn.get("tf_stars"), "course": course,
                         "bsp_result": bsp_result,
+                        # Filter layer fields
+                        "field_size":  rn.get("field_size", 0),
+                        "race_type":   rn.get("race_type", ""),
+                        "race_class":  rn.get("race_class", ""),
+                        "is_handicap": rn.get("is_handicap", False),
+                        "current_odds": rn.get("current_odds", odds_str),
                     }
                     confidence = _odds_model.calculate_confidence(runner_input)
                 else:
@@ -429,6 +448,11 @@ def get_todays_selections():
                     "BSP Flag":    bsp_flag,
                     "BSP Volume":  bsp_vol,
                     "BSP Matched": bsp_matched,
+                    # Filter layer metadata
+                    "Field Size":  rn.get("field_size", 0),
+                    "Race Type":   rn.get("race_type", ""),
+                    "Race Class":  rn.get("race_class", ""),
+                    "Is Handicap": rn.get("is_handicap", False),
                 })
 
     # Persist updated snapshot (today's entries only)

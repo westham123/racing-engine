@@ -36,6 +36,16 @@
 #   - Perfect recent form (4+ wins in last 5)       → +0.04
 #   - Steam signal with good form                   → +0.03
 #   - Top TF stars (5) + good form                  → +0.02
+#
+# FILTER LAYER (v2.5.1 — hard exclusions BEFORE scoring):
+#   Applied before calculate_confidence() is called from the dashboard.
+#   Returns (should_exclude: bool, reason: str).
+#   1. LARGE FIELD: 12+ runners → exclude (too unpredictable)
+#   2. HANDICAP UPLIFT: handicap races require 65% not 55% threshold
+#      (handled in app.py tab1 — threshold raised, not an exclusion)
+#   3. NO RECENT FORM: 0 runs AND no tf_stars → exclude (complete unknown)
+#   4. DUAL SIGNAL: must have 2+ positive signals (form OR tf_stars≥4)
+#      AND (market move OR market odds implied prob ≥ 0.40)
 
 from config.settings import WEIGHTS
 from engine.form_parser import parse_form
@@ -306,6 +316,81 @@ class OddsModel:
             pass
 
         return round(delta, 4)
+
+    # ── Filter Layer (v2.5.1) ─────────────────────────────────
+    def should_exclude(self, runner_data: dict) -> tuple:
+        """
+        Hard exclusion check — called BEFORE scoring.
+        Returns (exclude: bool, reason: str).
+        Horses that pass all checks proceed to calculate_confidence().
+        """
+        form_str   = str(runner_data.get("form", "-"))
+        tf_stars   = runner_data.get("tf_stars")
+        signal     = str(runner_data.get("signal", "Stable")).lower()
+        field_size = int(runner_data.get("field_size", 0) or 0)
+        form_det   = self._get_form_detail(form_str)
+        runs       = form_det.get("runs", 0)
+
+        # ── Filter 1: Large field ─────────────────────────────
+        # 12+ runners = highly unpredictable, exclude entirely
+        if field_size >= 12:
+            return (True, f"Large field ({field_size} runners)")
+
+        # ── Filter 2: Complete unknown ────────────────────────
+        # No form at all AND no TF rating = zero signal quality
+        try:
+            stars = int(str(tf_stars).strip())
+        except Exception:
+            stars = 0
+        if runs == 0 and stars == 0:
+            return (True, "No form and no TF rating — insufficient data")
+
+        # ── Filter 3: Dual positive signal requirement ────────
+        # Horse must clear at least 2 of the 4 checks below:
+        #   (a) Decent form score (form_score ≥ 0.50)
+        #   (b) TF stars ≥ 4 (Timeform rates well)
+        #   (c) Market shortening (Steam or Move)
+        #   (d) Implied probability ≥ 40% (odds ≤ 3/2 decimal 2.5)
+        positive_signals = 0
+        form_score = form_det.get("score", 0.50)
+
+        if form_score >= 0.50:
+            positive_signals += 1  # (a) decent form
+
+        if stars >= 4:
+            positive_signals += 1  # (b) TF endorsement
+
+        if "steam" in signal or "move" in signal:
+            positive_signals += 1  # (c) market shortening
+
+        _raw = runner_data.get("current_odds") or runner_data.get("odds", "N/A")
+        try:
+            _o = str(_raw)
+            if "/" in _o:
+                _n, _d = _o.split("/")
+                implied = float(_d) / (float(_n) + float(_d))
+            else:
+                implied = 1.0 / float(_o)
+        except Exception:
+            implied = 0.0
+        if implied >= 0.40:  # 40% implied = odds of 6/4 or shorter
+            positive_signals += 1  # (d) market rates well
+
+        if positive_signals < 2:
+            return (True, f"Only {positive_signals} positive signal(s) — need 2+ (form, TF stars, market move, or short price)")
+
+        return (False, "")
+
+    def get_handicap_threshold(self, runner_data: dict, base_threshold: float) -> float:
+        """
+        Handicap uplift: raise the required threshold for handicap races.
+        Handicaps have larger, more competitive fields — harder to predict.
+        Flat conditions races: base_threshold (default 55%)
+        Handicaps: base_threshold + 0.10 (default 65%)
+        """
+        if runner_data.get("is_handicap", False):
+            return round(base_threshold + 0.10, 2)
+        return base_threshold
 
     # ── Main Confidence Calculator ────────────────────────────
     def calculate_confidence(self, runner_data: dict) -> float:

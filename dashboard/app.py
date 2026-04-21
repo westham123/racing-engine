@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.0** — Live data only | BST times | Outlier filter | No stale data")
+    st.markdown("**Engine v2.5.1** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -497,7 +497,7 @@ with tab1:
     if _t1col2.button("🔄 Refresh", help="Clear cache and reload live data"):
         st.cache_data.clear()
         st.rerun()
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Six-timer is main bet | Lucky 15 shown only if 4+ horses qualify | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Accum is main bet | L15 if 4+ qualify | Min conf: **{st.session_state.get('conf_threshold', 0.55):.0%}** (handicaps: +10%) | Large fields (12+) excluded | Need 2+ signals")
 
     # ── Build pool from live data or sample ────────────────────────────────
     _conf_threshold = st.session_state.get("conf_threshold", 0.55)
@@ -543,14 +543,31 @@ with tab1:
                 'signal':       str(_row.get('Signal', 'Stable')),
                 'tf_stars':     _row.get('TF Stars'),
                 'bet_movements': [],
+                # Filter layer fields
+                'field_size':   int(_row.get('Field Size', 0) or 0),
+                'race_type':    str(_row.get('Race Type', '')),
+                'race_class':   str(_row.get('Race Class', '')),
+                'is_handicap':  bool(_row.get('Is Handicap', False)),
             }
+
+            # ── Filter layer: hard exclusions before scoring ──
+            if _tab1_model:
+                _exclude, _excl_reason = _tab1_model.should_exclude(_runner_dict)
+                if _exclude:
+                    continue  # excluded — large field, no signals, etc.
+
+            # ── Handicap threshold uplift ──
+            _effective_threshold = _conf_threshold
+            if _tab1_model and _runner_dict.get('is_handicap'):
+                _effective_threshold = _tab1_model.get_handicap_threshold(_runner_dict, _conf_threshold)
+
             # Rescore with current model, or fall back to cached confidence
             if _tab1_model:
                 _conf = _tab1_model.calculate_confidence(_runner_dict)
             else:
                 _conf = float(_row.get('Confidence', 0))
 
-            if _conf < _conf_threshold:
+            if _conf < _effective_threshold:
                 continue
 
             # Use Current Odds for cut-off; display best bk Odds
