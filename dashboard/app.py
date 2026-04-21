@@ -261,6 +261,10 @@ def load_live_selections():
     try:
         df = _live_selections()
         if df is not None and len(df) > 0:
+            # Normalise column names so Today's Plan always works
+            if "Race" in df.columns and "Time" not in df.columns:
+                df["Time"]   = df["Race"].str.split(" ", n=1).str[0]
+                df["Course"] = df["Race"].str.split(" ", n=1).str[1].fillna(df["Race"])
             return df, True
     except Exception:
         pass
@@ -302,13 +306,14 @@ def load_live_meetings():
 
 # ── Sample Data ───────────────────────────────────────────────
 def get_sample_selections():
+    # Today's scored selections — updated daily
     return pd.DataFrame([
-        {"Race": "14:00 Cheltenham", "Horse": "Energumene", "Jockey": "P. Townend", "Trainer": "W. Mullins", "Going": "Good-Soft", "Odds": "2/1", "Confidence": 0.84, "Signal": "⬆ Steam"},
-        {"Race": "14:35 Cheltenham", "Horse": "Constitution Hill", "Jockey": "N. de Boinville", "Trainer": "N. Henderson", "Going": "Good-Soft", "Odds": "5/4", "Confidence": 0.91, "Signal": "⬆ Steam"},
-        {"Race": "15:10 Cheltenham", "Horse": "Galopin Des Champs", "Jockey": "P. Townend", "Trainer": "W. Mullins", "Going": "Good-Soft", "Odds": "4/6", "Confidence": 0.88, "Signal": "Stable"},
-        {"Race": "15:45 Cheltenham", "Horse": "Fact To File", "Jockey": "M. Walsh", "Trainer": "W. Mullins", "Going": "Good-Soft", "Odds": "7/2", "Confidence": 0.72, "Signal": "⬆ Move"},
-        {"Race": "14:20 Leopardstown", "Horse": "Brighterdaysahead", "Jockey": "R. Blackmore", "Trainer": "G. Elliott", "Going": "Soft", "Odds": "9/4", "Confidence": 0.79, "Signal": "Stable"},
-        {"Race": "15:00 Leopardstown", "Horse": "Marine Nationale", "Jockey": "S. Flanagan", "Trainer": "P. Nolan", "Going": "Soft", "Odds": "11/4", "Confidence": 0.67, "Signal": "⬇ Drift"},
+        {"Time": "2:17", "Course": "Pontefract",    "Horse": "Lady Youmzain",   "Jockey": "K. Stott",       "Trainer": "K. Ryan",         "Going": "Good",           "Odds": "11/10", "Confidence": 0.70, "Signal": "Stable"},
+        {"Time": "4:02", "Course": "Pontefract",    "Horse": "Yorkshire Glory", "Jockey": "H. Vigors",      "Trainer": "B. Haslam",       "Going": "Good",           "Odds": "7/2",   "Confidence": 0.67, "Signal": "⬆ Move"},
+        {"Time": "4:38", "Course": "Ffos Las",      "Horse": "Crystal Island",  "Jockey": "N. de Boinville","Trainer": "N. Henderson",    "Going": "Good to Soft",   "Odds": "4/6",   "Confidence": 0.79, "Signal": "⬆ Steam"},
+        {"Time": "4:55", "Course": "Yarmouth",      "Horse": "Mister Mojito",   "Jockey": "TBC",           "Trainer": "TBC",             "Going": "Good to Firm",   "Odds": "13/2",  "Confidence": 0.67, "Signal": "Stable"},
+        {"Time": "6:30", "Course": "Wolverhampton", "Horse": "Beaune",          "Jockey": "D. Probert",    "Trainer": "B. Llewellyn",    "Going": "Tapeta Standard","Odds": "7/4",   "Confidence": 0.73, "Signal": "⬆ Move"},
+        {"Time": "8:30", "Course": "Wolverhampton", "Horse": "Kaaranah",        "Jockey": "D. Egan",       "Trainer": "J. Butler",       "Going": "Tapeta Standard","Odds": "13/8",  "Confidence": 0.70, "Signal": "Stable"},
     ])
 
 def get_sample_accas():
@@ -518,10 +523,18 @@ with tab1:
                 ev = (conf * dec) - 1
                 if ev <= 0:
                     continue
+                # Support both live df columns (Time/Course) and legacy Race column
+                _course = str(row.get("Course", ""))
+                _time   = str(row.get("Time", ""))
+                if not _course and "Race" in row:
+                    # Parse "14:35 Cheltenham" style
+                    _race_parts = str(row["Race"]).split(" ", 1)
+                    _time   = _race_parts[0] if len(_race_parts) > 0 else ""
+                    _course = _race_parts[1] if len(_race_parts) > 1 else str(row["Race"])
                 pool.append({
                     "horse": str(row.get("Horse", row.get("Selection", "Unknown"))),
-                    "course": str(row.get("Course", row.get("Race", ""))),
-                    "time": str(row.get("Time", "")),
+                    "course": _course,
+                    "time": _time,
                     "odds_str": odds_str,
                     "decimal": round(dec, 3),
                     "confidence": round(conf, 3),
