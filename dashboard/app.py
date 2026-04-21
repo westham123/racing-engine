@@ -451,7 +451,8 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.0** — Lucky 15 + Loss Analyser Active" if (MODEL_AVAILABLE or MONITOR_AVAILABLE) else "**Engine v2.0** — Running")
+    st.markdown("**Engine v2.3.8** — Live rescore | BST times | Outlier filter")
+    st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
     if st.button("🔒 Lock Dashboard", width="stretch"):
