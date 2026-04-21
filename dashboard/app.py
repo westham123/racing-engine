@@ -267,7 +267,7 @@ if not st.session_state.unlocked:
     st.stop()
 
 # ── Live Data Loader ─────────────────────────────────────────
-@st.cache_data(ttl=300)  # cache for 5 minutes
+@st.cache_data(ttl=90)  # cache for 5 minutes
 def load_live_selections():
     """Fetch live UK/Irish selections. Returns (df, is_live)."""
     if not LIVE_DATA_AVAILABLE:
@@ -284,7 +284,7 @@ def load_live_selections():
         pass
     return get_sample_selections(), False
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=90)
 def load_live_going():
     if not LIVE_DATA_AVAILABLE:
         return None, False
@@ -296,7 +296,7 @@ def load_live_going():
         pass
     return None, False
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=90)
 def load_live_results():
     if not LIVE_DATA_AVAILABLE:
         return None, False
@@ -308,7 +308,7 @@ def load_live_results():
         pass
     return None, False
 
-@st.cache_data(ttl=300)
+@st.cache_data(ttl=90)
 def load_live_meetings():
     if not LIVE_DATA_AVAILABLE:
         return [], False
@@ -515,7 +515,11 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 
 # ── Tab 1: Today's Plan ──────────────────────────────────────
 with tab1:
-    st.markdown("### 💰 Today's Staking Plan")
+    _t1col1, _t1col2 = st.columns([5, 1])
+    _t1col1.markdown("### 💰 Today's Staking Plan")
+    if _t1col2.button("🔄 Refresh", help="Clear cache and reload live data"):
+        st.cache_data.clear()
+        st.rerun()
     st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Six-timer is main bet | Lucky 15 shown only if 4+ horses qualify | Min confidence: **{st.session_state.get('conf_threshold', 0.60):.0%}** | Adjust in sidebar ←")
 
     # ── Build pool from live data or sample ────────────────────────────────
