@@ -15,13 +15,15 @@ from datetime import datetime
 
 from briefs.daily_brief import DailyBrief
 from alerts.monitor import AlertMonitor
+from alerts.market_monitor import MultiSourceMarketMonitor
 from settlement.settle import SettlementEngine
 from learning.loop import LearningLoop
 
-brief      = DailyBrief()
-monitor    = AlertMonitor()
-settler    = SettlementEngine()
-learner    = LearningLoop()
+brief          = DailyBrief()
+monitor        = AlertMonitor()
+multi_monitor  = MultiSourceMarketMonitor()
+settler        = SettlementEngine()
+learner        = LearningLoop()
 
 update_counter = [0]
 
@@ -31,6 +33,7 @@ def morning_reset():
     """Clear alert state at the start of each racing day."""
     print(f"\n[Scheduler] ── New Racing Day Reset ({datetime.now().strftime('%H:%M')}) ──")
     monitor.reset_state()
+    multi_monitor.reset_state()
 
 
 # ── Morning Brief ─────────────────────────────────────────────
@@ -48,10 +51,19 @@ def rolling_update():
 
 # ── Alert Poll ────────────────────────────────────────────────
 def alert_poll():
-    """Run every 60 seconds — checks for market moves, non-runners, going changes."""
+    """Run every 60 seconds — multi-source bookmaker + exchange monitor."""
+    # Run multi-source monitor (Betfair + Racing API + Oddschecker)
+    try:
+        multi_alerts = multi_monitor.run_poll()
+        for alert in multi_alerts:
+            if alert.get("level") == "HIGH":
+                brief.send_instant_alert(alert.get("type", "Alert"), alert.get("message", ""))
+    except Exception as e:
+        print(f"[Scheduler] Multi-source monitor error: {e}")
+
+    # Also run single-source monitor for non-runners + going changes
     try:
         alerts = monitor.run_poll()
-        # Fire instant alert email for any HIGH alerts found
         for alert in alerts:
             if alert.get("level") == "HIGH":
                 brief.send_instant_alert(alert.get("type", "Alert"), alert.get("message", ""))
@@ -107,7 +119,7 @@ schedule.every().day.at("20:00").do(daily_learning)
 
 
 # ── Startup ───────────────────────────────────────────────────
-print("\n🏇 Racing Engine Scheduler v1.1 — Started")
+print("\n🏇 Racing Engine Scheduler v1.2 — Started")
 print(f"  Time: {datetime.now().strftime('%A %d %B %Y %H:%M')} BST")
 print("  Schedule:")
 print("    07:30 BST — Daily reset")
