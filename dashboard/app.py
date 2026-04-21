@@ -545,8 +545,10 @@ with tab1:
     _l15_plan = None
     _l15_err  = None
     try:
-        import sys as _l15_sys, os as _l15_os
-        _l15_sys.path.insert(0, _l15_os.path.join(_l15_os.path.dirname(__file__), ".."))
+        # Ensure repo root is on path regardless of how Streamlit Cloud resolves __file__
+        _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        if _repo_root not in sys.path:
+            sys.path.insert(0, _repo_root)
         from permutations.lucky15_planner import Lucky15Planner as _Lucky15Planner
         if len(_six_pool) >= 2:
             _planner = _Lucky15Planner(_six_pool, stake_per_bet=2.00, sixtimer_stake=20.00)
@@ -623,13 +625,11 @@ with tab1:
         # ── Loss Learning summary (live) ──
         st.markdown("#### 🔍 Loss Learning — Recent Diagnoses")
         try:
-            import sys as _ls_sys, os as _ls_os
-            _ls_sys.path.insert(0, _ls_os.path.join(_ls_os.path.dirname(__file__), ".."))
             from learning.loss_analyser import get_loss_report as _get_loss_report
             _loss_txt = _get_loss_report(last_n=5)
             st.text(_loss_txt)
         except Exception as _le:
-            st.caption(f"Loss report: accumulates after races are settled. ({_le})")
+            st.caption(f"Loss report accumulates after races are settled. Check back after today's races complete.")
 
         if not _is_live:
             st.info("📌 Showing today's manually-scored selections (21 Apr 2026). Live data will populate automatically when the market feed connects.")

@@ -184,7 +184,9 @@ def build_brief_data():
     # ────────────────────────────────────────────────────────────────────────
     try:
         import sys as _sys, os as _os
-        _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+        _repo_root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+        if _repo_root not in _sys.path:
+            _sys.path.insert(0, _repo_root)
         from permutations.lucky15_planner import Lucky15Planner as _L15
 
         # Build pool from live selections — include ALL qualifying selections (conf >= 0.65)
@@ -351,7 +353,9 @@ def build_html(data):
     # Loss learning report — wrapped in light container for email
     try:
         import sys as _sys2, os as _os2
-        _sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+        _repo_root2 = _os2.path.dirname(_os2.path.dirname(_os2.path.abspath(__file__)))
+        if _repo_root2 not in _sys2.path:
+            _sys2.path.insert(0, _repo_root2)
         from learning.loss_analyser import get_loss_report_html as _loss_html
         loss_report_html = f'<div style="background:#1c1f2e;border-radius:12px;padding:20px;margin-bottom:16px;">' + _loss_html(last_n=10) + '</div>'
     except Exception as _lr_err:
