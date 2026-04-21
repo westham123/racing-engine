@@ -414,8 +414,13 @@ def get_todays_selections():
     df = pd.DataFrame(all_rows)
     df = df.sort_values("Confidence", ascending=False)
 
-    # ── Strip races that have already started (past race times) ──────────
-    now_str = datetime.now().strftime("%H:%M")
+    # ── Strip races that have already started (past race times, London/BST) ──
+    try:
+        import zoneinfo
+        _london = zoneinfo.ZoneInfo("Europe/London")
+        now_str = datetime.now(_london).strftime("%H:%M")
+    except Exception:
+        now_str = datetime.utcnow().strftime("%H:%M")  # fallback: UTC
     def _race_is_future(t):
         try:
             return str(t).strip() >= now_str

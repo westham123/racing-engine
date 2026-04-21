@@ -563,7 +563,11 @@ with tab1:
             })
     else:
         # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf, future races only)
-        _now_str = __import__('datetime').datetime.now().strftime("%H:%M")
+        try:
+            import zoneinfo as _zi
+            _now_str = __import__('datetime').datetime.now(_zi.ZoneInfo('Europe/London')).strftime("%H:%M")
+        except Exception:
+            _now_str = __import__('datetime').datetime.utcnow().strftime("%H:%M")
         _raw_sample = [
             {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "15:02", "odds_str": "5/2",  "decimal": 3.50,  "confidence": 0.683, "ev": 1.09, "tier": "MID"},
             {"horse": "Beaune",          "course": "Wolverhampton", "time": "17:30", "odds_str": "7/4",  "decimal": 2.75,  "confidence": 0.664, "ev": 0.83, "tier": "MID"},
