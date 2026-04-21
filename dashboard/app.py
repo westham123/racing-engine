@@ -561,6 +561,65 @@ with tab1:
     except Exception as _e:
         _l15_err = str(_e)
 
+    # ── Fallback: build plan inline if planner import failed ──────────
+    if _l15_plan is None and len(_six_pool) >= 2:
+        def _assign_tier_inline(dec):
+            if dec <= 2.50:  return "banker"
+            if dec <= 5.00:  return "mid"
+            if dec <= 10.00: return "value"
+            return "longshot"
+        def _l15_scenarios_inline(quartet):
+            decs = sorted([s["decimal"] for s in quartet])
+            def _comb_return(n):
+                import itertools
+                combos = list(itertools.combinations(decs, n))
+                returns = [round(2.0 * sum(c[0]*c[1] if len(c)==2 else (c[0]*c[1]*c[2] if len(c)==3 else c[0]*c[1]*c[2]*c[3]) for c in [combo]), 2)
+                           if n > 1 else [round(2.0 * d, 2) for d in decs]
+                           for combo in combos]
+                if n == 1:
+                    returns = [round(2.0 * d, 2) for d in decs]
+                    return {"min_return": min(returns), "max_return": max(returns),
+                            "min_profit": round(min(returns)-30, 2)}
+                flat = []
+                for combo in combos:
+                    r = 2.0
+                    for d in combo: r *= d
+                    flat.append(round(r, 2))
+                return {"min_return": round(min(flat), 2), "max_return": round(max(flat), 2),
+                        "min_profit": round(min(flat)-30, 2)}
+            return {
+                "1_winner":  _comb_return(1),
+                "2_winners": _comb_return(2),
+                "3_winners": _comb_return(3),
+                "4_winners": _comb_return(4),
+            }
+        # Filter out ≤ 4/6 (1.67) for Lucky 15
+        _l15_pool = [s for s in _six_pool if s["decimal"] > 1.67]
+        # Pick up to 4: prefer one of each tier, else top 4 by ev
+        _quartet = sorted(_l15_pool, key=lambda s: s["ev"], reverse=True)[:4]
+        _combined_dec = 1.0
+        for _ps in _six_pool:
+            _combined_dec *= _ps["decimal"]
+        _six_ret_fb = round(20.0 * _combined_dec, 2)
+        _l15_plan = {
+            "lucky15_selections":        [{"horse": s["horse"], "course": s["course"], "time": s["time"],
+                                           "tier": _assign_tier_inline(s["decimal"]),
+                                           "odds_str": s["odds_str"], "decimal": s["decimal"]} for s in _quartet],
+            "lucky15_bets":              [],
+            "lucky15_scenarios":         _l15_scenarios_inline(_quartet) if len(_quartet) >= 4 else
+                                          {"1_winner":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
+                                           "2_winners":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
+                                           "3_winners":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
+                                           "4_winners":{"max_return":0.0,"min_profit":-30.0}},
+            "sixtimer_selections":       [s["horse"] for s in _six_pool],
+            "sixtimer_stake":            20.00,
+            "sixtimer_combined_decimal": round(_combined_dec, 2),
+            "sixtimer_projected_return": _six_ret_fb,
+            "total_staked":              50.00,
+            "tier_breakdown":            {s["horse"]: _assign_tier_inline(s["decimal"]) for s in _quartet},
+        }
+        _l15_err = None  # cleared — fallback succeeded
+
     if _l15_plan is not None:
         _l15_sels  = _l15_plan["lucky15_selections"]
         _scen      = _l15_plan["lucky15_scenarios"]
@@ -639,8 +698,9 @@ with tab1:
         if not _is_live:
             st.info("📌 Showing today's manually-scored selections (21 Apr 2026). Live data will populate automatically when the market feed connects.")
     else:
-        _err_msg = f" ({_l15_err})" if _l15_err else ""
-        st.info(f"No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.{_err_msg}")
+        if _l15_err:
+            st.error(f"Plan builder error: {_l15_err}")
+        st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
     st.markdown("---")
     st.caption("All figures are research estimates only. Phase 1 personal research tool. Singles removed from plan permanently.")
 
