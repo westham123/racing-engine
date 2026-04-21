@@ -1,0 +1,6699 @@
+{
+  "date_from": "2026-03-24",
+  "date_to": "2026-04-20",
+  "total_races": 826,
+  "selectable_races": 826,
+  "singles": {
+    "bets": 826,
+    "wins": 424,
+    "hit_rate_pct": 51.3,
+    "pnl": 761.45,
+    "roi_pct": 92.2
+  },
+  "doubles": {
+    "bets": 12937,
+    "wins": 3349,
+    "hit_rate_pct": 25.9,
+    "pnl": 32807.87,
+    "roi_pct": 253.6
+  },
+  "trebles": {
+    "bets": 141090,
+    "wins": 17995,
+    "hit_rate_pct": 12.8,
+    "pnl": 751591.7,
+    "roi_pct": 532.7
+  },
+  "lucky_15": {
+    "tickets": 1960,
+    "profitable_tickets": 1279,
+    "pnl": 136224.14,
+    "roi_pct": 463.3
+  },
+  "daily_singles": {
+    "2026-03-24": [
+      {
+        "course": "Taunton",
+        "time": "14:15",
+        "horse": "Falls Of Acharn",
+        "sp": "5/6",
+        "won": true,
+        "pnl": 0.8333
+      },
+      {
+        "course": "Taunton",
+        "time": "14:45",
+        "horse": "Newmill Getaway",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Taunton",
+        "time": "15:15",
+        "horse": "Victory Shout",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Taunton",
+        "time": "15:45",
+        "horse": "Ede'iffs Rock",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Taunton",
+        "time": "16:15",
+        "horse": "Khafre",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Taunton",
+        "time": "16:45",
+        "horse": "Bobbi's Beauty",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Taunton",
+        "time": "17:15",
+        "horse": "Arms Park",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:00",
+        "horse": "Smurfette",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:30",
+        "horse": "Shadowfax Of Rohan",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:00",
+        "horse": "Scott's Legacy",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Southwell",
+        "time": "15:30",
+        "horse": "Peckforton Hills",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:00",
+        "horse": "Hillberry Hill",
+        "sp": "4/6",
+        "won": true,
+        "pnl": 0.6667
+      },
+      {
+        "course": "Southwell",
+        "time": "16:30",
+        "horse": "Codetalker",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Southwell",
+        "time": "17:00",
+        "horse": "Cher Monsieur",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:23",
+        "horse": "Quick Turn",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:55",
+        "horse": "Sorted",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:30",
+        "horse": "Kento",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Autumn Angel",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "Dr Ali",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:30",
+        "horse": "American Bay",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "20:30",
+        "horse": "Farasi Lane",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      }
+    ],
+    "2026-03-25": [
+      {
+        "course": "Kempton",
+        "time": "17:00",
+        "horse": "Rye",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "17:30",
+        "horse": "Timely Affair",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:00",
+        "horse": "Volendam",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:30",
+        "horse": "Enemy Agent",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Kempton",
+        "time": "19:00",
+        "horse": "Blues And Royals",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Kempton",
+        "time": "19:30",
+        "horse": "Constitution Hill",
+        "sp": "1/7",
+        "won": true,
+        "pnl": 0.1429
+      },
+      {
+        "course": "Kempton",
+        "time": "20:00",
+        "horse": "Knight Templar",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "20:30",
+        "horse": "Mr Ubiquitous",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Hereford",
+        "time": "14:30",
+        "horse": "Line Of Descent",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "15:00",
+        "horse": "Chestnut Pete",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "15:30",
+        "horse": "Kernie D'airy",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "16:00",
+        "horse": "Best Night",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "16:30",
+        "horse": "Miss Carbo",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Hereford",
+        "time": "17:05",
+        "horse": "One Knight",
+        "sp": "4/5",
+        "won": true,
+        "pnl": 0.8
+      },
+      {
+        "course": "Hexham",
+        "time": "14:11",
+        "horse": "Maiori",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Hexham",
+        "time": "14:41",
+        "horse": "Scottish King",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Hexham",
+        "time": "15:11",
+        "horse": "He's Bresilian",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "15:41",
+        "horse": "Planned Paradise",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Hexham",
+        "time": "16:11",
+        "horse": "Another High Five",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "16:41",
+        "horse": "Big John Wayne",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Hexham",
+        "time": "17:13",
+        "horse": "Emiko",
+        "sp": "6/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "13:52",
+        "horse": "Global Warning",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:22",
+        "horse": "Tilsworth Max",
+        "sp": "13/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:52",
+        "horse": "Tortured Soul",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:22",
+        "horse": "Space Bear",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:52",
+        "horse": "Beaune",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:22",
+        "horse": "Saachi",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:52",
+        "horse": "Profit Street",
+        "sp": "6/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "17:22",
+        "horse": "Westport",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "17:52",
+        "horse": "Desiderata",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-03-26": [
+      {
+        "course": "Warwick",
+        "time": "14:58",
+        "horse": "Getaway Sam",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Warwick",
+        "time": "15:28",
+        "horse": "El Rojo Grande",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Warwick",
+        "time": "15:58",
+        "horse": "Aj's Diamond",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Warwick",
+        "time": "16:30",
+        "horse": "Get Up Mush",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Warwick",
+        "time": "17:00",
+        "horse": "Ivor Bear",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:07",
+        "horse": "Enter Sandman",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:07",
+        "horse": "Spirit Of Bowland",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Southwell",
+        "time": "15:37",
+        "horse": "Crest of Fire",
+        "sp": "2/5",
+        "won": true,
+        "pnl": 0.4
+      },
+      {
+        "course": "Southwell",
+        "time": "16:07",
+        "horse": "Fickle Mcselfish",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:37",
+        "horse": "Riley Rocks",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Southwell",
+        "time": "17:07",
+        "horse": "Insuspense",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "17:30",
+        "horse": "Moscow Power",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "18:00",
+        "horse": "Combustion",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "18:30",
+        "horse": "Go Lockers Go",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "19:00",
+        "horse": "Take The Boat",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "19:30",
+        "horse": "Skellig Isle",
+        "sp": "12/1",
+        "won": true,
+        "pnl": 12.0
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "20:00",
+        "horse": "Caragio",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Chelmsford City",
+        "time": "20:30",
+        "horse": "Engross",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Clonmel",
+        "time": "14:42",
+        "horse": "Kilbarry Saint",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Clonmel",
+        "time": "15:12",
+        "horse": "Youlita",
+        "sp": "7/5",
+        "won": true,
+        "pnl": 1.4
+      },
+      {
+        "course": "Clonmel",
+        "time": "15:42",
+        "horse": "Brown Boots",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:12",
+        "horse": "Boedic",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:42",
+        "horse": "Tangara Bay",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:12",
+        "horse": "Courtbrack Boy",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:42",
+        "horse": "Potters Pal",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Clonmel",
+        "time": "18:12",
+        "horse": "Scarecrow",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-03-27": [
+      {
+        "course": "Wetherby",
+        "time": "14:20",
+        "horse": "Pioneer Pete",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Wetherby",
+        "time": "14:50",
+        "horse": "Slaney Opera",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wetherby",
+        "time": "15:20",
+        "horse": "Daylatedollarshort",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wetherby",
+        "time": "15:50",
+        "horse": "Singapore Trip",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Wetherby",
+        "time": "16:20",
+        "horse": "Kent De Thaix",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Wetherby",
+        "time": "16:50",
+        "horse": "Yummy",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Wetherby",
+        "time": "17:22",
+        "horse": "Matador St Georges",
+        "sp": "8/13",
+        "won": true,
+        "pnl": 0.6154
+      },
+      {
+        "course": "Fontwell",
+        "time": "15:00",
+        "horse": "Motazzen",
+        "sp": "11/5",
+        "won": true,
+        "pnl": 2.2
+      },
+      {
+        "course": "Fontwell",
+        "time": "15:30",
+        "horse": "Daring Plan",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "16:00",
+        "horse": "Unknown Entity",
+        "sp": "4/9",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "16:30",
+        "horse": "Alright Dai",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "17:05",
+        "horse": "Bridge",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:12",
+        "horse": "Pleasant Man",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:42",
+        "horse": "Marra Donna",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:12",
+        "horse": "One More",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:42",
+        "horse": "Mighty Vega",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:12",
+        "horse": "Montague Menace",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:42",
+        "horse": "Youarenotforgiven",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "17:17",
+        "horse": "The Craftymaster",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:25",
+        "horse": "Sea Legend",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:00",
+        "horse": "Jamaican Storm",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:30",
+        "horse": "Anthropologist",
+        "sp": "15/2",
+        "won": true,
+        "pnl": 7.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:00",
+        "horse": "Yorkshire Glory",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:30",
+        "horse": "Teardrops",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:00",
+        "horse": "Power Fizz",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:30",
+        "horse": "Saytarr",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "20:00",
+        "horse": "Master Richard",
+        "sp": "17/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "20:30",
+        "horse": "Station X",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:12",
+        "horse": "Benavente",
+        "sp": "10/1",
+        "won": true,
+        "pnl": 10.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:45",
+        "horse": "Bishopton",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:15",
+        "horse": "Sakakawea",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:45",
+        "horse": "Deluca Chop",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "19:15",
+        "horse": "Maria Quiteria",
+        "sp": "4/9",
+        "won": true,
+        "pnl": 0.4444
+      },
+      {
+        "course": "Dundalk",
+        "time": "19:45",
+        "horse": "Gaiety Girl",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Dundalk",
+        "time": "20:15",
+        "horse": "Storm Eric",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-03-28": [
+      {
+        "course": "Doncaster",
+        "time": "13:20",
+        "horse": "Blixen Force",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "13:50",
+        "horse": "Jasour",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "14:25",
+        "horse": "Mezcala",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Doncaster",
+        "time": "14:57",
+        "horse": "Docklands",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Doncaster",
+        "time": "15:32",
+        "horse": "Urban Lion",
+        "sp": "9/1",
+        "won": true,
+        "pnl": 9.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "16:05",
+        "horse": "Turty Tree",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "16:40",
+        "horse": "Mao Shang Wong",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Doncaster",
+        "time": "17:15",
+        "horse": "Golspie",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "13:35",
+        "horse": "Defence Minister",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Kempton",
+        "time": "14:08",
+        "horse": "Blindedbythelights",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "14:42",
+        "horse": "Respond",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "15:13",
+        "horse": "Cathedral",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "15:52",
+        "horse": "Ellusive Butterfly",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "16:28",
+        "horse": "King's Trail",
+        "sp": "4/7",
+        "won": true,
+        "pnl": 0.5714
+      },
+      {
+        "course": "Kempton",
+        "time": "17:03",
+        "horse": "Tuco Salamanca",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Stratford",
+        "time": "13:40",
+        "horse": "Watamu",
+        "sp": "1/6",
+        "won": true,
+        "pnl": 0.1667
+      },
+      {
+        "course": "Stratford",
+        "time": "14:15",
+        "horse": "Hecouldbetheone",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Stratford",
+        "time": "14:47",
+        "horse": "Classic King",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Stratford",
+        "time": "15:17",
+        "horse": "Lord Of The Glance",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Stratford",
+        "time": "15:57",
+        "horse": "Harbour Light",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Stratford",
+        "time": "16:33",
+        "horse": "Regal Renaissance",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Stratford",
+        "time": "17:08",
+        "horse": "Morning Mayhem",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "13:30",
+        "horse": "Saccary",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "14:00",
+        "horse": "Inishcorker",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "14:35",
+        "horse": "Crazierthandaisy",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "15:08",
+        "horse": "As Legends Have It",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "15:45",
+        "horse": "Largy Force",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "16:20",
+        "horse": "Sunray Shadow",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Uttoxeter",
+        "time": "16:55",
+        "horse": "Baron Du Brizais",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "17:00",
+        "horse": "Ancient State",
+        "sp": "16/5",
+        "won": true,
+        "pnl": 3.2
+      },
+      {
+        "course": "Southwell",
+        "time": "17:30",
+        "horse": "Gladiadora",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:00",
+        "horse": "Tamashal",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Southwell",
+        "time": "18:30",
+        "horse": "Aqpan",
+        "sp": "1/10",
+        "won": true,
+        "pnl": 0.1
+      },
+      {
+        "course": "Southwell",
+        "time": "19:00",
+        "horse": "Golden Muse",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Southwell",
+        "time": "19:30",
+        "horse": "Dodging The Bullet",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "20:00",
+        "horse": "Jack Andrea",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Southwell",
+        "time": "20:30",
+        "horse": "Roaring Ralph",
+        "sp": "5/6",
+        "won": true,
+        "pnl": 0.8333
+      },
+      {
+        "course": "Curragh",
+        "time": "13:25",
+        "horse": "Slaney View",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "13:55",
+        "horse": "Stag Night",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "14:30",
+        "horse": "Factual Fact",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "15:05",
+        "horse": "East Hampton",
+        "sp": "9/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "15:40",
+        "horse": "Lewis Carroll",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Curragh",
+        "time": "16:15",
+        "horse": "Electric Beauty",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "16:50",
+        "horse": "Shaihaan",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Curragh",
+        "time": "17:25",
+        "horse": "Mickey The Steel",
+        "sp": "15/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-03-29": [
+      {
+        "course": "Doncaster",
+        "time": "12:47",
+        "horse": "Rising Force",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Doncaster",
+        "time": "13:20",
+        "horse": "King Of Earth",
+        "sp": "6/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "13:55",
+        "horse": "Jimmy Speaking",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Doncaster",
+        "time": "14:30",
+        "horse": "Miletus",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "15:05",
+        "horse": "Atherstone Warrior",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Doncaster",
+        "time": "15:40",
+        "horse": "Arc Ole Ole",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Doncaster",
+        "time": "16:15",
+        "horse": "Fine Interview",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Doncaster",
+        "time": "16:50",
+        "horse": "Juan Les Pins",
+        "sp": "10/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ascot",
+        "time": "13:30",
+        "horse": "Sherborne",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Ascot",
+        "time": "14:05",
+        "horse": "Gallivanted",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ascot",
+        "time": "14:40",
+        "horse": "Authoceltic",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ascot",
+        "time": "15:15",
+        "horse": "Hard Dealt",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ascot",
+        "time": "16:25",
+        "horse": "Royal Way",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-03-30": [
+      {
+        "course": "Ludlow",
+        "time": "13:27",
+        "horse": "Jimbo Sport",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Ludlow",
+        "time": "13:57",
+        "horse": "Annie Express",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Ludlow",
+        "time": "14:27",
+        "horse": "Jackomy",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Ludlow",
+        "time": "14:57",
+        "horse": "Your Darling",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Ludlow",
+        "time": "15:27",
+        "horse": "High Fibre",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ludlow",
+        "time": "15:57",
+        "horse": "Jet Plane",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "13:10",
+        "horse": "Barefoot Beach",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "13:40",
+        "horse": "Escape Plan",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Kempton",
+        "time": "14:10",
+        "horse": "Plaid",
+        "sp": "6/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "14:40",
+        "horse": "Shushi",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "15:10",
+        "horse": "Tattie Bogle",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "15:40",
+        "horse": "Quick Quasar",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Kempton",
+        "time": "16:10",
+        "horse": "Montu",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:30",
+        "horse": "Instant Bond",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:00",
+        "horse": "Sovereign Spell",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:30",
+        "horse": "Arcturus Flame",
+        "sp": "85/40",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:00",
+        "horse": "Lux Aeterna",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Nad Alshiba Green",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "Alpine Sierra",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:30",
+        "horse": "Captain Pickles",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Navan",
+        "time": "13:18",
+        "horse": "Happy Henry",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Navan",
+        "time": "13:48",
+        "horse": "Shaftesbury Avenue",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Navan",
+        "time": "14:18",
+        "horse": "Galileo Dame",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Navan",
+        "time": "14:48",
+        "horse": "Bhean Saibhre",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Navan",
+        "time": "15:18",
+        "horse": "Karrygrant",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Navan",
+        "time": "15:48",
+        "horse": "Calamint",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Navan",
+        "time": "16:18",
+        "horse": "Servare",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      }
+    ],
+    "2026-03-31": [
+      {
+        "course": "Newcastle",
+        "time": "13:30",
+        "horse": "Jehol De Thaix",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "14:00",
+        "horse": "I C U In My Dreams",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Newcastle",
+        "time": "14:30",
+        "horse": "Cahier's Den",
+        "sp": "6/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "15:00",
+        "horse": "Smokeringinthedark",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Newcastle",
+        "time": "15:30",
+        "horse": "Ceolwulf",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:00",
+        "horse": "Tyson",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:35",
+        "horse": "Travis Wheatley",
+        "sp": "16/5",
+        "won": true,
+        "pnl": 3.2
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:30",
+        "horse": "Overbudget",
+        "sp": "30/100",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:30",
+        "horse": "Farasi Lane",
+        "sp": "5/6",
+        "won": true,
+        "pnl": 0.8333
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:00",
+        "horse": "Danehill Star",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Kolkata Knight",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "Tuba",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:30",
+        "horse": "A Lott Of Kane",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Limerick",
+        "time": "15:10",
+        "horse": "Louie's Folly",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "15:40",
+        "horse": "Beauvallon",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Limerick",
+        "time": "16:10",
+        "horse": "Royal Belief",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Limerick",
+        "time": "16:42",
+        "horse": "Dolly Watkins",
+        "sp": "15/2",
+        "won": true,
+        "pnl": 7.5
+      },
+      {
+        "course": "Limerick",
+        "time": "17:12",
+        "horse": "Duffys Hodey",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Limerick",
+        "time": "17:42",
+        "horse": "Marelly",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "18:12",
+        "horse": "Even Tho",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      }
+    ],
+    "2026-04-01": [
+      {
+        "course": "Wincanton",
+        "time": "13:20",
+        "horse": "Grand Vendetta",
+        "sp": "2/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "13:50",
+        "horse": "Jukebox King",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "14:20",
+        "horse": "Broomfields Cave",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "14:50",
+        "horse": "Square Du Roule",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Wincanton",
+        "time": "15:20",
+        "horse": "Universal Secret",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "15:50",
+        "horse": "Victory Shout",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "16:20",
+        "horse": "Beau Speed",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "13:40",
+        "horse": "Captain Cool",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "14:10",
+        "horse": "Realisation",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "14:40",
+        "horse": "Clean Getaway",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "15:10",
+        "horse": "Bright Legend",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Sedgefield",
+        "time": "15:40",
+        "horse": "Cosmic Soul",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "16:10",
+        "horse": "The Gem State",
+        "sp": "4/9",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "13:30",
+        "horse": "Hell Hound",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Southwell",
+        "time": "14:00",
+        "horse": "Ukantango",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Southwell",
+        "time": "14:30",
+        "horse": "No More Teardrops",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:00",
+        "horse": "Road To Wembley",
+        "sp": "2/9",
+        "won": true,
+        "pnl": 0.2222
+      },
+      {
+        "course": "Southwell",
+        "time": "15:30",
+        "horse": "Passing Pleasure",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:02",
+        "horse": "Princesse Milania",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "16:30",
+        "horse": "Nanoscience",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Kempton",
+        "time": "17:00",
+        "horse": "Havana Touch",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Kempton",
+        "time": "17:30",
+        "horse": "Balzac",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:00",
+        "horse": "Lion of Mali",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:30",
+        "horse": "Moment Of Light",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Kempton",
+        "time": "19:00",
+        "horse": "Arry Up",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Kempton",
+        "time": "19:30",
+        "horse": "True Promise",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "16:15",
+        "horse": "An Laochmor",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Dundalk",
+        "time": "16:45",
+        "horse": "Collective Power",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:15",
+        "horse": "Royal County Glory",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:45",
+        "horse": "Ocean's Breath",
+        "sp": "4/7",
+        "won": true,
+        "pnl": 0.5714
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:15",
+        "horse": "Kitty Bear",
+        "sp": "18/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:45",
+        "horse": "Emmeleia",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Dundalk",
+        "time": "19:15",
+        "horse": "Baila Conmigo",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-02": [
+      {
+        "course": "Southwell",
+        "time": "16:10",
+        "horse": "Romance Spirit",
+        "sp": "17/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:48",
+        "horse": "Musical Touch",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Southwell",
+        "time": "17:18",
+        "horse": "Booziebrunch",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "17:48",
+        "horse": "Little Mi Mi",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:18",
+        "horse": "Sporting Light",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:48",
+        "horse": "Haaland",
+        "sp": "8/1",
+        "won": true,
+        "pnl": 8.0
+      },
+      {
+        "course": "Southwell",
+        "time": "19:18",
+        "horse": "Hackney Diamonds",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Clonmel",
+        "time": "15:30",
+        "horse": "Dee Capo",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:00",
+        "horse": "Snow Punt",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:30",
+        "horse": "Kaiser De Chanay",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:00",
+        "horse": "Celtic Alliance",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:30",
+        "horse": "Wild Wild Wind",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "18:00",
+        "horse": "Blue Train",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Clonmel",
+        "time": "18:30",
+        "horse": "World As One",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-03": [
+      {
+        "course": "Newcastle",
+        "time": "12:15",
+        "horse": "Padraig Dawn",
+        "sp": "18/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "12:50",
+        "horse": "Al Najashi",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "13:25",
+        "horse": "Stateira",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Newcastle",
+        "time": "14:00",
+        "horse": "The Lost King",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "14:35",
+        "horse": "Wiltshire",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "15:10",
+        "horse": "Gaucher",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "15:42",
+        "horse": "Beylerbeyi",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "12:30",
+        "horse": "Cool Molly",
+        "sp": "8/1",
+        "won": true,
+        "pnl": 8.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "13:05",
+        "horse": "Shrimp Shady",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "13:40",
+        "horse": "Uncle Don",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:15",
+        "horse": "My Fermoy",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:50",
+        "horse": "Angel Hunter",
+        "sp": "15/2",
+        "won": true,
+        "pnl": 7.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:25",
+        "horse": "Lord Harcourt",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:00",
+        "horse": "Son Of Man",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Curragh",
+        "time": "12:22",
+        "horse": "Edward Thatch",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "12:57",
+        "horse": "Staysound Susie",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Curragh",
+        "time": "13:32",
+        "horse": "Chasing Paradise",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Curragh",
+        "time": "14:07",
+        "horse": "Faiyum",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "14:42",
+        "horse": "Perry Mason",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "15:17",
+        "horse": "Fiver Friday",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Curragh",
+        "time": "15:52",
+        "horse": "Atomic City",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "16:27",
+        "horse": "A Piece Of Heaven",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-04": [
+      {
+        "course": "Haydock",
+        "time": "12:37",
+        "horse": "First Candidate",
+        "sp": "1/4",
+        "won": true,
+        "pnl": 0.25
+      },
+      {
+        "course": "Haydock",
+        "time": "13:12",
+        "horse": "Dance And Glance",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Haydock",
+        "time": "13:46",
+        "horse": "Blue Carpet",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "14:20",
+        "horse": "Guard Your Dreams",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "14:55",
+        "horse": "Count Adhemar",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Haydock",
+        "time": "15:30",
+        "horse": "Brookside La",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "16:05",
+        "horse": "Major Fortune",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Carlisle",
+        "time": "11:43",
+        "horse": "Tap Tap Shamie",
+        "sp": "2/13",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Carlisle",
+        "time": "12:13",
+        "horse": "Loulou Madrik",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Carlisle",
+        "time": "12:48",
+        "horse": "Jupiter Des Mottes",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Carlisle",
+        "time": "13:23",
+        "horse": "Belvedere Bhoy",
+        "sp": "7/5",
+        "won": true,
+        "pnl": 1.4
+      },
+      {
+        "course": "Carlisle",
+        "time": "13:57",
+        "horse": "Out On Her Own",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Carlisle",
+        "time": "14:27",
+        "horse": "Jamesieconn",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Carlisle",
+        "time": "15:05",
+        "horse": "Moyganny Phil",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Huntingdon",
+        "time": "14:47",
+        "horse": "Is This For Real",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Huntingdon",
+        "time": "15:50",
+        "horse": "Kentucky River",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Huntingdon",
+        "time": "16:25",
+        "horse": "Icare Grandchamp",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Huntingdon",
+        "time": "17:00",
+        "horse": "Sweeper System",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Huntingdon",
+        "time": "17:30",
+        "horse": "Westbrooke Boy",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "13:00",
+        "horse": "Dutch Corner",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "13:35",
+        "horse": "Jack Doyen",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "14:10",
+        "horse": "Reel Orange",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "14:49",
+        "horse": "Scarface",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "15:20",
+        "horse": "Call Me Legend",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "15:55",
+        "horse": "Guste's Dance",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:50",
+        "horse": "Coloane",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:20",
+        "horse": "Constant Star",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:55",
+        "horse": "Kirkdale",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Pride Of Donegal",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "Blue Force",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:30",
+        "horse": "Karakula Dancer",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "13:05",
+        "horse": "Simply Natural",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "13:40",
+        "horse": "Kilbarry Saint",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:15",
+        "horse": "Kings Hill",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:50",
+        "horse": "He Can't Dance",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "15:25",
+        "horse": "Daydream Nation",
+        "sp": "10/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:00",
+        "horse": "Hello Neighbour",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:35",
+        "horse": "Wonderful Everyday",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "13:20",
+        "horse": "Velozee",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Cork",
+        "time": "13:54",
+        "horse": "Oh Cecelia",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Cork",
+        "time": "14:25",
+        "horse": "Cardiff By The Sea",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Cork",
+        "time": "15:02",
+        "horse": "King Cuan",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "15:37",
+        "horse": "Signora",
+        "sp": "1/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "16:12",
+        "horse": "Elana Osario",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "16:45",
+        "horse": "Empty Wallet",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      }
+    ],
+    "2026-04-05": [
+      {
+        "course": "Fairyhouse",
+        "time": "12:30",
+        "horse": "Colcannon",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "13:05",
+        "horse": "Sheer Raz",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "13:40",
+        "horse": "Koktail Brut",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:15",
+        "horse": "He's On Fire",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:50",
+        "horse": "Zanoosh",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "15:25",
+        "horse": "Shuffle The Deck",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:00",
+        "horse": "Kappa Jy Pyke",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:30",
+        "horse": "Big Interest",
+        "sp": "13/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "13:13",
+        "horse": "Tread Carefully",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "13:48",
+        "horse": "De Deli Counter",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "14:58",
+        "horse": "Kally Des Bruyeres",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Market Rasen",
+        "time": "15:33",
+        "horse": "Kalkaroo",
+        "sp": "9/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "16:05",
+        "horse": "Kildare D'irlande",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Plumpton",
+        "time": "12:45",
+        "horse": "Eremenko",
+        "sp": "4/9",
+        "won": true,
+        "pnl": 0.4444
+      },
+      {
+        "course": "Plumpton",
+        "time": "13:55",
+        "horse": "Goodwin Face",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "15:05",
+        "horse": "Serious Challenge",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "16:10",
+        "horse": "Washington Singer",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Bath",
+        "time": "13:00",
+        "horse": "Solar Invincible",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Bath",
+        "time": "13:35",
+        "horse": "Dowman",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bath",
+        "time": "14:10",
+        "horse": "Beautiful Diamond",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bath",
+        "time": "14:45",
+        "horse": "Twilight Madness",
+        "sp": "18/5",
+        "won": true,
+        "pnl": 3.6
+      },
+      {
+        "course": "Bath",
+        "time": "15:20",
+        "horse": "Baltic Fleet",
+        "sp": "8/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bath",
+        "time": "15:55",
+        "horse": "Law Supreme",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Bath",
+        "time": "16:25",
+        "horse": "Volendam",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Bath",
+        "time": "16:55",
+        "horse": "Scenario",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Southwell",
+        "time": "12:55",
+        "horse": "Fenlander",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "13:31",
+        "horse": "Colori Forever",
+        "sp": "8/13",
+        "won": true,
+        "pnl": 0.6154
+      },
+      {
+        "course": "Southwell",
+        "time": "14:06",
+        "horse": "Back To Me",
+        "sp": "8/1",
+        "won": true,
+        "pnl": 8.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:41",
+        "horse": "City Queen",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:15",
+        "horse": "Marry The Night",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:50",
+        "horse": "Pure Moon",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:20",
+        "horse": "Jack Andrea",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Cork",
+        "time": "12:15",
+        "horse": "Mino Des Mottes",
+        "sp": "4/7",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "12:50",
+        "horse": "Absurde",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "13:25",
+        "horse": "Tountinna",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Cork",
+        "time": "14:00",
+        "horse": "Larzac",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "14:35",
+        "horse": "Toor Khov",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "15:45",
+        "horse": "Funiculi Funicula",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Cork",
+        "time": "16:15",
+        "horse": "Gonewild",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-06": [
+      {
+        "course": "Fairyhouse",
+        "time": "13:05",
+        "horse": "Mart Lane",
+        "sp": "8/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "13:40",
+        "horse": "Proactif",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:15",
+        "horse": "Fierce Handay",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "14:50",
+        "horse": "Storm Heart",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "15:20",
+        "horse": "Energumene",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:00",
+        "horse": "Soldier In Milan",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "16:40",
+        "horse": "Union Station",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fairyhouse",
+        "time": "17:10",
+        "horse": "Charismatic Kid",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Kempton",
+        "time": "12:45",
+        "horse": "Zain Primus",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Kempton",
+        "time": "13:20",
+        "horse": "Eastern Veil",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "13:55",
+        "horse": "Gethin",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Kempton",
+        "time": "14:30",
+        "horse": "Topteam",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Kempton",
+        "time": "15:05",
+        "horse": "Fleetwater",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "15:40",
+        "horse": "Mr Baloo",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "16:15",
+        "horse": "Broadway Act",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Kempton",
+        "time": "16:50",
+        "horse": "Fleurman",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "13:00",
+        "horse": "Local Derby",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Plumpton",
+        "time": "13:35",
+        "horse": "Secret Des Dieux",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Plumpton",
+        "time": "14:10",
+        "horse": "Loriko",
+        "sp": "8/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "14:45",
+        "horse": "Grand Conqueror",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "15:25",
+        "horse": "Havaila",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Plumpton",
+        "time": "15:55",
+        "horse": "Unjeu Royal",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Fakenham",
+        "time": "13:15",
+        "horse": "Painted Wolf",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Fakenham",
+        "time": "13:50",
+        "horse": "Tralee Girl",
+        "sp": "1/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fakenham",
+        "time": "15:00",
+        "horse": "Annie Nail",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Fakenham",
+        "time": "16:10",
+        "horse": "Hidden Fortune",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "12:35",
+        "horse": "Neon Dream",
+        "sp": "4/6",
+        "won": true,
+        "pnl": 0.6667
+      },
+      {
+        "course": "Hereford",
+        "time": "13:10",
+        "horse": "Miss Kassiopi",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Hereford",
+        "time": "13:45",
+        "horse": "Lord Chamberlain",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Hereford",
+        "time": "14:20",
+        "horse": "The Long Walk",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "15:30",
+        "horse": "Jukebox D'eddy",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "16:05",
+        "horse": "Plan De Stan",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "12:55",
+        "horse": "Coloane",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "13:30",
+        "horse": "Pershaada",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "14:05",
+        "horse": "Kelly Burn",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "14:40",
+        "horse": "Elements Of Fire",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "15:15",
+        "horse": "King's Cruiser",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "15:50",
+        "horse": "Von Krolock",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:25",
+        "horse": "Mount Ruapehu",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:55",
+        "horse": "Kaaranah",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Cork",
+        "time": "12:15",
+        "horse": "Oaks Soldier",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Cork",
+        "time": "12:50",
+        "horse": "Back To Cali",
+        "sp": "10/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "13:25",
+        "horse": "River Vale",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Cork",
+        "time": "14:35",
+        "horse": "Hearts And Spades",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "15:10",
+        "horse": "Asian Master",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "15:45",
+        "horse": "Sharp As Glass",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Cork",
+        "time": "16:20",
+        "horse": "Wilton Mills Trier",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-07": [
+      {
+        "course": "Pontefract",
+        "time": "12:57",
+        "horse": "Invincible Boy",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Pontefract",
+        "time": "13:27",
+        "horse": "Arabian Desert",
+        "sp": "1/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Pontefract",
+        "time": "13:57",
+        "horse": "Kokanee",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Pontefract",
+        "time": "14:27",
+        "horse": "Swift Salian",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Pontefract",
+        "time": "14:57",
+        "horse": "Arklow Lad",
+        "sp": "15/2",
+        "won": true,
+        "pnl": 7.5
+      },
+      {
+        "course": "Pontefract",
+        "time": "15:27",
+        "horse": "Lightening Company",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Pontefract",
+        "time": "16:00",
+        "horse": "Maynora",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Pontefract",
+        "time": "16:35",
+        "horse": "Get Up Everybody",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Exeter",
+        "time": "13:10",
+        "horse": "Blue In The West",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Exeter",
+        "time": "13:40",
+        "horse": "Knight Of Magic",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Exeter",
+        "time": "14:10",
+        "horse": "Western Cross",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Exeter",
+        "time": "14:40",
+        "horse": "Bannerdown",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Exeter",
+        "time": "15:10",
+        "horse": "Loki's Mischief",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Exeter",
+        "time": "16:10",
+        "horse": "Macklin",
+        "sp": "1/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:55",
+        "horse": "Pickersgill",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Southwell",
+        "time": "16:30",
+        "horse": "Castan",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Southwell",
+        "time": "17:00",
+        "horse": "Gatehouse",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Southwell",
+        "time": "17:30",
+        "horse": "Paranjape",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:00",
+        "horse": "Studious",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Southwell",
+        "time": "19:00",
+        "horse": "Gesayed",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "19:30",
+        "horse": "Reginald Charles",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-08": [
+      {
+        "course": "Nottingham",
+        "time": "12:17",
+        "horse": "Infraad",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "12:47",
+        "horse": "Olympic Charter",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Nottingham",
+        "time": "13:22",
+        "horse": "Final Appeal",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "13:57",
+        "horse": "Albegone",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "14:32",
+        "horse": "Any Which Way",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "15:07",
+        "horse": "The Sweet Escape",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "15:40",
+        "horse": "Del Corso",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "16:10",
+        "horse": "Cavolo Nero",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "12:38",
+        "horse": "Doralee",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "13:13",
+        "horse": "Liverpool Star",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "13:48",
+        "horse": "Jeddaal",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Catterick",
+        "time": "14:23",
+        "horse": "Vince Le Prince",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "14:58",
+        "horse": "Kitsune Power",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "15:33",
+        "horse": "Roland Garros",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Catterick",
+        "time": "16:05",
+        "horse": "The Good Biscuit",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Catterick",
+        "time": "16:38",
+        "horse": "Moostar",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "13:30",
+        "horse": "Hardly Surprising",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Fontwell",
+        "time": "14:05",
+        "horse": "Duffry Trixs",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "15:47",
+        "horse": "Gorcombe Moonshine",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Fontwell",
+        "time": "16:17",
+        "horse": "Frank Stamper",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "16:00",
+        "horse": "Romantic Symphony",
+        "sp": "30/100",
+        "won": true,
+        "pnl": 0.3
+      },
+      {
+        "course": "Kempton",
+        "time": "16:30",
+        "horse": "Go Rimbaud",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Kempton",
+        "time": "17:00",
+        "horse": "Heraldry",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Kempton",
+        "time": "17:30",
+        "horse": "Atmosphere",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:00",
+        "horse": "Rastnet",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Kempton",
+        "time": "18:30",
+        "horse": "Arry Up",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Kempton",
+        "time": "19:00",
+        "horse": "Initial Blue",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Kempton",
+        "time": "19:30",
+        "horse": "Fiddlers Green",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "13:05",
+        "horse": "Harmani",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "13:40",
+        "horse": "Monocle Rocket",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "14:15",
+        "horse": "Sinmara",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Gowran Park",
+        "time": "14:50",
+        "horse": "Coincidental Glory",
+        "sp": "18/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "15:25",
+        "horse": "Never Loose",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "15:55",
+        "horse": "Matt Connor",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Gowran Park",
+        "time": "16:25",
+        "horse": "Light Up The Dark",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      }
+    ],
+    "2026-04-09": [
+      {
+        "course": "Aintree",
+        "time": "12:45",
+        "horse": "Selma De Vary",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "13:20",
+        "horse": "Koktail Divin",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Aintree",
+        "time": "13:55",
+        "horse": "Jango Baie",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "14:30",
+        "horse": "Barton Snow",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Aintree",
+        "time": "15:05",
+        "horse": "Brighterdaysahead",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Aintree",
+        "time": "15:40",
+        "horse": "Sans Bruit",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "16:15",
+        "horse": "Nan's Choice",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Taunton",
+        "time": "13:32",
+        "horse": "Minella Yoga",
+        "sp": "2/7",
+        "won": true,
+        "pnl": 0.2857
+      },
+      {
+        "course": "Taunton",
+        "time": "14:07",
+        "horse": "Happy Returns",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Taunton",
+        "time": "14:40",
+        "horse": "Little Venice",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Taunton",
+        "time": "15:15",
+        "horse": "Wicked Thoughts",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Taunton",
+        "time": "16:20",
+        "horse": "Hall Lane",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Taunton",
+        "time": "16:55",
+        "horse": "Lost In The Dream",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Southwell",
+        "time": "13:07",
+        "horse": "Alfa Duplicate",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "13:42",
+        "horse": "Ay Up Duck",
+        "sp": "8/13",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:17",
+        "horse": "Fidelius",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "14:47",
+        "horse": "Got The Booty",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "15:25",
+        "horse": "Peaky Blinder",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Southwell",
+        "time": "15:55",
+        "horse": "Tilted Kilt",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:25",
+        "horse": "Dash Of Class",
+        "sp": "8/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:30",
+        "horse": "Naughty Niall",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:00",
+        "horse": "Astrological",
+        "sp": "1/2",
+        "won": true,
+        "pnl": 0.5
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:30",
+        "horse": "Midnight Call",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Gold Star Hero",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "On The Inlet",
+        "sp": "2/9",
+        "won": true,
+        "pnl": 0.2222
+      },
+      {
+        "course": "Gowran Park",
+        "time": "15:30",
+        "horse": "Lunar Tide",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Gowran Park",
+        "time": "16:05",
+        "horse": "Lady Arwen",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "16:40",
+        "horse": "Rebel Moon",
+        "sp": "8/1",
+        "won": true,
+        "pnl": 8.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "17:15",
+        "horse": "Kepler",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "17:45",
+        "horse": "Mano Chicago",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "18:15",
+        "horse": "Sarangpur",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Gowran Park",
+        "time": "18:45",
+        "horse": "Rock Of Ireland",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-10": [
+      {
+        "course": "Aintree",
+        "time": "12:45",
+        "horse": "Wellington Arch",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Aintree",
+        "time": "13:20",
+        "horse": "Gold Dancer",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Aintree",
+        "time": "13:55",
+        "horse": "Sinnatra",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "14:30",
+        "horse": "Grey Dawning",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Aintree",
+        "time": "15:05",
+        "horse": "Madara",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "15:40",
+        "horse": "Johnny's Jury",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "16:15",
+        "horse": "Harry Lowes",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "12:57",
+        "horse": "Maggies Boy",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Sedgefield",
+        "time": "13:32",
+        "horse": "Dartmouth Castle",
+        "sp": "8/15",
+        "won": true,
+        "pnl": 0.5333
+      },
+      {
+        "course": "Sedgefield",
+        "time": "14:03",
+        "horse": "Rebel Tribesman",
+        "sp": "8/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "15:13",
+        "horse": "Dillarchie",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Sedgefield",
+        "time": "15:45",
+        "horse": "Blackwater Lilly",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "13:08",
+        "horse": "Where Love Lives",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Thirsk",
+        "time": "13:43",
+        "horse": "My Ballyquinn",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "14:18",
+        "horse": "Bearish",
+        "sp": "2/7",
+        "won": true,
+        "pnl": 0.2857
+      },
+      {
+        "course": "Thirsk",
+        "time": "14:53",
+        "horse": "Harswell Ruby",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Thirsk",
+        "time": "15:25",
+        "horse": "Poet Master",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "16:00",
+        "horse": "Asmen Warrior",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "16:35",
+        "horse": "Ey Up He's A Star",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "17:10",
+        "horse": "Juan Les Pins",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "15:50",
+        "horse": "Sirius A",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:23",
+        "horse": "Thames Waterman",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:30",
+        "horse": "Papa Cocktail",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:00",
+        "horse": "Divot",
+        "sp": "11/10",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "18:30",
+        "horse": "Present Times",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:00",
+        "horse": "Dublin Bay",
+        "sp": "5/1",
+        "won": true,
+        "pnl": 5.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "19:30",
+        "horse": "Three Socks On",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Dundalk",
+        "time": "16:07",
+        "horse": "New Yorker",
+        "sp": "4/7",
+        "won": true,
+        "pnl": 0.5714
+      },
+      {
+        "course": "Dundalk",
+        "time": "16:42",
+        "horse": "Jered Maddox",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:15",
+        "horse": "Allsortz",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Dundalk",
+        "time": "17:50",
+        "horse": "Royal County Glory",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:20",
+        "horse": "Grand Premiere",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "18:50",
+        "horse": "Jawhary",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Dundalk",
+        "time": "19:20",
+        "horse": "Keepsgettingbetter",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Wexford",
+        "time": "14:45",
+        "horse": "Ifallgoeswell",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wexford",
+        "time": "15:20",
+        "horse": "Le Moulin Rouge",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Wexford",
+        "time": "15:55",
+        "horse": "Hitthehayson",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wexford",
+        "time": "16:28",
+        "horse": "Agameoftwohalves",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Wexford",
+        "time": "17:03",
+        "horse": "James The Brave",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Wexford",
+        "time": "17:38",
+        "horse": "Dont Go Yet",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wexford",
+        "time": "18:08",
+        "horse": "Rockstown Girl",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-11": [
+      {
+        "course": "Aintree",
+        "time": "11:45",
+        "horse": "Salvator Mundi",
+        "sp": "8/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "12:20",
+        "horse": "Supremely West",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "12:55",
+        "horse": "Bossman Jack",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Aintree",
+        "time": "13:30",
+        "horse": "Lookaway",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "14:05",
+        "horse": "Honesty Policy",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Aintree",
+        "time": "15:00",
+        "horse": "I Am Maximus",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Aintree",
+        "time": "16:00",
+        "horse": "Look Me",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "12:30",
+        "horse": "The Clonmel Kid",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "13:07",
+        "horse": "Camarrate",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "13:42",
+        "horse": "Parisencore",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Newcastle",
+        "time": "14:25",
+        "horse": "Filibustering",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Newcastle",
+        "time": "15:32",
+        "horse": "Port Station",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:10",
+        "horse": "Attin",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Yarmouth",
+        "time": "13:02",
+        "horse": "Queen Of Good News",
+        "sp": "9/1",
+        "won": true,
+        "pnl": 9.0
+      },
+      {
+        "course": "Yarmouth",
+        "time": "13:37",
+        "horse": "Del Maro",
+        "sp": "4/7",
+        "won": true,
+        "pnl": 0.5714
+      },
+      {
+        "course": "Yarmouth",
+        "time": "14:12",
+        "horse": "Harriet Quimby",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Yarmouth",
+        "time": "14:42",
+        "horse": "Salamanca City",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Yarmouth",
+        "time": "15:25",
+        "horse": "My Mate Roger",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Yarmouth",
+        "time": "16:06",
+        "horse": "Organise",
+        "sp": "8/15",
+        "won": true,
+        "pnl": 0.5333
+      },
+      {
+        "course": "Yarmouth",
+        "time": "16:40",
+        "horse": "Pixie Diva",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Yarmouth",
+        "time": "17:10",
+        "horse": "Sports Day",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:15",
+        "horse": "Tortured Soul",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "16:45",
+        "horse": "Al Azd",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Southwell",
+        "time": "17:15",
+        "horse": "Ambishio",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "17:45",
+        "horse": "Timely Affair",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:15",
+        "horse": "Captain Pickles",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:45",
+        "horse": "Farandaway",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "19:15",
+        "horse": "Piperstown",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "15:17",
+        "horse": "Karrygrant",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "15:48",
+        "horse": "Balance Of Trade",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "16:23",
+        "horse": "Summer Island",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "16:55",
+        "horse": "Jordan Breeze",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "17:30",
+        "horse": "Bay Of Supremacy",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Bellewstown",
+        "time": "18:00",
+        "horse": "Obscenity",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "18:30",
+        "horse": "Joe Cool",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-12": [
+      {
+        "course": "Wincanton",
+        "time": "13:55",
+        "horse": "Siorai",
+        "sp": "6/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "14:27",
+        "horse": "My Rockstar",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "15:00",
+        "horse": "John Barbour",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Wincanton",
+        "time": "16:00",
+        "horse": "Victory Shout",
+        "sp": "11/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wincanton",
+        "time": "16:30",
+        "horse": "Lady Litigator",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "13:10",
+        "horse": "Thundering On",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "13:45",
+        "horse": "Launch Time",
+        "sp": "8/1",
+        "won": true,
+        "pnl": 8.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "14:20",
+        "horse": "Fixation",
+        "sp": "16/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "14:55",
+        "horse": "Thesecretadversary",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "15:25",
+        "horse": "True Love",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "15:55",
+        "horse": "A Boy Named Susie",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "16:25",
+        "horse": "Madbadanddangerous",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-13": [
+      {
+        "course": "Leicester",
+        "time": "12:52",
+        "horse": "Crimson Rose",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leicester",
+        "time": "13:22",
+        "horse": "King's Cavalry",
+        "sp": "7/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leicester",
+        "time": "13:52",
+        "horse": "Expressionless",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Leicester",
+        "time": "14:22",
+        "horse": "Wreck It Ryley",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Leicester",
+        "time": "14:52",
+        "horse": "Em Four",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leicester",
+        "time": "15:22",
+        "horse": "Albeseeingyer",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leicester",
+        "time": "16:22",
+        "horse": "Euphonia",
+        "sp": "11/2",
+        "won": true,
+        "pnl": 5.5
+      },
+      {
+        "course": "Fakenham",
+        "time": "13:40",
+        "horse": "Rialannah",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Fakenham",
+        "time": "14:10",
+        "horse": "Fortunefavorsdbold",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Hexham",
+        "time": "13:00",
+        "horse": "Red Oak",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Hexham",
+        "time": "13:30",
+        "horse": "Royal Deeside",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "14:00",
+        "horse": "She's Notjoeking",
+        "sp": "2/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "14:30",
+        "horse": "Jamesieconn",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Hexham",
+        "time": "15:00",
+        "horse": "Rock Dj",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "15:30",
+        "horse": "Highbury Hill",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hexham",
+        "time": "16:00",
+        "horse": "Nassalam",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Hexham",
+        "time": "16:35",
+        "horse": "Blue Skies Ahead",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:30",
+        "horse": "Pantile's Gift",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:00",
+        "horse": "Cosmic Clarets",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:30",
+        "horse": "Noelan Star",
+        "sp": "2/5",
+        "won": true,
+        "pnl": 0.4
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:00",
+        "horse": "Evening Saigon",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:30",
+        "horse": "Eddaari",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:00",
+        "horse": "The Cookstown Cafu",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:30",
+        "horse": "Herakles",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-14": [
+      {
+        "course": "Newmarket",
+        "time": "12:15",
+        "horse": "Cerro Blanco",
+        "sp": "4/9",
+        "won": true,
+        "pnl": 0.4444
+      },
+      {
+        "course": "Newmarket",
+        "time": "12:50",
+        "horse": "Adaay Of Scarlett",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Newmarket",
+        "time": "13:25",
+        "horse": "Talk Of New York",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:00",
+        "horse": "Hardy's Hero",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:35",
+        "horse": "Jakajaro",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:10",
+        "horse": "St Anton",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:45",
+        "horse": "Mister Winston",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Market Rasen",
+        "time": "12:35",
+        "horse": "Ladronne",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "13:10",
+        "horse": "Diamonds Galore",
+        "sp": "8/13",
+        "won": true,
+        "pnl": 0.6154
+      },
+      {
+        "course": "Market Rasen",
+        "time": "13:45",
+        "horse": "Plains Drifter",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Market Rasen",
+        "time": "14:20",
+        "horse": "Lord Chamberlain",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Market Rasen",
+        "time": "14:55",
+        "horse": "Catchim",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Market Rasen",
+        "time": "16:05",
+        "horse": "Bluey",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Market Rasen",
+        "time": "16:35",
+        "horse": "Numero Ventotto",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:00",
+        "horse": "Mighty Vega",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:30",
+        "horse": "Lara Antipova",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Lingfield",
+        "time": "17:00",
+        "horse": "Sail On Sailor",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "17:30",
+        "horse": "Helm Rock",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "18:00",
+        "horse": "Bergamo Gold",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "18:30",
+        "horse": "Zubaru",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "13:33",
+        "horse": "Onefournine",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "14:08",
+        "horse": "Green Asset",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "15:17",
+        "horse": "Dearkeithandkaty",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newton Abbot",
+        "time": "16:22",
+        "horse": "Taranis Dubh",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "15:37",
+        "horse": "Arcadian Emperor",
+        "sp": "1/2",
+        "won": true,
+        "pnl": 0.5
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:12",
+        "horse": "Paradise Lost",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "16:42",
+        "horse": "Wakey Wakey Man",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:12",
+        "horse": "Space Warrior",
+        "sp": "8/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "17:42",
+        "horse": "Royal Hollow",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Clonmel",
+        "time": "18:12",
+        "horse": "Coral River",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Clonmel",
+        "time": "18:42",
+        "horse": "Tutu Twist",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-15": [
+      {
+        "course": "Newmarket",
+        "time": "12:50",
+        "horse": "Double Rush",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Newmarket",
+        "time": "13:25",
+        "horse": "Poseidon's Warrior",
+        "sp": "9/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:00",
+        "horse": "Damysus",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:35",
+        "horse": "America Queen",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:10",
+        "horse": "Bint Archange",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:45",
+        "horse": "So Regal",
+        "sp": "6/5",
+        "won": true,
+        "pnl": 1.2
+      },
+      {
+        "course": "Newmarket",
+        "time": "16:17",
+        "horse": "Ranga Tang",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "13:05",
+        "horse": "White Noise",
+        "sp": "4/5",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "13:40",
+        "horse": "Riskintheground",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Haydock",
+        "time": "14:15",
+        "horse": "Below The Radar",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "14:50",
+        "horse": "Holokea",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Haydock",
+        "time": "15:25",
+        "horse": "Smokeringinthedark",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Haydock",
+        "time": "16:00",
+        "horse": "Iron Bridge",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Haydock",
+        "time": "16:35",
+        "horse": "Count Of Vendome",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Beverley",
+        "time": "12:40",
+        "horse": "Celestra",
+        "sp": "1/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Beverley",
+        "time": "13:15",
+        "horse": "Princesse D'orange",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Beverley",
+        "time": "13:50",
+        "horse": "Lady Blanche",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Beverley",
+        "time": "14:25",
+        "horse": "Corolla Point",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Beverley",
+        "time": "15:00",
+        "horse": "Charging Thunder",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Beverley",
+        "time": "15:35",
+        "horse": "Lyrical Song",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Beverley",
+        "time": "16:10",
+        "horse": "Wondrous Light",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Beverley",
+        "time": "16:45",
+        "horse": "Sea Master",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Southwell",
+        "time": "16:57",
+        "horse": "Invitorio",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Southwell",
+        "time": "17:30",
+        "horse": "Shipshape",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:00",
+        "horse": "Penny Time",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Southwell",
+        "time": "18:30",
+        "horse": "Enpassant",
+        "sp": "10/1",
+        "won": true,
+        "pnl": 10.0
+      },
+      {
+        "course": "Southwell",
+        "time": "19:00",
+        "horse": "Cool Molly",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Southwell",
+        "time": "19:30",
+        "horse": "Barefoot Beach",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "12:22",
+        "horse": "Eretria",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Leopardstown",
+        "time": "12:57",
+        "horse": "Cannes",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "13:32",
+        "horse": "Abbey Actress",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "14:07",
+        "horse": "The Lion In Winter",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Leopardstown",
+        "time": "14:42",
+        "horse": "Mixed Feelings",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Leopardstown",
+        "time": "15:17",
+        "horse": "Zipster",
+        "sp": "11/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "15:52",
+        "horse": "Goal Exceeded",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Leopardstown",
+        "time": "16:27",
+        "horse": "Methgal",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      }
+    ],
+    "2026-04-16": [
+      {
+        "course": "Newmarket",
+        "time": "12:50",
+        "horse": "Sovereign Spell",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "13:25",
+        "horse": "Portcullis",
+        "sp": "7/1",
+        "won": true,
+        "pnl": 7.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:00",
+        "horse": "Quinault",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newmarket",
+        "time": "14:35",
+        "horse": "Oxagon",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:10",
+        "horse": "Hassaleh",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Newmarket",
+        "time": "15:45",
+        "horse": "Maho Bay",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Newmarket",
+        "time": "16:20",
+        "horse": "Royal Velvet",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Ripon",
+        "time": "13:00",
+        "horse": "The Untamed",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Ripon",
+        "time": "13:35",
+        "horse": "Urchin",
+        "sp": "4/9",
+        "won": true,
+        "pnl": 0.4444
+      },
+      {
+        "course": "Ripon",
+        "time": "14:10",
+        "horse": "Empress Olivia",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Ripon",
+        "time": "14:45",
+        "horse": "Wild Clary",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ripon",
+        "time": "15:16",
+        "horse": "Spoken Truth",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Ripon",
+        "time": "15:52",
+        "horse": "Domination",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Ripon",
+        "time": "16:25",
+        "horse": "On The River",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "15:57",
+        "horse": "Maestro Du Mesnil",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "16:30",
+        "horse": "Crystal Days",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "17:00",
+        "horse": "Coastguard Station",
+        "sp": "8/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "17:30",
+        "horse": "Block Rockin Beats",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Hereford",
+        "time": "18:00",
+        "horse": "Wild Goose",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Hereford",
+        "time": "18:30",
+        "horse": "My Mate Aj",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Limerick",
+        "time": "12:05",
+        "horse": "Fly Away Home",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Limerick",
+        "time": "12:35",
+        "horse": "Collaborative",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "13:10",
+        "horse": "King's Bucks",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "13:45",
+        "horse": "Sense Of Occasion",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "14:20",
+        "horse": "Wild Wild Wind",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "14:55",
+        "horse": "Let Him B",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Limerick",
+        "time": "15:30",
+        "horse": "Opposite Ends",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Limerick",
+        "time": "16:05",
+        "horse": "Sparkling Wit",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      }
+    ],
+    "2026-04-17": [
+      {
+        "course": "Newbury",
+        "time": "12:57",
+        "horse": "Jaan Ki Tukri",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "13:32",
+        "horse": "Synchronicity",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Newbury",
+        "time": "14:07",
+        "horse": "I'm The One",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "14:42",
+        "horse": "Maltese Cross",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Newbury",
+        "time": "15:20",
+        "horse": "Blazeon Five",
+        "sp": "11/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "15:55",
+        "horse": "Colori Forever",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "16:25",
+        "horse": "Addison Grey",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "13:08",
+        "horse": "Travel Agent",
+        "sp": "6/4",
+        "won": true,
+        "pnl": 1.5
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "13:43",
+        "horse": "Afton Down",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "14:18",
+        "horse": "Baileys Khelstar",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "14:53",
+        "horse": "Gold Star Hero",
+        "sp": "8/13",
+        "won": true,
+        "pnl": 0.6154
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "15:25",
+        "horse": "Law Court",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:05",
+        "horse": "Tryst",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "16:35",
+        "horse": "Port Noir",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Wolverhampton",
+        "time": "17:05",
+        "horse": "Rb Yas Sir (A)",
+        "sp": "1/3",
+        "won": true,
+        "pnl": 0.3333
+      },
+      {
+        "course": "Bath",
+        "time": "15:15",
+        "horse": "No More Bolero",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Bath",
+        "time": "15:50",
+        "horse": "Ziggy Starshine",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Bath",
+        "time": "16:20",
+        "horse": "Justcallmepete",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Bath",
+        "time": "16:52",
+        "horse": "Starmade",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bath",
+        "time": "17:22",
+        "horse": "Ourbren",
+        "sp": "1/5",
+        "won": true,
+        "pnl": 0.2
+      },
+      {
+        "course": "Bath",
+        "time": "17:52",
+        "horse": "Armstrong",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bath",
+        "time": "18:22",
+        "horse": "Galaxy Wonder",
+        "sp": "5/6",
+        "won": true,
+        "pnl": 0.8333
+      },
+      {
+        "course": "Bath",
+        "time": "18:52",
+        "horse": "Eutropia",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Exeter",
+        "time": "16:10",
+        "horse": "Our Guide",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Exeter",
+        "time": "16:40",
+        "horse": "Mr Jukebox",
+        "sp": "4/1",
+        "won": true,
+        "pnl": 4.0
+      },
+      {
+        "course": "Exeter",
+        "time": "17:10",
+        "horse": "Square Du Roule",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Exeter",
+        "time": "17:40",
+        "horse": "Got A Dream",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Exeter",
+        "time": "18:10",
+        "horse": "Prairie Queen",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Exeter",
+        "time": "18:40",
+        "horse": "Dunstall Star",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      }
+    ],
+    "2026-04-18": [
+      {
+        "course": "Newbury",
+        "time": "12:25",
+        "horse": "Touleen",
+        "sp": "5/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "13:00",
+        "horse": "Albert Einstein",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "13:35",
+        "horse": "Al Aasy",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "14:10",
+        "horse": "Back In Black",
+        "sp": "6/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "14:45",
+        "horse": "Lighting Thunder",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "15:20",
+        "horse": "Water To Wine",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Newbury",
+        "time": "15:55",
+        "horse": "Valedictory",
+        "sp": "5/6",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "12:37",
+        "horse": "Niewiadoma",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "13:12",
+        "horse": "Weffaag",
+        "sp": "10/11",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "13:47",
+        "horse": "Stirrup Cup",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "14:23",
+        "horse": "Murashah",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Thirsk",
+        "time": "14:58",
+        "horse": "Mudamer",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "15:32",
+        "horse": "Nightsinwhitesatin",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Thirsk",
+        "time": "16:07",
+        "horse": "Simplify",
+        "sp": "11/4",
+        "won": true,
+        "pnl": 2.75
+      },
+      {
+        "course": "Thirsk",
+        "time": "16:40",
+        "horse": "Wee Mary",
+        "sp": "17/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "15:05",
+        "horse": "Botagoz",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "15:37",
+        "horse": "Bintaryana",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Nottingham",
+        "time": "16:12",
+        "horse": "Takincareofbizness",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "16:45",
+        "horse": "Papa Don't Preach",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "17:15",
+        "horse": "Commander Of Life",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "17:45",
+        "horse": "Caph Star",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Nottingham",
+        "time": "18:15",
+        "horse": "Sceptic",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Nottingham",
+        "time": "18:45",
+        "horse": "Desiderata",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Bellewstown",
+        "time": "13:05",
+        "horse": "Ole Ole",
+        "sp": "1/3",
+        "won": true,
+        "pnl": 0.3333
+      },
+      {
+        "course": "Bellewstown",
+        "time": "13:40",
+        "horse": "Two Pair",
+        "sp": "15/2",
+        "won": true,
+        "pnl": 7.5
+      },
+      {
+        "course": "Bellewstown",
+        "time": "14:15",
+        "horse": "Fiver Friday",
+        "sp": "10/11",
+        "won": true,
+        "pnl": 0.9091
+      },
+      {
+        "course": "Bellewstown",
+        "time": "14:50",
+        "horse": "Dairy Force",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "15:25",
+        "horse": "Struck Oil",
+        "sp": "5/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "16:00",
+        "horse": "Midleton Rare",
+        "sp": "6/1",
+        "won": true,
+        "pnl": 6.0
+      },
+      {
+        "course": "Bellewstown",
+        "time": "16:35",
+        "horse": "Gillane",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      }
+    ],
+    "2026-04-19": [
+      {
+        "course": "Stratford",
+        "time": "12:58",
+        "horse": "Hornica",
+        "sp": "11/10",
+        "won": true,
+        "pnl": 1.1
+      },
+      {
+        "course": "Stratford",
+        "time": "13:33",
+        "horse": "Juggernaut",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Stratford",
+        "time": "14:08",
+        "horse": "Granny Hawkins",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Stratford",
+        "time": "14:43",
+        "horse": "Yes And Yes",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Stratford",
+        "time": "15:18",
+        "horse": "Three Pikes",
+        "sp": "13/2",
+        "won": true,
+        "pnl": 6.5
+      },
+      {
+        "course": "Plumpton",
+        "time": "13:17",
+        "horse": "Line Of Descent",
+        "sp": "4/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "13:52",
+        "horse": "Ballyeaston",
+        "sp": "2/7",
+        "won": true,
+        "pnl": 0.2857
+      },
+      {
+        "course": "Plumpton",
+        "time": "14:27",
+        "horse": "Tranquil Sea",
+        "sp": "7/2",
+        "won": true,
+        "pnl": 3.5
+      },
+      {
+        "course": "Plumpton",
+        "time": "15:02",
+        "horse": "Sea Invasion",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Plumpton",
+        "time": "15:37",
+        "horse": "Market House",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Plumpton",
+        "time": "16:12",
+        "horse": "Hecouldbetheone",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Plumpton",
+        "time": "16:47",
+        "horse": "Posh Chick",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "12:15",
+        "horse": "Carry The Flag",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "12:50",
+        "horse": "Stag Night",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Curragh",
+        "time": "13:25",
+        "horse": "Great Barrier Reef",
+        "sp": "4/9",
+        "won": true,
+        "pnl": 0.4444
+      },
+      {
+        "course": "Curragh",
+        "time": "14:00",
+        "horse": "Alnofoor",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "14:35",
+        "horse": "Beset",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "15:10",
+        "horse": "Starman Tom",
+        "sp": "13/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "15:45",
+        "horse": "Red Charlie",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Curragh",
+        "time": "16:20",
+        "horse": "Dreoilin",
+        "sp": "9/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "13:08",
+        "horse": "Nirisque",
+        "sp": "15/8",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "13:43",
+        "horse": "Polepatrick",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Tramore",
+        "time": "14:18",
+        "horse": "Dont Tell Jack",
+        "sp": "7/4",
+        "won": true,
+        "pnl": 1.75
+      },
+      {
+        "course": "Tramore",
+        "time": "14:53",
+        "horse": "Quietrunsthedon",
+        "sp": "7/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "15:28",
+        "horse": "Nettuno Italia",
+        "sp": "9/4",
+        "won": true,
+        "pnl": 2.25
+      },
+      {
+        "course": "Tramore",
+        "time": "16:00",
+        "horse": "Torquay Road",
+        "sp": "5/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "16:30",
+        "horse": "Spanish Maid",
+        "sp": "1/1",
+        "won": true,
+        "pnl": 1.0
+      }
+    ],
+    "2026-04-20": [
+      {
+        "course": "Redcar",
+        "time": "13:12",
+        "horse": "Vollering",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Redcar",
+        "time": "13:42",
+        "horse": "Worlington",
+        "sp": "1/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Redcar",
+        "time": "14:12",
+        "horse": "Perfidia",
+        "sp": "10/3",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Redcar",
+        "time": "14:42",
+        "horse": "Skipper",
+        "sp": "10/3",
+        "won": true,
+        "pnl": 3.3333
+      },
+      {
+        "course": "Redcar",
+        "time": "15:50",
+        "horse": "Mafting",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Redcar",
+        "time": "16:20",
+        "horse": "Watchdog",
+        "sp": "2/1",
+        "won": true,
+        "pnl": 2.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "13:21",
+        "horse": "No Knee Never",
+        "sp": "5/2",
+        "won": true,
+        "pnl": 2.5
+      },
+      {
+        "course": "Lingfield",
+        "time": "13:51",
+        "horse": "Dyrholaey",
+        "sp": "3/1",
+        "won": true,
+        "pnl": 3.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:21",
+        "horse": "Rose Cotton",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "14:51",
+        "horse": "Golden Brown",
+        "sp": "4/9",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:25",
+        "horse": "Archer's Grace",
+        "sp": "5/6",
+        "won": true,
+        "pnl": 0.8333
+      },
+      {
+        "course": "Lingfield",
+        "time": "15:55",
+        "horse": "Magna",
+        "sp": "11/8",
+        "won": true,
+        "pnl": 1.375
+      },
+      {
+        "course": "Lingfield",
+        "time": "16:25",
+        "horse": "Harlington",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "16:30",
+        "horse": "Asadjumeirah",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:00",
+        "horse": "Patrol",
+        "sp": "9/4",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "17:30",
+        "horse": "Bintaziza",
+        "sp": "15/8",
+        "won": true,
+        "pnl": 1.875
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:00",
+        "horse": "Gouken",
+        "sp": "5/4",
+        "won": true,
+        "pnl": 1.25
+      },
+      {
+        "course": "Newcastle",
+        "time": "18:30",
+        "horse": "Nana's Boy George",
+        "sp": "7/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:00",
+        "horse": "Lord Capulet",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Newcastle",
+        "time": "19:30",
+        "horse": "Esque Elegance",
+        "sp": "17/2",
+        "won": true,
+        "pnl": 8.5
+      },
+      {
+        "course": "Tramore",
+        "time": "15:10",
+        "horse": "You Done Well",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "15:42",
+        "horse": "Crooked Path",
+        "sp": "8/11",
+        "won": true,
+        "pnl": 0.7273
+      },
+      {
+        "course": "Tramore",
+        "time": "16:12",
+        "horse": "Time Is A Thief",
+        "sp": "13/8",
+        "won": true,
+        "pnl": 1.625
+      },
+      {
+        "course": "Tramore",
+        "time": "16:42",
+        "horse": "Kimy",
+        "sp": "13/2",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "17:12",
+        "horse": "Might Be The One",
+        "sp": "3/1",
+        "won": false,
+        "pnl": -1.0
+      },
+      {
+        "course": "Tramore",
+        "time": "17:42",
+        "horse": "Ira Hayes",
+        "sp": "9/2",
+        "won": true,
+        "pnl": 4.5
+      },
+      {
+        "course": "Tramore",
+        "time": "18:12",
+        "horse": "Lake Chad",
+        "sp": "9/1",
+        "won": true,
+        "pnl": 9.0
+      },
+      {
+        "course": "Tramore",
+        "time": "18:42",
+        "horse": "I Walked The Line",
+        "sp": "4/11",
+        "won": true,
+        "pnl": 0.3636
+      }
+    ]
+  }
+}

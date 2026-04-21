@@ -1,0 +1,938 @@
+=================================================================
+  RACING ENGINE — 28-DAY HISTORICAL BACKTEST REPORT
+  Period: 2026-03-24 to 2026-04-20
+=================================================================
+
+METHOD
+  Selection = shortest SP runner in each race (market favourite proxy)
+  Level stakes: £1 per bet
+  SP = actual Starting Price
+  UK + Ireland races only
+
+  Total UK/IRE races fetched : 826
+  Races with valid SP data   : 826
+
+-----------------------------------------------------------------
+  SINGLES  (1 x £1 bet per race)
+-----------------------------------------------------------------
+  Bets placed  : 826
+  Winners      : 424
+  Hit rate     : 51.3%
+  Total P&L    : £+761.45
+  ROI          : +92.2%
+
+-----------------------------------------------------------------
+  DOUBLES  (all same-day pairs, £1 each)
+-----------------------------------------------------------------
+  Bets placed  : 12937
+  Winners      : 3349
+  Hit rate     : 25.9%
+  Total P&L    : £+32807.87
+  ROI          : +253.6%
+
+-----------------------------------------------------------------
+  TREBLES  (all same-day 3-way combos, £1 each)
+-----------------------------------------------------------------
+  Bets placed  : 141090
+  Winners      : 17995
+  Hit rate     : 12.8%
+  Total P&L    : £+751591.70
+  ROI          : +532.7%
+
+-----------------------------------------------------------------
+  LUCKY 15  (all 4-selection combos, £15 ticket each)
+-----------------------------------------------------------------
+  Tickets placed    : 1960
+  Profitable tickets: 1279
+  Total P&L         : £+136224.14
+  ROI               : +463.3%
+
+-----------------------------------------------------------------
+  DAILY SINGLES BREAKDOWN
+-----------------------------------------------------------------
+
+  2026-03-24  |  21 bets  |  14 wins  |  P&L £+32.85
+    14:15    Taunton                 Falls Of Acharn               SP     5/6  WON   £+0.83
+    14:45    Taunton                 Newmill Getaway               SP    11/4  LOST  £-1.00
+    15:15    Taunton                 Victory Shout                 SP    13/2  WON   £+6.50
+    15:45    Taunton                 Ede'iffs Rock                 SP    11/4  WON   £+2.75
+    16:15    Taunton                 Khafre                        SP     7/4  WON   £+1.75
+    16:45    Taunton                 Bobbi's Beauty                SP     5/2  WON   £+2.50
+    17:15    Taunton                 Arms Park                     SP     4/1  WON   £+4.00
+    14:00    Southwell               Smurfette                     SP     7/4  LOST  £-1.00
+    14:30    Southwell               Shadowfax Of Rohan            SP     1/1  WON   £+1.00
+    15:00    Southwell               Scott's Legacy                SP    11/2  WON   £+5.50
+    15:30    Southwell               Peckforton Hills              SP     5/4  LOST  £-1.00
+    16:00    Southwell               Hillberry Hill                SP     4/6  WON   £+0.67
+    16:30    Southwell               Codetalker                    SP     6/1  WON   £+6.00
+    17:00    Southwell               Cher Monsieur                 SP    11/4  LOST  £-1.00
+    16:23    Wolverhampton           Quick Turn                    SP     9/4  WON   £+2.25
+    16:55    Wolverhampton           Sorted                        SP     5/4  LOST  £-1.00
+    17:30    Wolverhampton           Kento                         SP    11/4  WON   £+2.75
+    18:30    Wolverhampton           Autumn Angel                  SP     4/1  LOST  £-1.00
+    19:00    Wolverhampton           Dr Ali                        SP     9/4  WON   £+2.25
+    19:30    Wolverhampton           American Bay                  SP     2/1  LOST  £-1.00
+    20:30    Wolverhampton           Farasi Lane                   SP   11/10  WON   £+1.10
+
+  2026-03-25  |  30 bets  |  12 wins  |  P&L £+7.69
+    17:00    Kempton                 Rye                           SP    10/3  LOST  £-1.00
+    17:30    Kempton                 Timely Affair                 SP   11/10  LOST  £-1.00
+    18:00    Kempton                 Volendam                      SP     1/1  LOST  £-1.00
+    18:30    Kempton                 Enemy Agent                   SP    15/8  WON   £+1.88
+    19:00    Kempton                 Blues And Royals              SP     3/1  WON   £+3.00
+    19:30    Kempton                 Constitution Hill             SP     1/7  WON   £+0.14
+    20:00    Kempton                 Knight Templar                SP    11/8  LOST  £-1.00
+    20:30    Kempton                 Mr Ubiquitous                 SP     3/1  WON   £+3.00
+    14:30    Hereford                Line Of Descent               SP     9/2  LOST  £-1.00
+    15:00    Hereford                Chestnut Pete                 SP    15/8  LOST  £-1.00
+    15:30    Hereford                Kernie D'airy                 SP   11/10  LOST  £-1.00
+    16:00    Hereford                Best Night                    SP    15/8  LOST  £-1.00
+    16:30    Hereford                Miss Carbo                    SP    11/4  WON   £+2.75
+    17:05    Hereford                One Knight                    SP     4/5  WON   £+0.80
+    14:11    Hexham                  Maiori                        SP    11/4  WON   £+2.75
+    14:41    Hexham                  Scottish King                 SP     2/1  WON   £+2.00
+    15:11    Hexham                  He's Bresilian                SP     4/1  LOST  £-1.00
+    15:41    Hexham                  Planned Paradise              SP     7/2  WON   £+3.50
+    16:11    Hexham                  Another High Five             SP     9/2  LOST  £-1.00
+    16:41    Hexham                  Big John Wayne                SP    15/8  WON   £+1.88
+    17:13    Hexham                  Emiko                         SP     6/4  LOST  £-1.00
+    13:52    Lingfield               Global Warning                SP     5/2  WON   £+2.50
+    14:22    Lingfield               Tilsworth Max                 SP    13/2  LOST  £-1.00
+    14:52    Lingfield               Tortured Soul                 SP    11/4  LOST  £-1.00
+    15:22    Lingfield               Space Bear                    SP     7/2  LOST  £-1.00
+    15:52    Lingfield               Beaune                        SP    13/8  LOST  £-1.00
+    16:22    Lingfield               Saachi                        SP     5/4  LOST  £-1.00
+    16:52    Lingfield               Profit Street                 SP     6/5  LOST  £-1.00
+    17:22    Lingfield               Westport                      SP     6/4  WON   £+1.50
+    17:52    Lingfield               Desiderata                    SP     9/4  LOST  £-1.00
+
+  2026-03-26  |  26 bets  |  14 wins  |  P&L £+28.75
+    14:58    Warwick                 Getaway Sam                   SP     9/4  LOST  £-1.00
+    15:28    Warwick                 El Rojo Grande                SP     3/1  WON   £+3.00
+    15:58    Warwick                 Aj's Diamond                  SP   11/10  WON   £+1.10
+    16:30    Warwick                 Get Up Mush                   SP     3/1  LOST  £-1.00
+    17:00    Warwick                 Ivor Bear                     SP     2/1  LOST  £-1.00
+    14:07    Southwell               Enter Sandman                 SP     2/1  LOST  £-1.00
+    15:07    Southwell               Spirit Of Bowland             SP     5/2  WON   £+2.50
+    15:37    Southwell               Crest of Fire                 SP     2/5  WON   £+0.40
+    16:07    Southwell               Fickle Mcselfish              SP     7/2  LOST  £-1.00
+    16:37    Southwell               Riley Rocks                   SP     6/1  WON   £+6.00
+    17:07    Southwell               Insuspense                    SP    11/4  LOST  £-1.00
+    17:30    Chelmsford City         Moscow Power                  SP   10/11  WON   £+0.91
+    18:00    Chelmsford City         Combustion                    SP    11/4  LOST  £-1.00
+    18:30    Chelmsford City         Go Lockers Go                 SP    10/3  WON   £+3.33
+    19:00    Chelmsford City         Take The Boat                 SP     3/1  LOST  £-1.00
+    19:30    Chelmsford City         Skellig Isle                  SP    12/1  WON   £+12.00
+    20:00    Chelmsford City         Caragio                       SP     2/1  LOST  £-1.00
+    20:30    Chelmsford City         Engross                       SP     6/5  WON   £+1.20
+    14:42    Clonmel                 Kilbarry Saint                SP     6/4  WON   £+1.50
+    15:12    Clonmel                 Youlita                       SP     7/5  WON   £+1.40
+    15:42    Clonmel                 Brown Boots                   SP     5/2  LOST  £-1.00
+    16:12    Clonmel                 Boedic                        SP   10/11  WON   £+0.91
+    16:42    Clonmel                 Tangara Bay                   SP     3/1  WON   £+3.00
+    17:12    Clonmel                 Courtbrack Boy                SP     9/4  LOST  £-1.00
+    17:42    Clonmel                 Potters Pal                   SP     7/2  WON   £+3.50
+    18:12    Clonmel                 Scarecrow                     SP     2/1  LOST  £-1.00
+
+  2026-03-27  |  35 bets  |  23 wins  |  P&L £+57.92
+    14:20    Wetherby                Pioneer Pete                  SP   10/11  WON   £+0.91
+    14:50    Wetherby                Slaney Opera                  SP     7/2  LOST  £-1.00
+    15:20    Wetherby                Daylatedollarshort            SP     9/4  WON   £+2.25
+    15:50    Wetherby                Singapore Trip                SP     5/2  WON   £+2.50
+    16:20    Wetherby                Kent De Thaix                 SP     4/1  WON   £+4.00
+    16:50    Wetherby                Yummy                         SP    11/8  WON   £+1.38
+    17:22    Wetherby                Matador St Georges            SP    8/13  WON   £+0.62
+    15:00    Fontwell                Motazzen                      SP    11/5  WON   £+2.20
+    15:30    Fontwell                Daring Plan                   SP    10/3  LOST  £-1.00
+    16:00    Fontwell                Unknown Entity                SP     4/9  LOST  £-1.00
+    16:30    Fontwell                Alright Dai                   SP     5/1  LOST  £-1.00
+    17:05    Fontwell                Bridge                        SP     9/4  WON   £+2.25
+    14:12    Lingfield               Pleasant Man                  SP    10/3  LOST  £-1.00
+    14:42    Lingfield               Marra Donna                   SP    10/3  LOST  £-1.00
+    15:12    Lingfield               One More                      SP    13/8  WON   £+1.62
+    15:42    Lingfield               Mighty Vega                   SP    11/2  WON   £+5.50
+    16:12    Lingfield               Montague Menace               SP     6/4  WON   £+1.50
+    16:42    Lingfield               Youarenotforgiven             SP     5/2  WON   £+2.50
+    17:17    Lingfield               The Craftymaster              SP     6/1  WON   £+6.00
+    16:25    Newcastle               Sea Legend                    SP     9/2  WON   £+4.50
+    17:00    Newcastle               Jamaican Storm                SP     4/1  WON   £+4.00
+    17:30    Newcastle               Anthropologist                SP    15/2  WON   £+7.50
+    18:00    Newcastle               Yorkshire Glory               SP     6/4  WON   £+1.50
+    18:30    Newcastle               Teardrops                     SP     5/1  LOST  £-1.00
+    19:00    Newcastle               Power Fizz                    SP     2/1  WON   £+2.00
+    19:30    Newcastle               Saytarr                       SP     2/1  WON   £+2.00
+    20:00    Newcastle               Master Richard                SP    17/2  LOST  £-1.00
+    20:30    Newcastle               Station X                     SP     3/1  LOST  £-1.00
+    17:12    Dundalk                 Benavente                     SP    10/1  WON   £+10.00
+    17:45    Dundalk                 Bishopton                     SP     7/2  WON   £+3.50
+    18:15    Dundalk                 Sakakawea                     SP     3/1  LOST  £-1.00
+    18:45    Dundalk                 Deluca Chop                   SP     6/1  LOST  £-1.00
+    19:15    Dundalk                 Maria Quiteria                SP     4/9  WON   £+0.44
+    19:45    Dundalk                 Gaiety Girl                   SP     5/4  WON   £+1.25
+    20:15    Dundalk                 Storm Eric                    SP     2/1  LOST  £-1.00
+
+  2026-03-28  |  45 bets  |  20 wins  |  P&L £+27.81
+    13:20    Doncaster               Blixen Force                  SP     7/2  LOST  £-1.00
+    13:50    Doncaster               Jasour                        SP     6/1  LOST  £-1.00
+    14:25    Doncaster               Mezcala                       SP    11/2  WON   £+5.50
+    14:57    Doncaster               Docklands                     SP    8/11  WON   £+0.73
+    15:32    Doncaster               Urban Lion                    SP     9/1  WON   £+9.00
+    16:05    Doncaster               Turty Tree                    SP   10/11  LOST  £-1.00
+    16:40    Doncaster               Mao Shang Wong                SP     7/2  WON   £+3.50
+    17:15    Doncaster               Golspie                       SP     7/1  LOST  £-1.00
+    13:35    Kempton                 Defence Minister              SP     9/4  WON   £+2.25
+    14:08    Kempton                 Blindedbythelights            SP     9/4  LOST  £-1.00
+    14:42    Kempton                 Respond                       SP     9/4  LOST  £-1.00
+    15:13    Kempton                 Cathedral                     SP    11/8  LOST  £-1.00
+    15:52    Kempton                 Ellusive Butterfly            SP     4/1  LOST  £-1.00
+    16:28    Kempton                 King's Trail                  SP     4/7  WON   £+0.57
+    17:03    Kempton                 Tuco Salamanca                SP     7/2  WON   £+3.50
+    13:40    Stratford               Watamu                        SP     1/6  WON   £+0.17
+    14:15    Stratford               Hecouldbetheone               SP     9/4  LOST  £-1.00
+    14:47    Stratford               Classic King                  SP    13/8  LOST  £-1.00
+    15:17    Stratford               Lord Of The Glance            SP    11/4  WON   £+2.75
+    15:57    Stratford               Harbour Light                 SP     1/1  WON   £+1.00
+    16:33    Stratford               Regal Renaissance             SP     5/2  LOST  £-1.00
+    17:08    Stratford               Morning Mayhem                SP     9/4  LOST  £-1.00
+    13:30    Uttoxeter               Saccary                       SP     9/4  LOST  £-1.00
+    14:00    Uttoxeter               Inishcorker                   SP     5/4  LOST  £-1.00
+    14:35    Uttoxeter               Crazierthandaisy              SP     3/1  LOST  £-1.00
+    15:08    Uttoxeter               As Legends Have It            SP     9/4  WON   £+2.25
+    15:45    Uttoxeter               Largy Force                   SP     5/2  LOST  £-1.00
+    16:20    Uttoxeter               Sunray Shadow                 SP     5/1  LOST  £-1.00
+    16:55    Uttoxeter               Baron Du Brizais              SP   11/10  LOST  £-1.00
+    17:00    Southwell               Ancient State                 SP    16/5  WON   £+3.20
+    17:30    Southwell               Gladiadora                    SP     6/1  WON   £+6.00
+    18:00    Southwell               Tamashal                      SP     9/4  WON   £+2.25
+    18:30    Southwell               Aqpan                         SP    1/10  WON   £+0.10
+    19:00    Southwell               Golden Muse                   SP     5/4  WON   £+1.25
+    19:30    Southwell               Dodging The Bullet            SP     3/1  LOST  £-1.00
+    20:00    Southwell               Jack Andrea                   SP    10/3  WON   £+3.33
+    20:30    Southwell               Roaring Ralph                 SP     5/6  WON   £+0.83
+    13:25    Curragh                 Slaney View                   SP    11/4  LOST  £-1.00
+    13:55    Curragh                 Stag Night                    SP     9/2  LOST  £-1.00
+    14:30    Curragh                 Factual Fact                  SP    10/3  LOST  £-1.00
+    15:05    Curragh                 East Hampton                  SP     9/1  LOST  £-1.00
+    15:40    Curragh                 Lewis Carroll                 SP     3/1  WON   £+3.00
+    16:15    Curragh                 Electric Beauty               SP     7/2  LOST  £-1.00
+    16:50    Curragh                 Shaihaan                      SP    13/8  WON   £+1.62
+    17:25    Curragh                 Mickey The Steel              SP    15/2  LOST  £-1.00
+
+  2026-03-29  |  13 bets  |  5 wins  |  P&L £+6.08
+    12:47    Doncaster               Rising Force                  SP    11/2  WON   £+5.50
+    13:20    Doncaster               King Of Earth                 SP     6/4  LOST  £-1.00
+    13:55    Doncaster               Jimmy Speaking                SP    10/3  WON   £+3.33
+    14:30    Doncaster               Miletus                       SP     6/1  LOST  £-1.00
+    15:05    Doncaster               Atherstone Warrior            SP    10/3  LOST  £-1.00
+    15:40    Doncaster               Arc Ole Ole                   SP     6/4  WON   £+1.50
+    16:15    Doncaster               Fine Interview                SP    15/8  WON   £+1.88
+    16:50    Doncaster               Juan Les Pins                 SP    10/1  LOST  £-1.00
+    13:30    Ascot                   Sherborne                     SP    15/8  WON   £+1.88
+    14:05    Ascot                   Gallivanted                   SP     5/1  LOST  £-1.00
+    14:40    Ascot                   Authoceltic                   SP    11/4  LOST  £-1.00
+    15:15    Ascot                   Hard Dealt                    SP     3/1  LOST  £-1.00
+    16:25    Ascot                   Royal Way                     SP    10/3  LOST  £-1.00
+
+  2026-03-30  |  27 bets  |  11 wins  |  P&L £+12.05
+    13:27    Ludlow                  Jimbo Sport                   SP     2/1  WON   £+2.00
+    13:57    Ludlow                  Annie Express                 SP     6/4  WON   £+1.50
+    14:27    Ludlow                  Jackomy                       SP   10/11  WON   £+0.91
+    14:57    Ludlow                  Your Darling                  SP     9/4  WON   £+2.25
+    15:27    Ludlow                  High Fibre                    SP   11/10  LOST  £-1.00
+    15:57    Ludlow                  Jet Plane                     SP     1/1  LOST  £-1.00
+    13:10    Kempton                 Barefoot Beach                SP     5/6  LOST  £-1.00
+    13:40    Kempton                 Escape Plan                   SP     3/1  WON   £+3.00
+    14:10    Kempton                 Plaid                         SP     6/5  LOST  £-1.00
+    14:40    Kempton                 Shushi                        SP   10/11  LOST  £-1.00
+    15:10    Kempton                 Tattie Bogle                  SP     7/2  LOST  £-1.00
+    15:40    Kempton                 Quick Quasar                  SP    10/3  WON   £+3.33
+    16:10    Kempton                 Montu                         SP     6/1  LOST  £-1.00
+    16:30    Wolverhampton           Instant Bond                  SP    13/8  LOST  £-1.00
+    17:00    Wolverhampton           Sovereign Spell               SP    8/11  WON   £+0.73
+    17:30    Wolverhampton           Arcturus Flame                SP   85/40  LOST  £-1.00
+    18:00    Wolverhampton           Lux Aeterna                   SP    11/2  WON   £+5.50
+    18:30    Wolverhampton           Nad Alshiba Green             SP    11/8  LOST  £-1.00
+    19:00    Wolverhampton           Alpine Sierra                 SP     2/1  LOST  £-1.00
+    19:30    Wolverhampton           Captain Pickles               SP    10/3  WON   £+3.33
+    13:18    Navan                   Happy Henry                   SP     7/2  LOST  £-1.00
+    13:48    Navan                   Shaftesbury Avenue            SP     2/1  WON   £+2.00
+    14:18    Navan                   Galileo Dame                  SP     3/1  LOST  £-1.00
+    14:48    Navan                   Bhean Saibhre                 SP     3/1  LOST  £-1.00
+    15:18    Navan                   Karrygrant                    SP     5/1  LOST  £-1.00
+    15:48    Navan                   Calamint                      SP     4/1  LOST  £-1.00
+    16:18    Navan                   Servare                       SP     7/2  WON   £+3.50
+
+  2026-03-31  |  20 bets  |  15 wins  |  P&L £+35.14
+    13:30    Newcastle               Jehol De Thaix                SP     5/2  WON   £+2.50
+    14:00    Newcastle               I C U In My Dreams            SP     6/5  WON   £+1.20
+    14:30    Newcastle               Cahier's Den                  SP     6/4  LOST  £-1.00
+    15:00    Newcastle               Smokeringinthedark            SP     7/4  WON   £+1.75
+    15:30    Newcastle               Ceolwulf                      SP    11/4  WON   £+2.75
+    16:00    Newcastle               Tyson                         SP    8/11  WON   £+0.73
+    16:35    Newcastle               Travis Wheatley               SP    16/5  WON   £+3.20
+    16:30    Wolverhampton           Overbudget                    SP  30/100  LOST  £-1.00
+    17:30    Wolverhampton           Farasi Lane                   SP     5/6  WON   £+0.83
+    18:00    Wolverhampton           Danehill Star                 SP     6/5  WON   £+1.20
+    18:30    Wolverhampton           Kolkata Knight                SP     2/1  LOST  £-1.00
+    19:00    Wolverhampton           Tuba                          SP     2/1  WON   £+2.00
+    19:30    Wolverhampton           A Lott Of Kane                SP     5/4  WON   £+1.25
+    15:10    Limerick                Louie's Folly                 SP     7/4  LOST  £-1.00
+    15:40    Limerick                Beauvallon                    SP     6/4  WON   £+1.50
+    16:10    Limerick                Royal Belief                  SP     6/1  WON   £+6.00
+    16:42    Limerick                Dolly Watkins                 SP    15/2  WON   £+7.50
+    17:12    Limerick                Duffys Hodey                  SP     7/1  WON   £+7.00
+    17:42    Limerick                Marelly                       SP     3/1  LOST  £-1.00
+    18:12    Limerick                Even Tho                      SP    8/11  WON   £+0.73
+
+  2026-04-01  |  33 bets  |  17 wins  |  P&L £+17.50
+    13:20    Wincanton               Grand Vendetta                SP     2/5  LOST  £-1.00
+    13:50    Wincanton               Jukebox King                  SP    11/4  LOST  £-1.00
+    14:20    Wincanton               Broomfields Cave              SP     3/1  WON   £+3.00
+    14:50    Wincanton               Square Du Roule               SP    10/3  WON   £+3.33
+    15:20    Wincanton               Universal Secret              SP     3/1  LOST  £-1.00
+    15:50    Wincanton               Victory Shout                 SP     9/4  LOST  £-1.00
+    16:20    Wincanton               Beau Speed                    SP   11/10  LOST  £-1.00
+    13:40    Sedgefield              Captain Cool                  SP     2/1  LOST  £-1.00
+    14:10    Sedgefield              Realisation                   SP     9/4  LOST  £-1.00
+    14:40    Sedgefield              Clean Getaway                 SP     5/1  WON   £+5.00
+    15:10    Sedgefield              Bright Legend                 SP    8/11  WON   £+0.73
+    15:40    Sedgefield              Cosmic Soul                   SP     1/1  WON   £+1.00
+    16:10    Sedgefield              The Gem State                 SP     4/9  LOST  £-1.00
+    13:30    Southwell               Hell Hound                    SP    11/8  WON   £+1.38
+    14:00    Southwell               Ukantango                     SP     9/4  WON   £+2.25
+    14:30    Southwell               No More Teardrops             SP     5/1  WON   £+5.00
+    15:00    Southwell               Road To Wembley               SP     2/9  WON   £+0.22
+    15:30    Southwell               Passing Pleasure              SP    11/8  LOST  £-1.00
+    16:02    Southwell               Princesse Milania             SP    10/3  LOST  £-1.00
+    16:30    Kempton                 Nanoscience                   SP     6/5  WON   £+1.20
+    17:00    Kempton                 Havana Touch                  SP    13/8  WON   £+1.62
+    17:30    Kempton                 Balzac                        SP     1/1  WON   £+1.00
+    18:00    Kempton                 Lion of Mali                  SP   11/10  LOST  £-1.00
+    18:30    Kempton                 Moment Of Light               SP     6/4  WON   £+1.50
+    19:00    Kempton                 Arry Up                       SP     3/1  WON   £+3.00
+    19:30    Kempton                 True Promise                  SP     3/1  LOST  £-1.00
+    16:15    Dundalk                 An Laochmor                   SP     6/4  WON   £+1.50
+    16:45    Dundalk                 Collective Power              SP    11/2  LOST  £-1.00
+    17:15    Dundalk                 Royal County Glory            SP     4/1  LOST  £-1.00
+    17:45    Dundalk                 Ocean's Breath                SP     4/7  WON   £+0.57
+    18:15    Dundalk                 Kitty Bear                    SP    18/5  LOST  £-1.00
+    18:45    Dundalk                 Emmeleia                      SP     6/5  WON   £+1.20
+    19:15    Dundalk                 Baila Conmigo                 SP     3/1  LOST  £-1.00
+
+  2026-04-02  |  14 bets  |  7 wins  |  P&L £+25.88
+    16:10    Southwell               Romance Spirit                SP    17/2  LOST  £-1.00
+    16:48    Southwell               Musical Touch                 SP     5/2  WON   £+2.50
+    17:18    Southwell               Booziebrunch                  SP     9/2  LOST  £-1.00
+    17:48    Southwell               Little Mi Mi                  SP    15/8  LOST  £-1.00
+    18:18    Southwell               Sporting Light                SP     6/1  WON   £+6.00
+    18:48    Southwell               Haaland                       SP     8/1  WON   £+8.00
+    19:18    Southwell               Hackney Diamonds              SP    11/2  WON   £+5.50
+    15:30    Clonmel                 Dee Capo                      SP    15/8  LOST  £-1.00
+    16:00    Clonmel                 Snow Punt                     SP     9/2  LOST  £-1.00
+    16:30    Clonmel                 Kaiser De Chanay              SP    11/8  WON   £+1.38
+    17:00    Clonmel                 Celtic Alliance               SP     7/1  WON   £+7.00
+    17:30    Clonmel                 Wild Wild Wind                SP    11/4  LOST  £-1.00
+    18:00    Clonmel                 Blue Train                    SP     5/2  WON   £+2.50
+    18:30    Clonmel                 World As One                  SP     5/6  LOST  £-1.00
+
+  2026-04-03  |  22 bets  |  9 wins  |  P&L £+28.12
+    12:15    Newcastle               Padraig Dawn                  SP    18/1  LOST  £-1.00
+    12:50    Newcastle               Al Najashi                    SP     7/2  WON   £+3.50
+    13:25    Newcastle               Stateira                      SP    11/8  WON   £+1.38
+    14:00    Newcastle               The Lost King                 SP     7/2  LOST  £-1.00
+    14:35    Newcastle               Wiltshire                     SP     7/1  WON   £+7.00
+    15:10    Newcastle               Gaucher                       SP     3/1  LOST  £-1.00
+    15:42    Newcastle               Beylerbeyi                    SP     5/2  LOST  £-1.00
+    12:30    Lingfield               Cool Molly                    SP     8/1  WON   £+8.00
+    13:05    Lingfield               Shrimp Shady                  SP    11/4  LOST  £-1.00
+    13:40    Lingfield               Uncle Don                     SP     9/4  LOST  £-1.00
+    14:15    Lingfield               My Fermoy                     SP     4/1  LOST  £-1.00
+    14:50    Lingfield               Angel Hunter                  SP    15/2  WON   £+7.50
+    15:25    Lingfield               Lord Harcourt                 SP     9/4  LOST  £-1.00
+    16:00    Lingfield               Son Of Man                    SP     7/2  WON   £+3.50
+    12:22    Curragh                 Edward Thatch                 SP     1/1  LOST  £-1.00
+    12:57    Curragh                 Staysound Susie               SP    11/4  WON   £+2.75
+    13:32    Curragh                 Chasing Paradise              SP     2/1  WON   £+2.00
+    14:07    Curragh                 Faiyum                        SP     5/6  LOST  £-1.00
+    14:42    Curragh                 Perry Mason                   SP     7/2  LOST  £-1.00
+    15:17    Curragh                 Fiver Friday                  SP    11/2  WON   £+5.50
+    15:52    Curragh                 Atomic City                   SP     3/1  LOST  £-1.00
+    16:27    Curragh                 A Piece Of Heaven             SP    11/2  LOST  £-1.00
+
+  2026-04-04  |  45 bets  |  23 wins  |  P&L £+32.39
+    12:37    Haydock                 First Candidate               SP     1/4  WON   £+0.25
+    13:12    Haydock                 Dance And Glance              SP     4/1  WON   £+4.00
+    13:46    Haydock                 Blue Carpet                   SP     9/4  LOST  £-1.00
+    14:20    Haydock                 Guard Your Dreams             SP    11/4  LOST  £-1.00
+    14:55    Haydock                 Count Adhemar                 SP     3/1  WON   £+3.00
+    15:30    Haydock                 Brookside La                  SP    13/8  LOST  £-1.00
+    16:05    Haydock                 Major Fortune                 SP    13/2  WON   £+6.50
+    11:43    Carlisle                Tap Tap Shamie                SP    2/13  LOST  £-1.00
+    12:13    Carlisle                Loulou Madrik                 SP    11/4  LOST  £-1.00
+    12:48    Carlisle                Jupiter Des Mottes            SP     6/4  WON   £+1.50
+    13:23    Carlisle                Belvedere Bhoy                SP     7/5  WON   £+1.40
+    13:57    Carlisle                Out On Her Own                SP     9/4  LOST  £-1.00
+    14:27    Carlisle                Jamesieconn                   SP   10/11  WON   £+0.91
+    15:05    Carlisle                Moyganny Phil                 SP     7/4  WON   £+1.75
+    14:47    Huntingdon              Is This For Real              SP    11/8  WON   £+1.38
+    15:50    Huntingdon              Kentucky River                SP     1/1  WON   £+1.00
+    16:25    Huntingdon              Icare Grandchamp              SP     9/4  LOST  £-1.00
+    17:00    Huntingdon              Sweeper System                SP     5/1  LOST  £-1.00
+    17:30    Huntingdon              Westbrooke Boy                SP     4/1  LOST  £-1.00
+    13:00    Newton Abbot            Dutch Corner                  SP     6/4  WON   £+1.50
+    13:35    Newton Abbot            Jack Doyen                    SP     5/1  WON   £+5.00
+    14:10    Newton Abbot            Reel Orange                   SP    11/4  WON   £+2.75
+    14:49    Newton Abbot            Scarface                      SP    11/4  WON   £+2.75
+    15:20    Newton Abbot            Call Me Legend                SP     2/1  LOST  £-1.00
+    15:55    Newton Abbot            Guste's Dance                 SP     7/2  LOST  £-1.00
+    16:50    Wolverhampton           Coloane                       SP     2/1  WON   £+2.00
+    17:20    Wolverhampton           Constant Star                 SP    11/8  WON   £+1.38
+    17:55    Wolverhampton           Kirkdale                      SP     9/4  WON   £+2.25
+    18:30    Wolverhampton           Pride Of Donegal              SP    11/8  WON   £+1.38
+    19:00    Wolverhampton           Blue Force                    SP     9/2  LOST  £-1.00
+    19:30    Wolverhampton           Karakula Dancer               SP     6/4  WON   £+1.50
+    13:05    Fairyhouse              Simply Natural                SP     4/1  LOST  £-1.00
+    13:40    Fairyhouse              Kilbarry Saint                SP     3/1  LOST  £-1.00
+    14:15    Fairyhouse              Kings Hill                    SP     9/2  LOST  £-1.00
+    14:50    Fairyhouse              He Can't Dance                SP     3/1  LOST  £-1.00
+    15:25    Fairyhouse              Daydream Nation               SP    10/1  LOST  £-1.00
+    16:00    Fairyhouse              Hello Neighbour               SP    11/2  LOST  £-1.00
+    16:35    Fairyhouse              Wonderful Everyday            SP     5/2  LOST  £-1.00
+    13:20    Cork                    Velozee                       SP    11/4  WON   £+2.75
+    13:54    Cork                    Oh Cecelia                    SP    10/3  WON   £+3.33
+    14:25    Cork                    Cardiff By The Sea            SP    13/8  WON   £+1.62
+    15:02    Cork                    King Cuan                     SP    11/8  LOST  £-1.00
+    15:37    Cork                    Signora                       SP     1/2  LOST  £-1.00
+    16:12    Cork                    Elana Osario                  SP     5/1  LOST  £-1.00
+    16:45    Cork                    Empty Wallet                  SP     9/2  WON   £+4.50
+
+  2026-04-05  |  39 bets  |  20 wins  |  P&L £+45.80
+    12:30    Fairyhouse              Colcannon                     SP     5/2  WON   £+2.50
+    13:05    Fairyhouse              Sheer Raz                     SP     7/1  LOST  £-1.00
+    13:40    Fairyhouse              Koktail Brut                  SP    13/2  WON   £+6.50
+    14:15    Fairyhouse              He's On Fire                  SP     3/1  WON   £+3.00
+    14:50    Fairyhouse              Zanoosh                       SP     9/2  WON   £+4.50
+    15:25    Fairyhouse              Shuffle The Deck              SP     3/1  LOST  £-1.00
+    16:00    Fairyhouse              Kappa Jy Pyke                 SP    11/4  LOST  £-1.00
+    16:30    Fairyhouse              Big Interest                  SP    13/2  LOST  £-1.00
+    13:13    Market Rasen            Tread Carefully               SP   10/11  LOST  £-1.00
+    13:48    Market Rasen            De Deli Counter               SP     5/1  WON   £+5.00
+    14:58    Market Rasen            Kally Des Bruyeres            SP     9/4  WON   £+2.25
+    15:33    Market Rasen            Kalkaroo                      SP     9/5  LOST  £-1.00
+    16:05    Market Rasen            Kildare D'irlande             SP     9/4  WON   £+2.25
+    12:45    Plumpton                Eremenko                      SP     4/9  WON   £+0.44
+    13:55    Plumpton                Goodwin Face                  SP    11/4  LOST  £-1.00
+    15:05    Plumpton                Serious Challenge             SP     7/1  LOST  £-1.00
+    16:10    Plumpton                Washington Singer             SP     4/1  WON   £+4.00
+    13:00    Bath                    Solar Invincible              SP    10/3  WON   £+3.33
+    13:35    Bath                    Dowman                        SP     5/1  LOST  £-1.00
+    14:10    Bath                    Beautiful Diamond             SP    11/4  LOST  £-1.00
+    14:45    Bath                    Twilight Madness              SP    18/5  WON   £+3.60
+    15:20    Bath                    Baltic Fleet                  SP    8/11  LOST  £-1.00
+    15:55    Bath                    Law Supreme                   SP     3/1  WON   £+3.00
+    16:25    Bath                    Volendam                      SP     5/2  WON   £+2.50
+    16:55    Bath                    Scenario                      SP    10/3  WON   £+3.33
+    12:55    Southwell               Fenlander                     SP     9/4  LOST  £-1.00
+    13:31    Southwell               Colori Forever                SP    8/13  WON   £+0.62
+    14:06    Southwell               Back To Me                    SP     8/1  WON   £+8.00
+    14:41    Southwell               City Queen                    SP     3/1  WON   £+3.00
+    15:15    Southwell               Marry The Night               SP     3/1  LOST  £-1.00
+    15:50    Southwell               Pure Moon                     SP     5/4  LOST  £-1.00
+    16:20    Southwell               Jack Andrea                   SP     5/4  WON   £+1.25
+    12:15    Cork                    Mino Des Mottes               SP     4/7  LOST  £-1.00
+    12:50    Cork                    Absurde                       SP     5/6  LOST  £-1.00
+    13:25    Cork                    Tountinna                     SP     5/1  WON   £+5.00
+    14:00    Cork                    Larzac                        SP     9/2  LOST  £-1.00
+    14:35    Cork                    Toor Khov                     SP     4/1  LOST  £-1.00
+    15:45    Cork                    Funiculi Funicula             SP    8/11  WON   £+0.73
+    16:15    Cork                    Gonewild                      SP     7/1  LOST  £-1.00
+
+  2026-04-06  |  47 bets  |  24 wins  |  P&L £+46.56
+    13:05    Fairyhouse              Mart Lane                     SP     8/1  LOST  £-1.00
+    13:40    Fairyhouse              Proactif                      SP     5/4  WON   £+1.25
+    14:15    Fairyhouse              Fierce Handay                 SP    11/2  WON   £+5.50
+    14:50    Fairyhouse              Storm Heart                   SP     9/4  LOST  £-1.00
+    15:20    Fairyhouse              Energumene                    SP     9/4  WON   £+2.25
+    16:00    Fairyhouse              Soldier In Milan              SP     6/1  WON   £+6.00
+    16:40    Fairyhouse              Union Station                 SP    11/2  LOST  £-1.00
+    17:10    Fairyhouse              Charismatic Kid               SP     3/1  WON   £+3.00
+    12:45    Kempton                 Zain Primus                   SP     5/2  WON   £+2.50
+    13:20    Kempton                 Eastern Veil                  SP     4/1  LOST  £-1.00
+    13:55    Kempton                 Gethin                        SP     7/4  WON   £+1.75
+    14:30    Kempton                 Topteam                       SP     9/2  WON   £+4.50
+    15:05    Kempton                 Fleetwater                    SP     2/1  LOST  £-1.00
+    15:40    Kempton                 Mr Baloo                      SP     5/1  LOST  £-1.00
+    16:15    Kempton                 Broadway Act                  SP     5/4  WON   £+1.25
+    16:50    Kempton                 Fleurman                      SP    10/3  LOST  £-1.00
+    13:00    Plumpton                Local Derby                   SP     5/4  WON   £+1.25
+    13:35    Plumpton                Secret Des Dieux              SP     5/2  WON   £+2.50
+    14:10    Plumpton                Loriko                        SP    8/11  LOST  £-1.00
+    14:45    Plumpton                Grand Conqueror               SP    11/4  LOST  £-1.00
+    15:25    Plumpton                Havaila                       SP     7/2  WON   £+3.50
+    15:55    Plumpton                Unjeu Royal                   SP     5/2  WON   £+2.50
+    13:15    Fakenham                Painted Wolf                  SP     7/2  WON   £+3.50
+    13:50    Fakenham                Tralee Girl                   SP     1/4  LOST  £-1.00
+    15:00    Fakenham                Annie Nail                    SP     5/2  WON   £+2.50
+    16:10    Fakenham                Hidden Fortune                SP     5/6  LOST  £-1.00
+    12:35    Hereford                Neon Dream                    SP     4/6  WON   £+0.67
+    13:10    Hereford                Miss Kassiopi                 SP     5/2  WON   £+2.50
+    13:45    Hereford                Lord Chamberlain              SP    13/2  WON   £+6.50
+    14:20    Hereford                The Long Walk                 SP     3/1  LOST  £-1.00
+    15:30    Hereford                Jukebox D'eddy                SP   11/10  LOST  £-1.00
+    16:05    Hereford                Plan De Stan                  SP     3/1  LOST  £-1.00
+    12:55    Wolverhampton           Coloane                       SP   11/10  WON   £+1.10
+    13:30    Wolverhampton           Pershaada                     SP   10/11  LOST  £-1.00
+    14:05    Wolverhampton           Kelly Burn                    SP     1/1  LOST  £-1.00
+    14:40    Wolverhampton           Elements Of Fire              SP    10/3  WON   £+3.33
+    15:15    Wolverhampton           King's Cruiser                SP    15/8  LOST  £-1.00
+    15:50    Wolverhampton           Von Krolock                   SP     9/2  WON   £+4.50
+    16:25    Wolverhampton           Mount Ruapehu                 SP     5/2  LOST  £-1.00
+    16:55    Wolverhampton           Kaaranah                      SP     9/4  WON   £+2.25
+    12:15    Cork                    Oaks Soldier                  SP    13/8  WON   £+1.62
+    12:50    Cork                    Back To Cali                  SP    10/1  LOST  £-1.00
+    13:25    Cork                    River Vale                    SP    10/3  WON   £+3.33
+    14:35    Cork                    Hearts And Spades             SP    13/8  LOST  £-1.00
+    15:10    Cork                    Asian Master                  SP    11/8  LOST  £-1.00
+    15:45    Cork                    Sharp As Glass                SP     4/1  LOST  £-1.00
+    16:20    Cork                    Wilton Mills Trier            SP    13/8  LOST  £-1.00
+
+  2026-04-07  |  21 bets  |  11 wins  |  P&L £+30.08
+    12:57    Pontefract              Invincible Boy                SP     2/1  WON   £+2.00
+    13:27    Pontefract              Arabian Desert                SP     1/8  LOST  £-1.00
+    13:57    Pontefract              Kokanee                       SP     2/1  LOST  £-1.00
+    14:27    Pontefract              Swift Salian                  SP     9/2  LOST  £-1.00
+    14:57    Pontefract              Arklow Lad                    SP    15/2  WON   £+7.50
+    15:27    Pontefract              Lightening Company            SP     3/1  WON   £+3.00
+    16:00    Pontefract              Maynora                       SP     9/2  WON   £+4.50
+    16:35    Pontefract              Get Up Everybody              SP     5/1  LOST  £-1.00
+    13:10    Exeter                  Blue In The West              SP     4/1  WON   £+4.00
+    13:40    Exeter                  Knight Of Magic               SP    10/3  LOST  £-1.00
+    14:10    Exeter                  Western Cross                 SP     1/1  WON   £+1.00
+    14:40    Exeter                  Bannerdown                    SP     3/1  WON   £+3.00
+    15:10    Exeter                  Loki's Mischief               SP     9/4  LOST  £-1.00
+    16:10    Exeter                  Macklin                       SP     1/4  LOST  £-1.00
+    15:55    Southwell               Pickersgill                   SP    11/4  WON   £+2.75
+    16:30    Southwell               Castan                        SP    10/3  WON   £+3.33
+    17:00    Southwell               Gatehouse                     SP     7/2  WON   £+3.50
+    17:30    Southwell               Paranjape                     SP     4/1  LOST  £-1.00
+    18:00    Southwell               Studious                      SP    11/2  WON   £+5.50
+    19:00    Southwell               Gesayed                       SP     5/6  LOST  £-1.00
+    19:30    Southwell               Reginald Charles              SP     7/2  LOST  £-1.00
+
+  2026-04-08  |  35 bets  |  14 wins  |  P&L £+12.15
+    12:17    Nottingham              Infraad                       SP   11/10  LOST  £-1.00
+    12:47    Nottingham              Olympic Charter               SP    11/8  WON   £+1.38
+    13:22    Nottingham              Final Appeal                  SP     5/4  LOST  £-1.00
+    13:57    Nottingham              Albegone                      SP     4/1  LOST  £-1.00
+    14:32    Nottingham              Any Which Way                 SP     3/1  WON   £+3.00
+    15:07    Nottingham              The Sweet Escape              SP     5/1  WON   £+5.00
+    15:40    Nottingham              Del Corso                     SP     4/1  LOST  £-1.00
+    16:10    Nottingham              Cavolo Nero                   SP     5/2  LOST  £-1.00
+    12:38    Catterick               Doralee                       SP     6/1  LOST  £-1.00
+    13:13    Catterick               Liverpool Star                SP     9/2  LOST  £-1.00
+    13:48    Catterick               Jeddaal                       SP     7/4  WON   £+1.75
+    14:23    Catterick               Vince Le Prince               SP    11/4  LOST  £-1.00
+    14:58    Catterick               Kitsune Power                 SP    11/4  LOST  £-1.00
+    15:33    Catterick               Roland Garros                 SP    11/4  WON   £+2.75
+    16:05    Catterick               The Good Biscuit              SP     7/1  LOST  £-1.00
+    16:38    Catterick               Moostar                       SP     7/4  LOST  £-1.00
+    13:30    Fontwell                Hardly Surprising             SP    8/11  WON   £+0.73
+    14:05    Fontwell                Duffry Trixs                  SP    11/4  LOST  £-1.00
+    15:47    Fontwell                Gorcombe Moonshine            SP     7/2  LOST  £-1.00
+    16:17    Fontwell                Frank Stamper                 SP     5/4  LOST  £-1.00
+    16:00    Kempton                 Romantic Symphony             SP  30/100  WON   £+0.30
+    16:30    Kempton                 Go Rimbaud                    SP     6/4  WON   £+1.50
+    17:00    Kempton                 Heraldry                      SP     4/1  WON   £+4.00
+    17:30    Kempton                 Atmosphere                    SP    11/8  LOST  £-1.00
+    18:00    Kempton                 Rastnet                       SP    11/4  LOST  £-1.00
+    18:30    Kempton                 Arry Up                       SP     7/4  WON   £+1.75
+    19:00    Kempton                 Initial Blue                  SP     7/2  WON   £+3.50
+    19:30    Kempton                 Fiddlers Green                SP     5/2  LOST  £-1.00
+    13:05    Gowran Park             Harmani                       SP     3/1  LOST  £-1.00
+    13:40    Gowran Park             Monocle Rocket                SP    11/2  LOST  £-1.00
+    14:15    Gowran Park             Sinmara                       SP     5/4  WON   £+1.25
+    14:50    Gowran Park             Coincidental Glory            SP    18/5  LOST  £-1.00
+    15:25    Gowran Park             Never Loose                   SP     5/1  LOST  £-1.00
+    15:55    Gowran Park             Matt Connor                   SP    11/4  WON   £+2.75
+    16:25    Gowran Park             Light Up The Dark             SP     7/2  WON   £+3.50
+
+  2026-04-09  |  32 bets  |  17 wins  |  P&L £+28.84
+    12:45    Aintree                 Selma De Vary                 SP     9/4  LOST  £-1.00
+    13:20    Aintree                 Koktail Divin                 SP     3/1  WON   £+3.00
+    13:55    Aintree                 Jango Baie                    SP     1/1  WON   £+1.00
+    14:30    Aintree                 Barton Snow                   SP     7/4  WON   £+1.75
+    15:05    Aintree                 Brighterdaysahead             SP    13/8  WON   £+1.62
+    15:40    Aintree                 Sans Bruit                    SP    11/4  LOST  £-1.00
+    16:15    Aintree                 Nan's Choice                  SP     9/2  WON   £+4.50
+    13:32    Taunton                 Minella Yoga                  SP     2/7  WON   £+0.29
+    14:07    Taunton                 Happy Returns                 SP    11/2  LOST  £-1.00
+    14:40    Taunton                 Little Venice                 SP    10/3  LOST  £-1.00
+    15:15    Taunton                 Wicked Thoughts               SP    10/3  WON   £+3.33
+    16:20    Taunton                 Hall Lane                     SP     5/1  LOST  £-1.00
+    16:55    Taunton                 Lost In The Dream             SP     7/2  WON   £+3.50
+    13:07    Southwell               Alfa Duplicate                SP     5/1  LOST  £-1.00
+    13:42    Southwell               Ay Up Duck                    SP    8/13  LOST  £-1.00
+    14:17    Southwell               Fidelius                      SP     9/4  LOST  £-1.00
+    14:47    Southwell               Got The Booty                 SP     5/6  LOST  £-1.00
+    15:25    Southwell               Peaky Blinder                 SP     5/4  WON   £+1.25
+    15:55    Southwell               Tilted Kilt                   SP     2/1  WON   £+2.00
+    16:25    Southwell               Dash Of Class                 SP     8/1  LOST  £-1.00
+    16:30    Wolverhampton           Naughty Niall                 SP     9/4  LOST  £-1.00
+    17:00    Wolverhampton           Astrological                  SP     1/2  WON   £+0.50
+    17:30    Wolverhampton           Midnight Call                 SP    15/8  WON   £+1.88
+    18:30    Wolverhampton           Gold Star Hero                SP     5/4  WON   £+1.25
+    19:00    Wolverhampton           On The Inlet                  SP     2/9  WON   £+0.22
+    15:30    Gowran Park             Lunar Tide                    SP    11/4  WON   £+2.75
+    16:05    Gowran Park             Lady Arwen                    SP     7/1  WON   £+7.00
+    16:40    Gowran Park             Rebel Moon                    SP     8/1  WON   £+8.00
+    17:15    Gowran Park             Kepler                        SP     5/2  LOST  £-1.00
+    17:45    Gowran Park             Mano Chicago                  SP    11/4  LOST  £-1.00
+    18:15    Gowran Park             Sarangpur                     SP     5/1  LOST  £-1.00
+    18:45    Gowran Park             Rock Of Ireland               SP     7/4  LOST  £-1.00
+
+  2026-04-10  |  41 bets  |  23 wins  |  P&L £+38.78
+    12:45    Aintree                 Wellington Arch               SP     6/1  WON   £+6.00
+    13:20    Aintree                 Gold Dancer                   SP    10/3  WON   £+3.33
+    13:55    Aintree                 Sinnatra                      SP     6/1  LOST  £-1.00
+    14:30    Aintree                 Grey Dawning                  SP     5/1  WON   £+5.00
+    15:05    Aintree                 Madara                        SP     7/2  LOST  £-1.00
+    15:40    Aintree                 Johnny's Jury                 SP    11/4  LOST  £-1.00
+    16:15    Aintree                 Harry Lowes                   SP     5/1  LOST  £-1.00
+    12:57    Sedgefield              Maggies Boy                   SP     7/2  WON   £+3.50
+    13:32    Sedgefield              Dartmouth Castle              SP    8/15  WON   £+0.53
+    14:03    Sedgefield              Rebel Tribesman               SP    8/11  LOST  £-1.00
+    15:13    Sedgefield              Dillarchie                    SP     2/1  WON   £+2.00
+    15:45    Sedgefield              Blackwater Lilly              SP     5/2  LOST  £-1.00
+    13:08    Thirsk                  Where Love Lives              SP     6/4  WON   £+1.50
+    13:43    Thirsk                  My Ballyquinn                 SP     5/4  LOST  £-1.00
+    14:18    Thirsk                  Bearish                       SP     2/7  WON   £+0.29
+    14:53    Thirsk                  Harswell Ruby                 SP     5/2  WON   £+2.50
+    15:25    Thirsk                  Poet Master                   SP    15/8  LOST  £-1.00
+    16:00    Thirsk                  Asmen Warrior                 SP    11/8  LOST  £-1.00
+    16:35    Thirsk                  Ey Up He's A Star             SP     5/1  LOST  £-1.00
+    17:10    Thirsk                  Juan Les Pins                 SP    11/4  WON   £+2.75
+    15:50    Wolverhampton           Sirius A                      SP     7/2  WON   £+3.50
+    16:23    Wolverhampton           Thames Waterman               SP    15/8  WON   £+1.88
+    17:30    Wolverhampton           Papa Cocktail                 SP     3/1  LOST  £-1.00
+    18:00    Wolverhampton           Divot                         SP   11/10  LOST  £-1.00
+    18:30    Wolverhampton           Present Times                 SP     9/2  LOST  £-1.00
+    19:00    Wolverhampton           Dublin Bay                    SP     5/1  WON   £+5.00
+    19:30    Wolverhampton           Three Socks On                SP     6/4  WON   £+1.50
+    16:07    Dundalk                 New Yorker                    SP     4/7  WON   £+0.57
+    16:42    Dundalk                 Jered Maddox                  SP    11/4  WON   £+2.75
+    17:15    Dundalk                 Allsortz                      SP     7/4  WON   £+1.75
+    17:50    Dundalk                 Royal County Glory            SP    10/3  WON   £+3.33
+    18:20    Dundalk                 Grand Premiere                SP    11/4  LOST  £-1.00
+    18:50    Dundalk                 Jawhary                       SP     4/1  LOST  £-1.00
+    19:20    Dundalk                 Keepsgettingbetter            SP   11/10  WON   £+1.10
+    14:45    Wexford                 Ifallgoeswell                 SP     9/4  WON   £+2.25
+    15:20    Wexford                 Le Moulin Rouge               SP     1/1  WON   £+1.00
+    15:55    Wexford                 Hitthehayson                  SP     6/1  LOST  £-1.00
+    16:28    Wexford                 Agameoftwohalves              SP     5/2  WON   £+2.50
+    17:03    Wexford                 James The Brave               SP     9/4  WON   £+2.25
+    17:38    Wexford                 Dont Go Yet                   SP    10/3  LOST  £-1.00
+    18:08    Wexford                 Rockstown Girl                SP    11/2  LOST  £-1.00
+
+  2026-04-11  |  35 bets  |  15 wins  |  P&L £+28.80
+    11:45    Aintree                 Salvator Mundi                SP    8/11  LOST  £-1.00
+    12:20    Aintree                 Supremely West                SP     7/1  LOST  £-1.00
+    12:55    Aintree                 Bossman Jack                  SP    11/4  WON   £+2.75
+    13:30    Aintree                 Lookaway                      SP     7/2  LOST  £-1.00
+    14:05    Aintree                 Honesty Policy                SP     5/2  LOST  £-1.00
+    15:00    Aintree                 I Am Maximus                  SP     9/2  WON   £+4.50
+    16:00    Aintree                 Look Me                       SP    10/3  LOST  £-1.00
+    12:30    Newcastle               The Clonmel Kid               SP     4/1  WON   £+4.00
+    13:07    Newcastle               Camarrate                     SP    11/2  WON   £+5.50
+    13:42    Newcastle               Parisencore                   SP     9/4  WON   £+2.25
+    14:25    Newcastle               Filibustering                 SP    11/4  WON   £+2.75
+    15:32    Newcastle               Port Station                  SP    10/3  LOST  £-1.00
+    16:10    Newcastle               Attin                         SP     6/5  WON   £+1.20
+    13:02    Yarmouth                Queen Of Good News            SP     9/1  WON   £+9.00
+    13:37    Yarmouth                Del Maro                      SP     4/7  WON   £+0.57
+    14:12    Yarmouth                Harriet Quimby                SP     4/1  WON   £+4.00
+    14:42    Yarmouth                Salamanca City                SP     7/2  WON   £+3.50
+    15:25    Yarmouth                My Mate Roger                 SP     2/1  LOST  £-1.00
+    16:06    Yarmouth                Organise                      SP    8/15  WON   £+0.53
+    16:40    Yarmouth                Pixie Diva                    SP     9/4  LOST  £-1.00
+    17:10    Yarmouth                Sports Day                    SP     2/1  LOST  £-1.00
+    16:15    Southwell               Tortured Soul                 SP     9/2  LOST  £-1.00
+    16:45    Southwell               Al Azd                        SP     6/4  WON   £+1.50
+    17:15    Southwell               Ambishio                      SP     9/4  LOST  £-1.00
+    17:45    Southwell               Timely Affair                 SP    13/8  LOST  £-1.00
+    18:15    Southwell               Captain Pickles               SP     9/4  LOST  £-1.00
+    18:45    Southwell               Farandaway                    SP    15/8  LOST  £-1.00
+    19:15    Southwell               Piperstown                    SP     4/1  WON   £+4.00
+    15:17    Bellewstown             Karrygrant                    SP     5/6  LOST  £-1.00
+    15:48    Bellewstown             Balance Of Trade              SP    10/3  LOST  £-1.00
+    16:23    Bellewstown             Summer Island                 SP     4/1  LOST  £-1.00
+    16:55    Bellewstown             Jordan Breeze                 SP     9/2  LOST  £-1.00
+    17:30    Bellewstown             Bay Of Supremacy              SP    11/4  WON   £+2.75
+    18:00    Bellewstown             Obscenity                     SP     7/4  LOST  £-1.00
+    18:30    Bellewstown             Joe Cool                      SP     5/2  LOST  £-1.00
+
+  2026-04-12  |  12 bets  |  5 wins  |  P&L £+15.50
+    13:55    Wincanton               Siorai                        SP     6/5  LOST  £-1.00
+    14:27    Wincanton               My Rockstar                   SP     2/1  WON   £+2.00
+    15:00    Wincanton               John Barbour                  SP     7/2  WON   £+3.50
+    16:00    Wincanton               Victory Shout                 SP    11/4  LOST  £-1.00
+    16:30    Wincanton               Lady Litigator                SP    11/8  LOST  £-1.00
+    13:10    Leopardstown            Thundering On                 SP     5/4  LOST  £-1.00
+    13:45    Leopardstown            Launch Time                   SP     8/1  WON   £+8.00
+    14:20    Leopardstown            Fixation                      SP    16/5  LOST  £-1.00
+    14:55    Leopardstown            Thesecretadversary            SP     6/1  WON   £+6.00
+    15:25    Leopardstown            True Love                     SP     3/1  WON   £+3.00
+    15:55    Leopardstown            A Boy Named Susie             SP    11/2  LOST  £-1.00
+    16:25    Leopardstown            Madbadanddangerous            SP    15/8  LOST  £-1.00
+
+  2026-04-13  |  24 bets  |  14 wins  |  P&L £+19.60
+    12:52    Leicester               Crimson Rose                  SP     5/2  LOST  £-1.00
+    13:22    Leicester               King's Cavalry                SP     7/4  LOST  £-1.00
+    13:52    Leicester               Expressionless                SP    11/4  WON   £+2.75
+    14:22    Leicester               Wreck It Ryley                SP    13/8  WON   £+1.62
+    14:52    Leicester               Em Four                       SP     3/1  LOST  £-1.00
+    15:22    Leicester               Albeseeingyer                 SP     5/2  LOST  £-1.00
+    16:22    Leicester               Euphonia                      SP    11/2  WON   £+5.50
+    13:40    Fakenham                Rialannah                     SP     2/1  WON   £+2.00
+    14:10    Fakenham                Fortunefavorsdbold            SP     7/4  WON   £+1.75
+    13:00    Hexham                  Red Oak                       SP   11/10  WON   £+1.10
+    13:30    Hexham                  Royal Deeside                 SP    10/3  LOST  £-1.00
+    14:00    Hexham                  She's Notjoeking              SP     2/1  LOST  £-1.00
+    14:30    Hexham                  Jamesieconn                   SP     7/4  WON   £+1.75
+    15:00    Hexham                  Rock Dj                       SP    10/3  LOST  £-1.00
+    15:30    Hexham                  Highbury Hill                 SP     4/1  LOST  £-1.00
+    16:00    Hexham                  Nassalam                      SP     9/4  WON   £+2.25
+    16:35    Hexham                  Blue Skies Ahead              SP     7/2  WON   £+3.50
+    16:30    Newcastle               Pantile's Gift                SP    11/8  WON   £+1.38
+    17:00    Newcastle               Cosmic Clarets                SP     3/1  LOST  £-1.00
+    17:30    Newcastle               Noelan Star                   SP     2/5  WON   £+0.40
+    18:00    Newcastle               Evening Saigon                SP     6/4  WON   £+1.50
+    18:30    Newcastle               Eddaari                       SP   11/10  WON   £+1.10
+    19:00    Newcastle               The Cookstown Cafu            SP     3/1  WON   £+3.00
+    19:30    Newcastle               Herakles                      SP     9/2  LOST  £-1.00
+
+  2026-04-14  |  31 bets  |  15 wins  |  P&L £+9.42
+    12:15    Newmarket               Cerro Blanco                  SP     4/9  WON   £+0.44
+    12:50    Newmarket               Adaay Of Scarlett             SP    11/8  WON   £+1.38
+    13:25    Newmarket               Talk Of New York              SP    8/11  WON   £+0.73
+    14:00    Newmarket               Hardy's Hero                  SP    11/2  LOST  £-1.00
+    14:35    Newmarket               Jakajaro                      SP     4/1  WON   £+4.00
+    15:10    Newmarket               St Anton                      SP     5/1  LOST  £-1.00
+    15:45    Newmarket               Mister Winston                SP     9/4  WON   £+2.25
+    12:35    Market Rasen            Ladronne                      SP     7/2  LOST  £-1.00
+    13:10    Market Rasen            Diamonds Galore               SP    8/13  WON   £+0.62
+    13:45    Market Rasen            Plains Drifter                SP   11/10  WON   £+1.10
+    14:20    Market Rasen            Lord Chamberlain              SP    11/8  LOST  £-1.00
+    14:55    Market Rasen            Catchim                       SP     9/4  WON   £+2.25
+    16:05    Market Rasen            Bluey                         SP     5/2  WON   £+2.50
+    16:35    Market Rasen            Numero Ventotto               SP     5/2  WON   £+2.50
+    16:00    Lingfield               Mighty Vega                   SP     3/1  LOST  £-1.00
+    16:30    Lingfield               Lara Antipova                 SP   10/11  WON   £+0.91
+    17:00    Lingfield               Sail On Sailor                SP     3/1  LOST  £-1.00
+    17:30    Lingfield               Helm Rock                     SP     9/4  LOST  £-1.00
+    18:00    Lingfield               Bergamo Gold                  SP     9/2  LOST  £-1.00
+    18:30    Lingfield               Zubaru                        SP    10/3  LOST  £-1.00
+    13:33    Newton Abbot            Onefournine                   SP     6/4  WON   £+1.50
+    14:08    Newton Abbot            Green Asset                   SP     5/1  LOST  £-1.00
+    15:17    Newton Abbot            Dearkeithandkaty              SP     1/1  LOST  £-1.00
+    16:22    Newton Abbot            Taranis Dubh                  SP   10/11  LOST  £-1.00
+    15:37    Clonmel                 Arcadian Emperor              SP     1/2  WON   £+0.50
+    16:12    Clonmel                 Paradise Lost                 SP     5/1  LOST  £-1.00
+    16:42    Clonmel                 Wakey Wakey Man               SP     9/2  LOST  £-1.00
+    17:12    Clonmel                 Space Warrior                 SP     8/1  LOST  £-1.00
+    17:42    Clonmel                 Royal Hollow                  SP     2/1  WON   £+2.00
+    18:12    Clonmel                 Coral River                   SP    11/4  WON   £+2.75
+    18:42    Clonmel                 Tutu Twist                    SP     5/1  LOST  £-1.00
+
+  2026-04-15  |  36 bets  |  18 wins  |  P&L £+37.12
+    12:50    Newmarket               Double Rush                   SP   11/10  WON   £+1.10
+    13:25    Newmarket               Poseidon's Warrior            SP     9/5  LOST  £-1.00
+    14:00    Newmarket               Damysus                       SP     7/4  WON   £+1.75
+    14:35    Newmarket               America Queen                 SP     9/2  LOST  £-1.00
+    15:10    Newmarket               Bint Archange                 SP     4/1  LOST  £-1.00
+    15:45    Newmarket               So Regal                      SP     6/5  WON   £+1.20
+    16:17    Newmarket               Ranga Tang                    SP     5/1  LOST  £-1.00
+    13:05    Haydock                 White Noise                   SP     4/5  LOST  £-1.00
+    13:40    Haydock                 Riskintheground               SP     4/1  WON   £+4.00
+    14:15    Haydock                 Below The Radar               SP     9/2  LOST  £-1.00
+    14:50    Haydock                 Holokea                       SP     4/1  WON   £+4.00
+    15:25    Haydock                 Smokeringinthedark            SP     7/2  LOST  £-1.00
+    16:00    Haydock                 Iron Bridge                   SP    11/4  WON   £+2.75
+    16:35    Haydock                 Count Of Vendome              SP    11/8  WON   £+1.38
+    12:40    Beverley                Celestra                      SP     1/2  LOST  £-1.00
+    13:15    Beverley                Princesse D'orange            SP    11/8  WON   £+1.38
+    13:50    Beverley                Lady Blanche                  SP    13/8  LOST  £-1.00
+    14:25    Beverley                Corolla Point                 SP   10/11  LOST  £-1.00
+    15:00    Beverley                Charging Thunder              SP     4/1  LOST  £-1.00
+    15:35    Beverley                Lyrical Song                  SP     7/1  WON   £+7.00
+    16:10    Beverley                Wondrous Light                SP     2/1  WON   £+2.00
+    16:45    Beverley                Sea Master                    SP    13/2  WON   £+6.50
+    16:57    Southwell               Invitorio                     SP    11/4  WON   £+2.75
+    17:30    Southwell               Shipshape                     SP     3/1  WON   £+3.00
+    18:00    Southwell               Penny Time                    SP     1/1  LOST  £-1.00
+    18:30    Southwell               Enpassant                     SP    10/1  WON   £+10.00
+    19:00    Southwell               Cool Molly                    SP    13/8  WON   £+1.62
+    19:30    Southwell               Barefoot Beach                SP     7/2  LOST  £-1.00
+    12:22    Leopardstown            Eretria                       SP     5/2  WON   £+2.50
+    12:57    Leopardstown            Cannes                        SP    11/8  LOST  £-1.00
+    13:32    Leopardstown            Abbey Actress                 SP     5/4  LOST  £-1.00
+    14:07    Leopardstown            The Lion In Winter            SP   11/10  WON   £+1.10
+    14:42    Leopardstown            Mixed Feelings                SP   11/10  WON   £+1.10
+    15:17    Leopardstown            Zipster                       SP    11/8  LOST  £-1.00
+    15:52    Leopardstown            Goal Exceeded                 SP    11/2  LOST  £-1.00
+    16:27    Leopardstown            Methgal                       SP     4/1  LOST  £-1.00
+
+  2026-04-16  |  28 bets  |  15 wins  |  P&L £+26.58
+    12:50    Newmarket               Sovereign Spell               SP     4/1  WON   £+4.00
+    13:25    Newmarket               Portcullis                    SP     7/1  WON   £+7.00
+    14:00    Newmarket               Quinault                      SP     7/2  LOST  £-1.00
+    14:35    Newmarket               Oxagon                        SP     7/4  WON   £+1.75
+    15:10    Newmarket               Hassaleh                      SP   10/11  WON   £+0.91
+    15:45    Newmarket               Maho Bay                      SP   11/10  WON   £+1.10
+    16:20    Newmarket               Royal Velvet                  SP    13/2  WON   £+6.50
+    13:00    Ripon                   The Untamed                   SP     1/1  WON   £+1.00
+    13:35    Ripon                   Urchin                        SP     4/9  WON   £+0.44
+    14:10    Ripon                   Empress Olivia                SP     9/2  WON   £+4.50
+    14:45    Ripon                   Wild Clary                    SP     6/1  LOST  £-1.00
+    15:16    Ripon                   Spoken Truth                  SP     5/2  LOST  £-1.00
+    15:52    Ripon                   Domination                    SP     9/4  WON   £+2.25
+    16:25    Ripon                   On The River                  SP    15/8  LOST  £-1.00
+    15:57    Hereford                Maestro Du Mesnil             SP    15/8  LOST  £-1.00
+    16:30    Hereford                Crystal Days                  SP    15/8  LOST  £-1.00
+    17:00    Hereford                Coastguard Station            SP     8/1  LOST  £-1.00
+    17:30    Hereford                Block Rockin Beats            SP    10/3  LOST  £-1.00
+    18:00    Hereford                Wild Goose                    SP    13/8  WON   £+1.62
+    18:30    Hereford                My Mate Aj                    SP     7/4  WON   £+1.75
+    12:05    Limerick                Fly Away Home                 SP     5/4  WON   £+1.25
+    12:35    Limerick                Collaborative                 SP     9/4  LOST  £-1.00
+    13:10    Limerick                King's Bucks                  SP     1/1  LOST  £-1.00
+    13:45    Limerick                Sense Of Occasion             SP     5/2  LOST  £-1.00
+    14:20    Limerick                Wild Wild Wind                SP     4/1  LOST  £-1.00
+    14:55    Limerick                Let Him B                     SP     3/1  LOST  £-1.00
+    15:30    Limerick                Opposite Ends                 SP     4/1  WON   £+4.00
+    16:05    Limerick                Sparkling Wit                 SP     6/4  WON   £+1.50
+
+  2026-04-17  |  29 bets  |  18 wins  |  P&L £+22.18
+    12:57    Newbury                 Jaan Ki Tukri                 SP     7/2  LOST  £-1.00
+    13:32    Newbury                 Synchronicity                 SP     6/4  WON   £+1.50
+    14:07    Newbury                 I'm The One                   SP     1/1  WON   £+1.00
+    14:42    Newbury                 Maltese Cross                 SP     7/4  WON   £+1.75
+    15:20    Newbury                 Blazeon Five                  SP    11/2  LOST  £-1.00
+    15:55    Newbury                 Colori Forever                SP    13/8  LOST  £-1.00
+    16:25    Newbury                 Addison Grey                  SP    10/3  LOST  £-1.00
+    13:08    Wolverhampton           Travel Agent                  SP     6/4  WON   £+1.50
+    13:43    Wolverhampton           Afton Down                    SP   11/10  WON   £+1.10
+    14:18    Wolverhampton           Baileys Khelstar              SP     5/2  LOST  £-1.00
+    14:53    Wolverhampton           Gold Star Hero                SP    8/13  WON   £+0.62
+    15:25    Wolverhampton           Law Court                     SP    13/8  LOST  £-1.00
+    16:05    Wolverhampton           Tryst                         SP     1/1  LOST  £-1.00
+    16:35    Wolverhampton           Port Noir                     SP     4/1  LOST  £-1.00
+    17:05    Wolverhampton           Rb Yas Sir (A)                SP     1/3  WON   £+0.33
+    15:15    Bath                    No More Bolero                SP    10/3  WON   £+3.33
+    15:50    Bath                    Ziggy Starshine               SP    15/8  WON   £+1.88
+    16:20    Bath                    Justcallmepete                SP    13/2  WON   £+6.50
+    16:52    Bath                    Starmade                      SP    10/3  LOST  £-1.00
+    17:22    Bath                    Ourbren                       SP     1/5  WON   £+0.20
+    17:52    Bath                    Armstrong                     SP    10/3  LOST  £-1.00
+    18:22    Bath                    Galaxy Wonder                 SP     5/6  WON   £+0.83
+    18:52    Bath                    Eutropia                      SP     5/2  WON   £+2.50
+    16:10    Exeter                  Our Guide                     SP    8/11  WON   £+0.73
+    16:40    Exeter                  Mr Jukebox                    SP     4/1  WON   £+4.00
+    17:10    Exeter                  Square Du Roule               SP     5/2  WON   £+2.50
+    17:40    Exeter                  Got A Dream                   SP     2/1  WON   £+2.00
+    18:10    Exeter                  Prairie Queen                 SP     9/4  LOST  £-1.00
+    18:40    Exeter                  Dunstall Star                 SP   10/11  WON   £+0.91
+
+  2026-04-18  |  30 bets  |  13 wins  |  P&L £+28.24
+    12:25    Newbury                 Touleen                       SP     5/4  LOST  £-1.00
+    13:00    Newbury                 Albert Einstein               SP     9/4  LOST  £-1.00
+    13:35    Newbury                 Al Aasy                       SP     7/2  LOST  £-1.00
+    14:10    Newbury                 Back In Black                 SP     6/1  LOST  £-1.00
+    14:45    Newbury                 Lighting Thunder              SP     1/1  LOST  £-1.00
+    15:20    Newbury                 Water To Wine                 SP     1/1  WON   £+1.00
+    15:55    Newbury                 Valedictory                   SP     5/6  LOST  £-1.00
+    12:37    Thirsk                  Niewiadoma                    SP     6/1  WON   £+6.00
+    13:12    Thirsk                  Weffaag                       SP   10/11  LOST  £-1.00
+    13:47    Thirsk                  Stirrup Cup                   SP     7/2  LOST  £-1.00
+    14:23    Thirsk                  Murashah                      SP     9/4  WON   £+2.25
+    14:58    Thirsk                  Mudamer                       SP    10/3  LOST  £-1.00
+    15:32    Thirsk                  Nightsinwhitesatin            SP     3/1  LOST  £-1.00
+    16:07    Thirsk                  Simplify                      SP    11/4  WON   £+2.75
+    16:40    Thirsk                  Wee Mary                      SP    17/2  LOST  £-1.00
+    15:05    Nottingham              Botagoz                       SP     3/1  WON   £+3.00
+    15:37    Nottingham              Bintaryana                    SP     7/2  WON   £+3.50
+    16:12    Nottingham              Takincareofbizness            SP    10/3  LOST  £-1.00
+    16:45    Nottingham              Papa Don't Preach             SP    10/3  LOST  £-1.00
+    17:15    Nottingham              Commander Of Life             SP     7/1  LOST  £-1.00
+    17:45    Nottingham              Caph Star                     SP    13/2  WON   £+6.50
+    18:15    Nottingham              Sceptic                       SP     5/2  LOST  £-1.00
+    18:45    Nottingham              Desiderata                    SP     9/2  WON   £+4.50
+    13:05    Bellewstown             Ole Ole                       SP     1/3  WON   £+0.33
+    13:40    Bellewstown             Two Pair                      SP    15/2  WON   £+7.50
+    14:15    Bellewstown             Fiver Friday                  SP   10/11  WON   £+0.91
+    14:50    Bellewstown             Dairy Force                   SP     9/2  LOST  £-1.00
+    15:25    Bellewstown             Struck Oil                    SP     5/1  LOST  £-1.00
+    16:00    Bellewstown             Midleton Rare                 SP     6/1  WON   £+6.00
+    16:35    Bellewstown             Gillane                       SP     1/1  WON   £+1.00
+
+  2026-04-19  |  27 bets  |  15 wins  |  P&L £+21.08
+    12:58    Stratford               Hornica                       SP   11/10  WON   £+1.10
+    13:33    Stratford               Juggernaut                    SP     7/2  LOST  £-1.00
+    14:08    Stratford               Granny Hawkins                SP     7/2  WON   £+3.50
+    14:43    Stratford               Yes And Yes                   SP     3/1  WON   £+3.00
+    15:18    Stratford               Three Pikes                   SP    13/2  WON   £+6.50
+    13:17    Plumpton                Line Of Descent               SP     4/1  LOST  £-1.00
+    13:52    Plumpton                Ballyeaston                   SP     2/7  WON   £+0.29
+    14:27    Plumpton                Tranquil Sea                  SP     7/2  WON   £+3.50
+    15:02    Plumpton                Sea Invasion                  SP     9/4  WON   £+2.25
+    15:37    Plumpton                Market House                  SP    15/8  WON   £+1.88
+    16:12    Plumpton                Hecouldbetheone               SP     9/4  LOST  £-1.00
+    16:47    Plumpton                Posh Chick                    SP     1/1  WON   £+1.00
+    12:15    Curragh                 Carry The Flag                SP     5/2  LOST  £-1.00
+    12:50    Curragh                 Stag Night                    SP     3/1  WON   £+3.00
+    13:25    Curragh                 Great Barrier Reef            SP     4/9  WON   £+0.44
+    14:00    Curragh                 Alnofoor                      SP    10/3  LOST  £-1.00
+    14:35    Curragh                 Beset                         SP     7/2  LOST  £-1.00
+    15:10    Curragh                 Starman Tom                   SP    13/8  LOST  £-1.00
+    15:45    Curragh                 Red Charlie                   SP     9/4  LOST  £-1.00
+    16:20    Curragh                 Dreoilin                      SP     9/2  LOST  £-1.00
+    13:08    Tramore                 Nirisque                      SP    15/8  LOST  £-1.00
+    13:43    Tramore                 Polepatrick                   SP    13/8  WON   £+1.62
+    14:18    Tramore                 Dont Tell Jack                SP     7/4  WON   £+1.75
+    14:53    Tramore                 Quietrunsthedon               SP     7/1  LOST  £-1.00
+    15:28    Tramore                 Nettuno Italia                SP     9/4  WON   £+2.25
+    16:00    Tramore                 Torquay Road                  SP     5/2  LOST  £-1.00
+    16:30    Tramore                 Spanish Maid                  SP     1/1  WON   £+1.00
+
+  2026-04-20  |  28 bets  |  17 wins  |  P&L £+38.51
+    13:12    Redcar                  Vollering                     SP     5/2  WON   £+2.50
+    13:42    Redcar                  Worlington                    SP     1/1  LOST  £-1.00
+    14:12    Redcar                  Perfidia                      SP    10/3  LOST  £-1.00
+    14:42    Redcar                  Skipper                       SP    10/3  WON   £+3.33
+    15:50    Redcar                  Mafting                       SP    13/8  WON   £+1.62
+    16:20    Redcar                  Watchdog                      SP     2/1  WON   £+2.00
+    13:21    Lingfield               No Knee Never                 SP     5/2  WON   £+2.50
+    13:51    Lingfield               Dyrholaey                     SP     3/1  WON   £+3.00
+    14:21    Lingfield               Rose Cotton                   SP     9/4  LOST  £-1.00
+    14:51    Lingfield               Golden Brown                  SP     4/9  LOST  £-1.00
+    15:25    Lingfield               Archer's Grace                SP     5/6  WON   £+0.83
+    15:55    Lingfield               Magna                         SP    11/8  WON   £+1.38
+    16:25    Lingfield               Harlington                    SP     3/1  LOST  £-1.00
+    16:30    Newcastle               Asadjumeirah                  SP     9/4  LOST  £-1.00
+    17:00    Newcastle               Patrol                        SP     9/4  LOST  £-1.00
+    17:30    Newcastle               Bintaziza                     SP    15/8  WON   £+1.88
+    18:00    Newcastle               Gouken                        SP     5/4  WON   £+1.25
+    18:30    Newcastle               Nana's Boy George             SP     7/2  LOST  £-1.00
+    19:00    Newcastle               Lord Capulet                  SP     9/2  WON   £+4.50
+    19:30    Newcastle               Esque Elegance                SP    17/2  WON   £+8.50
+    15:10    Tramore                 You Done Well                 SP     3/1  LOST  £-1.00
+    15:42    Tramore                 Crooked Path                  SP    8/11  WON   £+0.73
+    16:12    Tramore                 Time Is A Thief               SP    13/8  WON   £+1.62
+    16:42    Tramore                 Kimy                          SP    13/2  LOST  £-1.00
+    17:12    Tramore                 Might Be The One              SP     3/1  LOST  £-1.00
+    17:42    Tramore                 Ira Hayes                     SP     9/2  WON   £+4.50
+    18:12    Tramore                 Lake Chad                     SP     9/1  WON   £+9.00
+    18:42    Tramore                 I Walked The Line             SP    4/11  WON   £+0.36
+
+=================================================================
+  END OF REPORT
+=================================================================
