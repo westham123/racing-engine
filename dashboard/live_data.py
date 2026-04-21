@@ -168,7 +168,11 @@ def get_todays_meetings():
     """
     Returns list of today's UK + Irish meetings with going and race slugs.
     Source: Sporting Life racecards (free, public).
+
+    Slug is always built from race ID + slugified race name from NEXT_DATA
+    (avoids 404s caused by using bare /racecard/{id} without the name suffix).
     """
+    import re as _re
     today = date.today().strftime("%Y-%m-%d")
     url   = "https://www.sportinglife.com/racing/racecards"
     data  = _get_page_json(url)
@@ -178,29 +182,20 @@ def get_todays_meetings():
     meetings_raw = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
     UK_IRE_LIVE = {"ENG", "SCO", "IRE", "IE", "WAL", "Wale", "Wales",
-                   "GB", "UK", "Northern Ireland", "NI"}
+                   "GB", "UK", "Northern Ireland", "NI", "Eire"}
 
-    # Build slug map from HTML links
-    slug_map = {}
-    try:
-        r    = requests.get(url, headers=HEADERS, timeout=12)
-        soup = BeautifulSoup(r.text, "html.parser")
-        for a in soup.find_all("a", href=True):
-            href = a["href"]
-            if f"/racecards/{today}/" in href and "/racecard/" in href:
-                parts   = href.split("/racecard/")
-                if len(parts) == 2:
-                    race_id = parts[1].split("/")[0]
-                    slug_map[race_id] = href
-    except Exception:
-        pass
+    def _make_slug(course: str, rc_id: str, rc_name: str) -> str:
+        """Build full Sporting Life racecard slug from components."""
+        course_slug = _re.sub(r"[^a-z0-9]+", "-", course.lower()).strip("-")
+        name_slug   = _re.sub(r"[^a-z0-9]+", "-", rc_name.lower()).strip("-")
+        return f"/racing/racecards/{today}/{course_slug}/racecard/{rc_id}/{name_slug}"
 
     meetings = []
     for m in meetings_raw:
-        ms           = m.get("meeting_summary", {})
-        course_data  = ms.get("course", {})
-        course       = course_data.get("name", "")
-        country      = course_data.get("country", {}).get("short_name", "")
+        ms          = m.get("meeting_summary", {})
+        course_data = ms.get("course", {})
+        course      = course_data.get("name", "")
+        country     = course_data.get("country", {}).get("short_name", "")
         if country not in UK_IRE_LIVE:
             continue
 
@@ -208,19 +203,17 @@ def get_todays_meetings():
         races_raw = m.get("races", [])
         races     = []
         for rc in races_raw:
-            rc_id = str(rc.get("race_summary_reference", {}).get("id", ""))
-            slug  = slug_map.get(rc_id)
-            if not slug and rc_id:
-                course_slug = course.lower().replace(" ", "-").replace("'", "")
-                slug = f"/racing/racecards/{today}/{course_slug}/racecard/{rc_id}"
+            rc_id   = str(rc.get("race_summary_reference", {}).get("id", ""))
+            rc_name = rc.get("name", "")
+            slug    = _make_slug(course, rc_id, rc_name) if rc_id and rc_name else None
             races.append({
-                "id":    rc_id,
-                "time":  rc.get("time", ""),
-                "name":  rc.get("name", ""),
-                "stage": rc.get("race_stage", ""),
-                "slug":  slug,
+                "id":     rc_id,
+                "time":   rc.get("time", ""),
+                "name":   rc_name,
+                "stage":  rc.get("race_stage", ""),
+                "slug":   slug,
                 "course": course,
-                "going": going,
+                "going":  going,
             })
 
         meetings.append({"course": course, "going": going, "races": races})
