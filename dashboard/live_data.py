@@ -25,11 +25,15 @@ def _utc_to_bst(utc_time_str):
         return utc_time_str
     try:
         if _LONDON:
-            _dt = datetime.strptime(utc_time_str, "%H:%M").replace(tzinfo=timezone.utc)
-            return _dt.astimezone(_LONDON).strftime("%H:%M")
+            # Use today's actual date so DST offset is correct (strptime alone gives year 1900)
+            _today = date.today()
+            _h, _m = map(int, str(utc_time_str).strip().split(":"))
+            _utc_dt = datetime(_today.year, _today.month, _today.day, _h, _m,
+                               tzinfo=timezone.utc)
+            return _utc_dt.astimezone(_LONDON).strftime("%H:%M")
         else:
             # Fallback: manual UTC+1 (correct for BST/summer)
-            _h, _m = map(int, utc_time_str.split(":"))
+            _h, _m = map(int, str(utc_time_str).strip().split(":"))
             _bst_h = (_h + 1) % 24
             return f"{_bst_h:02d}:{_m:02d}"
     except Exception:
