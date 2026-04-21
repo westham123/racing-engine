@@ -31,9 +31,19 @@ WEIGHTS = {
     "race_pace":      0.03,   # Speed rating vs course par
 }
 
+# ── Staking Rules (permanent) ──────────────────────────────
+# Short price cut-off: anything AT or BELOW 4/6 (1.67 decimal) excluded
+# from ALL bets — six-timer and Lucky 15.
+# Previously the cut-off only applied to the Lucky 15; now it applies to both.
+SHORT_PRICE_CUTOFF_DECIMAL = 1.67   # 4/6
+SHORT_PRICE_CUTOFF_DISPLAY = "4/6"
+
+# Confidence threshold — only runners above this qualify for any selection
+MIN_CONFIDENCE = 0.60
+
 # ── Accumulator Settings ─────────────────────────────────────
 MAX_RACES_PER_DAY = 8
-MIN_CONFIDENCE_FOR_ACCA = 0.55  # Only include horses above 65% confidence
+MIN_CONFIDENCE_FOR_ACCA = 0.60  # Updated from 0.55
 
 # ── Alert Thresholds ─────────────────────────────────────────
 MARKET_MOVE_THRESHOLD = 0.20  # Flag if odds move more than 20%

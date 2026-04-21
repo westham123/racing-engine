@@ -1,5 +1,5 @@
 # Racing Engine — Visual Dashboard
-# Version: 2.0 — Lucky 15 + Six-Timer plan, Loss Analyser, Tiered Selection Logic
+# Version: 2.3 — Flexible selection plan, remove forced L15, 4/6 cut-off on all bets
 # Built with Streamlit
 # Date: 20 April 2026
 
@@ -415,7 +415,7 @@ with st.sidebar:
 
     _conf_threshold = st.slider(
         "Min Confidence Threshold",
-        min_value=0.50, max_value=0.85, value=st.session_state.get("conf_threshold", 0.55),
+        min_value=0.50, max_value=0.85, value=st.session_state.get("conf_threshold", 0.60),
         step=0.01, format="%.2f",
         help="Only selections above this score are included"
     )
@@ -515,12 +515,18 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 
 # ── Tab 1: Today's Plan ──────────────────────────────────────
 with tab1:
-    st.markdown("### 💰 Today's Staking Plan — Lucky 15 + Six-Timer")
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | £30 Lucky 15 + £20 Six-Timer | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
+    st.markdown("### 💰 Today's Staking Plan")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Six-timer is main bet | Lucky 15 shown only if 4+ horses qualify | Min confidence: **{st.session_state.get('conf_threshold', 0.60):.0%}** | Adjust in sidebar ←")
 
     # ── Build pool from live data or sample ────────────────────────────────
-    _conf_threshold = st.session_state.get("conf_threshold", 0.55)
-    _six_pool  = []  # All qualifying selections — goes in six-timer
+    _conf_threshold = st.session_state.get("conf_threshold", 0.60)
+    _six_pool = []  # All qualifying selections
+
+    def _assign_tier(dec):
+        if dec <= 2.50:  return "BANKER"
+        if dec <= 5.00:  return "MID"
+        if dec <= 10.00: return "VALUE"
+        return "LONGSHOT"
 
     if _is_live and len(_live_df) > 0:
         for _, _row in _live_df.iterrows():
@@ -536,6 +542,8 @@ with tab1:
                     _dec = float(_odds_str)
             except Exception:
                 _dec = 2.0
+            if _dec <= 1.67:  # Hard 4/6 cut-off
+                continue
             _ev = round(_conf * _dec - 1, 3)
             _course = str(_row.get("Course", ""))
             _time   = str(_row.get("Time", ""))
@@ -544,180 +552,186 @@ with tab1:
                 _time   = _rp[0] if len(_rp) > 0 else ""
                 _course = _rp[1] if len(_rp) > 1 else str(_row["Race"])
             _six_pool.append({
-                "horse": str(_row.get("Horse", _row.get("Selection", "Unknown"))),
-                "course": _course, "time": _time,
-                "odds_str": _odds_str, "decimal": round(_dec, 3),
-                "confidence": round(_conf, 3), "ev": _ev,
+                "horse":      str(_row.get("Horse", _row.get("Selection", "Unknown"))),
+                "course":     _course,
+                "time":       _time,
+                "odds_str":   _odds_str,
+                "decimal":    round(_dec, 3),
+                "confidence": round(_conf, 3),
+                "ev":         _ev,
+                "tier":       _assign_tier(round(_dec, 3)),
             })
     else:
-        # Sample pool for today's card (21 April 2026)
+        # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf)
         _six_pool = [
-            {"horse": "Lady Youmzain",   "course": "Pontefract",    "time": "2:17", "odds_str": "11/10", "decimal": 2.10,  "confidence": 0.70, "ev": 0.47},
-            {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "4:02", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.67, "ev": 1.35},
-            {"horse": "Crystal Island",  "course": "Ffos Las",      "time": "4:38", "odds_str": "4/6",   "decimal": 1.67,  "confidence": 0.79, "ev": 0.31},
-            {"horse": "Mister Mojito",   "course": "Yarmouth",      "time": "4:55", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.67, "ev": 4.03},
-            {"horse": "Beaune",          "course": "Wolverhampton", "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
-            {"horse": "Kaaranah",        "course": "Wolverhampton", "time": "8:30", "odds_str": "13/8",  "decimal": 2.625, "confidence": 0.70, "ev": 0.84},
+            {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "15:02", "odds_str": "5/2",  "decimal": 3.50,  "confidence": 0.683, "ev": 1.09, "tier": "MID"},
+            {"horse": "Beaune",          "course": "Wolverhampton", "time": "17:30", "odds_str": "6/4",  "decimal": 2.50,  "confidence": 0.670, "ev": 0.68, "tier": "BANKER"},
+            {"horse": "Daizen",          "course": "Pontefract",    "time": "13:52", "odds_str": "13/2", "decimal": 7.50,  "confidence": 0.649, "ev": 3.87, "tier": "VALUE"},
+            {"horse": "Eightthreeone",   "course": "Yarmouth",      "time": "15:20", "odds_str": "4/1",  "decimal": 5.00,  "confidence": 0.645, "ev": 2.23, "tier": "MID"},
+            {"horse": "Lillistar",       "course": "Pontefract",    "time": "15:32", "odds_str": "11/1", "decimal": 12.00, "confidence": 0.639, "ev": 6.67, "tier": "LONGSHOT"},
+            {"horse": "Esperti",         "course": "Ffos Las",      "time": "17:42", "odds_str": "7/2",  "decimal": 4.50,  "confidence": 0.614, "ev": 1.76, "tier": "MID"},
         ]
 
-    # ── Run Lucky15Planner ─────────────────────────────────────────
-    _l15_plan = None
-    _l15_err  = None
-    try:
-        # Ensure repo root is on path regardless of how Streamlit Cloud resolves __file__
-        _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        if _repo_root not in sys.path:
-            sys.path.insert(0, _repo_root)
-        from permutations.lucky15_planner import Lucky15Planner as _Lucky15Planner
-        if len(_six_pool) >= 2:
-            _planner = _Lucky15Planner(_six_pool, stake_per_bet=2.00, sixtimer_stake=20.00)
-            _l15_plan = _planner.build_plan()
-    except Exception as _e:
-        _l15_err = str(_e)
-
-    # ── Fallback: build plan inline if planner import failed ──────────
-    if _l15_plan is None and len(_six_pool) >= 2:
-        def _assign_tier_inline(dec):
-            if dec <= 2.50:  return "banker"
-            if dec <= 5.00:  return "mid"
-            if dec <= 10.00: return "value"
-            return "longshot"
-        def _l15_scenarios_inline(quartet):
-            decs = sorted([s["decimal"] for s in quartet])
-            def _comb_return(n):
-                import itertools
-                combos = list(itertools.combinations(decs, n))
-                returns = [round(2.0 * sum(c[0]*c[1] if len(c)==2 else (c[0]*c[1]*c[2] if len(c)==3 else c[0]*c[1]*c[2]*c[3]) for c in [combo]), 2)
-                           if n > 1 else [round(2.0 * d, 2) for d in decs]
-                           for combo in combos]
-                if n == 1:
-                    returns = [round(2.0 * d, 2) for d in decs]
-                    return {"min_return": min(returns), "max_return": max(returns),
-                            "min_profit": round(min(returns)-30, 2)}
-                flat = []
-                for combo in combos:
-                    r = 2.0
-                    for d in combo: r *= d
-                    flat.append(round(r, 2))
-                return {"min_return": round(min(flat), 2), "max_return": round(max(flat), 2),
-                        "min_profit": round(min(flat)-30, 2)}
-            return {
-                "1_winner":  _comb_return(1),
-                "2_winners": _comb_return(2),
-                "3_winners": _comb_return(3),
-                "4_winners": _comb_return(4),
-            }
-        # Filter out ≤ 4/6 (1.67) for Lucky 15
-        _l15_pool = [s for s in _six_pool if s["decimal"] > 1.67]
-        # Pick up to 4: prefer one of each tier, else top 4 by ev
-        _quartet = sorted(_l15_pool, key=lambda s: s["ev"], reverse=True)[:4]
+    # ── Main display ────────────────────────────────────────────────────────
+    if len(_six_pool) == 0:
+        st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
+    else:
+        # ── Combined accumulator odds ──
         _combined_dec = 1.0
         for _ps in _six_pool:
             _combined_dec *= _ps["decimal"]
-        _six_ret_fb = round(20.0 * _combined_dec, 2)
-        _l15_plan = {
-            "lucky15_selections":        [{"horse": s["horse"], "course": s["course"], "time": s["time"],
-                                           "tier": _assign_tier_inline(s["decimal"]),
-                                           "odds_str": s["odds_str"], "decimal": s["decimal"]} for s in _quartet],
-            "lucky15_bets":              [],
-            "lucky15_scenarios":         _l15_scenarios_inline(_quartet) if len(_quartet) >= 4 else
-                                          {"1_winner":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
-                                           "2_winners":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
-                                           "3_winners":{"min_return":0.0,"max_return":0.0,"min_profit":-30.0},
-                                           "4_winners":{"max_return":0.0,"min_profit":-30.0}},
-            "sixtimer_selections":       [s["horse"] for s in _six_pool],
-            "sixtimer_stake":            20.00,
-            "sixtimer_combined_decimal": round(_combined_dec, 2),
-            "sixtimer_projected_return": _six_ret_fb,
-            "total_staked":              50.00,
-            "tier_breakdown":            {s["horse"]: _assign_tier_inline(s["decimal"]) for s in _quartet},
-        }
-        _l15_err = None  # cleared — fallback succeeded
-
-    if _l15_plan is not None:
-        _l15_sels  = _l15_plan["lucky15_selections"]
-        _scen      = _l15_plan["lucky15_scenarios"]
-        _six_ret   = _l15_plan["sixtimer_projected_return"]
-        _six_dec   = _l15_plan["sixtimer_combined_decimal"]
-        _total_stk = _l15_plan["total_staked"]
+        _combined_dec = round(_combined_dec, 2)
+        _acc_stake    = round(st.session_state.get("daily_budget", 50) * 0.40, 2)
+        _acc_return   = round(_acc_stake * _combined_dec, 2)
 
         # ── KPI row ──
         _kc1, _kc2, _kc3, _kc4 = st.columns(4)
-        _kc1.metric("🎰 Six-Timer Stake", "£20.00", f"Return if all win: £{_six_ret:,.2f}")
-        _kc2.metric("♥ Lucky 15 Stake", "£30.00", "15 bets × £2")
-        _kc3.metric("Total Staked", f"£{_total_stk:.2f}")
-        _kc4.metric("Six-Timer Odds", f"{_six_dec:.2f}x", f"All {len(_six_pool)} selections")
+        _kc1.metric("🎯 Qualifying Selections", str(len(_six_pool)))
+        _kc2.metric("🎰 Accumulator Odds", f"{_combined_dec:,.0f}x")
+        _kc3.metric("💰 Acc Stake", f"£{_acc_stake:.2f}", f"Return if all win: £{_acc_return:,.2f}")
+        _l15_eligible  = [s for s in _six_pool if s["decimal"] > 1.67]
+        _l15_available = len(_l15_eligible) >= 4
+        _kc4.metric("♥ Lucky 15", "✅ Available" if _l15_available else "✖ Not enough horses",
+                    f"{len(_l15_eligible)} of 4 needed" if not _l15_available else "Optional — see below")
 
         st.markdown("---")
 
-        # ── Six-Timer box ──
-        st.markdown("#### 🎰 Six-Timer Accumulator (£20 stake)")
-        st.caption("All qualifying selections in one accumulator. Maximum potential return — all must win.")
-        _six_df_rows = [{"Horse": s, "In Six-Timer": "✅"} for s in _l15_plan["sixtimer_selections"]]
-        _six_extra   = [s for s in _six_pool if s["horse"] not in [x["horse"] for x in _l15_sels]]
-        if _six_extra:
-            for sx in _six_extra:
-                for row in _six_df_rows:
-                    if row["Horse"] == sx["horse"]:
-                        row["Note"] = f"Excluded from Lucky 15 (≤ 4/6 price)"
-        st.dataframe(pd.DataFrame(_six_df_rows), use_container_width=True, hide_index=True)
-        st.success(f"Six-Timer projected return: **£{_six_ret:,.2f}** (combined odds: {_six_dec:.2f}x). Stake: £20.00.")
-
-        st.markdown("---")
-
-        # ── Lucky 15 selections with tier badges ──
-        st.markdown("#### ♥ Lucky 15 — Tiered Selections (£30 = 15 bets × £2)")
-        st.caption("4 horses selected by tier: Banker (shortest) anchors singles, Value/Longshot supercharges trebles/4-folds.")
-
-        _tier_colours = {
-            "banker":   ("#003300", "#00ff88", "BANKER — ≤ 6/4"),
-            "mid":      ("#1a1200", "#ffcc00", "MID — 6/4 to 4/1"),
-            "value":    ("#00001a", "#66aaff", "VALUE — 4/1 to 9/1"),
-            "longshot": ("#1a0000", "#ff6666", "LONGSHOT — 10/1+"),
-        }
-        _tier_df_rows = []
-        for _s in _l15_sels:
-            _tc = _tier_colours.get(_s["tier"], ("", "#ffffff", _s["tier"].upper()))
-            _tier_df_rows.append({
-                "Tier":   _tc[2],
-                "Horse":  _s["horse"],
-                "Course": _s["course"],
-                "Time":   _s["time"],
-                "Odds":   _s["odds_str"],
-                "Decimal": f"{_s['decimal']:.2f}x",
+        # ── All qualifying selections table ──
+        st.markdown("#### 📋 All Qualifying Selections")
+        st.caption(f"All {len(_six_pool)} horses above {_conf_threshold:.0%} confidence and above 4/6 price. Put all of these in your accumulator.")
+        _sel_rows = []
+        for _s in _six_pool:
+            _sel_rows.append({
+                "Time":       _s["time"],
+                "Horse":      _s["horse"],
+                "Course":     _s["course"],
+                "Odds":       _s["odds_str"],
+                "Dec":        f"{_s['decimal']:.2f}x",
+                "Confidence": f"{_s['confidence']:.1%}",
+                "EV":         f"+{_s['ev']:.2f}" if _s["ev"] >= 0 else str(_s["ev"]),
+                "Tier":       _s["tier"],
             })
-        st.dataframe(pd.DataFrame(_tier_df_rows), use_container_width=True, hide_index=True)
-
-        # ── Scenario table ──
-        st.markdown("#### Return Scenarios (Lucky 15)")
-        _scen_rows = [
-            {"Scenario": "1 winner (best case single)",   "Min Return": f"£{_scen['1_winner']['min_return']:.2f}",  "Max Return": f"£{_scen['1_winner']['max_return']:.2f}",  "vs £30 stake": f"£{_scen['1_winner']['min_profit']:.2f}"},
-            {"Scenario": "2 winners",                     "Min Return": f"£{_scen['2_winners']['min_return']:.2f}", "Max Return": f"£{_scen['2_winners']['max_return']:.2f}", "vs £30 stake": f"£{_scen['2_winners']['min_profit']:.2f}"},
-            {"Scenario": "3 winners",                     "Min Return": f"£{_scen['3_winners']['min_return']:.2f}", "Max Return": f"£{_scen['3_winners']['max_return']:.2f}", "vs £30 stake": f"£{_scen['3_winners']['min_profit']:.2f}"},
-            {"Scenario": "ALL 4 winners",                 "Min Return": f"£{_scen['4_winners']['max_return']:.2f}", "Max Return": f"£{_scen['4_winners']['max_return']:.2f}", "vs £30 stake": f"+£{_scen['4_winners']['min_profit']:.2f}"},
-        ]
-        st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
+        st.dataframe(pd.DataFrame(_sel_rows), use_container_width=True, hide_index=True)
 
         st.markdown("---")
 
-        # ── Loss Learning summary (live) ──
+        # ── Accumulator box ──
+        st.markdown("#### 🎰 Accumulator — All Selections")
+        st.caption("★ Main bet. All qualifying horses in one accumulator — all must win.")
+        _acc_rows = [{"#": i+1, "Horse": _s["horse"], "Course": _s["course"], "Time": _s["time"],
+                      "Odds": _s["odds_str"], "Dec": f"{_s['decimal']:.2f}x"}
+                     for i, _s in enumerate(_six_pool)]
+        st.dataframe(pd.DataFrame(_acc_rows), use_container_width=True, hide_index=True)
+        st.success(
+            f"💰 **Accumulator**: {len(_six_pool)} selections | Combined odds: **{_combined_dec:,.0f}x** | "
+            f"Suggested stake: £{_acc_stake:.2f} | Projected return if all win: **£{_acc_return:,.2f}**"
+        )
+
+        # ── Lucky 15 — optional, only if >= 4 horses qualify ──
+        if _l15_available:
+            st.markdown("---")
+            st.markdown("#### ♥ Lucky 15 — Optional Side Bet")
+            st.caption("4 horses selected from your qualifying list. Lucky 15 = 15 bets (4 singles, 6 doubles, 4 trebles, 1 four-fold). Only place this if you want part-return safety net.")
+
+            _l15_plan = None
+            _l15_err  = None
+            try:
+                _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                if _repo_root not in sys.path:
+                    sys.path.insert(0, _repo_root)
+                from permutations.lucky15_planner import Lucky15Planner as _Lucky15Planner
+                _planner  = _Lucky15Planner(_l15_eligible, stake_per_bet=2.00, sixtimer_stake=20.00)
+                _l15_plan = _planner.build_plan()
+            except Exception as _e:
+                _l15_err = str(_e)
+
+            # Inline fallback
+            if _l15_plan is None:
+                import itertools as _it
+                def _l15_scenarios_inline(quartet):
+                    decs = [s["decimal"] for s in quartet]
+                    def _combret(n):
+                        flat = []
+                        for c in _it.combinations(decs, n):
+                            r = 2.0
+                            for d in c: r *= d
+                            flat.append(round(r, 2))
+                        return {"min_return": round(min(flat), 2), "max_return": round(max(flat), 2),
+                                "min_profit": round(min(flat) - 30, 2)}
+                    s1_rets = [round(2.0 * d, 2) for d in decs]
+                    s1 = {"min_return": min(s1_rets), "max_return": max(s1_rets),
+                          "min_profit": round(min(s1_rets) - 30, 2)}
+                    return {"1_winner": s1,
+                            "2_winners": _combret(2),
+                            "3_winners": _combret(3),
+                            "4_winners": _combret(4)}
+                _quartet = sorted(_l15_eligible, key=lambda s: s["ev"], reverse=True)[:4]
+                _l15_plan = {
+                    "lucky15_selections": [{"horse": s["horse"], "course": s["course"], "time": s["time"],
+                                            "tier": s["tier"], "odds_str": s["odds_str"], "decimal": s["decimal"]}
+                                           for s in _quartet],
+                    "lucky15_scenarios":  _l15_scenarios_inline(_quartet),
+                    "total_staked":       30.00,
+                }
+
+            if _l15_plan is not None:
+                _l15_sels = _l15_plan["lucky15_selections"]
+                _scen     = _l15_plan["lucky15_scenarios"]
+
+                _tier_df_rows = []
+                for _s in _l15_sels:
+                    _tier_df_rows.append({
+                        "Tier":    _s["tier"],
+                        "Horse":   _s["horse"],
+                        "Course":  _s["course"],
+                        "Time":    _s["time"],
+                        "Odds":    _s["odds_str"],
+                        "Decimal": f"{_s['decimal']:.2f}x",
+                    })
+                st.dataframe(pd.DataFrame(_tier_df_rows), use_container_width=True, hide_index=True)
+
+                st.markdown("##### Return Scenarios (Lucky 15 — £30 stake = 15 bets × £2)")
+                _scen_rows = [
+                    {"Scenario": "1 winner (best single)",
+                     "Min Return": f"£{_scen['1_winner']['min_return']:.2f}",
+                     "Max Return": f"£{_scen['1_winner']['max_return']:.2f}",
+                     "vs £30 stake": f"£{_scen['1_winner']['min_profit']:.2f}"},
+                    {"Scenario": "2 winners",
+                     "Min Return": f"£{_scen['2_winners']['min_return']:.2f}",
+                     "Max Return": f"£{_scen['2_winners']['max_return']:.2f}",
+                     "vs £30 stake": f"£{_scen['2_winners']['min_profit']:.2f}"},
+                    {"Scenario": "3 winners",
+                     "Min Return": f"£{_scen['3_winners']['min_return']:.2f}",
+                     "Max Return": f"£{_scen['3_winners']['max_return']:.2f}",
+                     "vs £30 stake": f"£{_scen['3_winners']['min_profit']:.2f}"},
+                    {"Scenario": "ALL 4 winners",
+                     "Min Return": f"£{_scen['4_winners']['max_return']:.2f}",
+                     "Max Return": f"£{_scen['4_winners']['max_return']:.2f}",
+                     "vs £30 stake": f"+£{_scen['4_winners']['min_profit']:.2f}"},
+                ]
+                st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
+            else:
+                if _l15_err:
+                    st.warning(f"Lucky 15 builder note: {_l15_err}")
+        else:
+            st.info(f"✖ Lucky 15 not available today — only {len(_l15_eligible)} horse(s) qualify (need 4+). Accumulator is the main bet.")
+
+        st.markdown("---")
+
+        # ── Loss Learning summary ──
         st.markdown("#### 🔍 Loss Learning — Recent Diagnoses")
         try:
             from learning.loss_analyser import get_loss_report as _get_loss_report
             _loss_txt = _get_loss_report(last_n=5)
             st.text(_loss_txt)
-        except Exception as _le:
-            st.caption(f"Loss report accumulates after races are settled. Check back after today's races complete.")
+        except Exception:
+            st.caption("Loss report accumulates after races are settled. Check back after today's races complete.")
 
         if not _is_live:
-            st.info("📌 Showing today's manually-scored selections (21 Apr 2026). Live data will populate automatically when the market feed connects.")
-    else:
-        if _l15_err:
-            st.error(f"Plan builder error: {_l15_err}")
-        st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
+            st.info("📌 Showing today's manually-scored selections. Live data will populate automatically when the market feed connects.")
+
     st.markdown("---")
     st.caption("All figures are research estimates only. Phase 1 personal research tool. Singles removed from plan permanently.")
-
 
 
 
