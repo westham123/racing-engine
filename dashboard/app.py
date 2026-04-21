@@ -1,5 +1,5 @@
 # Racing Engine — Visual Dashboard
-# Version: 1.9 — Today's Plan tab + Configurable Staking Settings
+# Version: 2.0 — Lucky 15 + Six-Timer plan, Loss Analyser, Tiered Selection Logic
 # Built with Streamlit
 # Date: 20 April 2026
 
@@ -496,237 +496,150 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
 
 # ── Tab 1: Today's Plan ──────────────────────────────────────
 with tab1:
-    st.markdown("### 💰 Today's Staking Plan")
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Risk: **{st.session_state.get('risk_profile', 'Balanced')}** | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
+    st.markdown("### 💰 Today's Staking Plan — Lucky 15 + Six-Timer")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | £30 Lucky 15 + £20 Six-Timer | Min confidence: **{st.session_state.get('conf_threshold', 0.55):.0%}** | Adjust in sidebar ←")
 
-    def _build_todays_plan(live_df, is_live, budget, risk_profile, conf_threshold, max_legs,
-                           use_singles, use_doubles, use_trebles, use_4fold, use_5fold):
-        splits = st.session_state.get("stake_splits", {
-            "singles_pct": 0.20, "doubles_pct": 0.20,
-            "trebles_pct": 0.27, "4fold_pct": 0.24, "5fold_pct": 0.09
-        })
-        if is_live and len(live_df) > 0:
-            pool = []
-            for _, row in live_df.iterrows():
-                conf = float(row.get("Confidence", 0))
-                if conf < conf_threshold:
-                    continue
-                odds_str = str(row.get("Odds", "Evs"))
-                try:
-                    if "/" in odds_str:
-                        n, d = odds_str.split("/")
-                        dec = float(n) / float(d) + 1
-                    else:
-                        dec = float(odds_str)
-                except Exception:
-                    dec = 2.0
-                ev = (conf * dec) - 1
-                # Exclude horses priced at 4/6 (1.67) or shorter — too compressed to add multiple value
-                if dec <= 1.67:
-                    continue
-                if ev <= 0:
-                    continue
-                # Support both live df columns (Time/Course) and legacy Race column
-                _course = str(row.get("Course", ""))
-                _time   = str(row.get("Time", ""))
-                if not _course and "Race" in row:
-                    # Parse "14:35 Cheltenham" style
-                    _race_parts = str(row["Race"]).split(" ", 1)
-                    _time   = _race_parts[0] if len(_race_parts) > 0 else ""
-                    _course = _race_parts[1] if len(_race_parts) > 1 else str(row["Race"])
-                pool.append({
-                    "horse": str(row.get("Horse", row.get("Selection", "Unknown"))),
-                    "course": _course,
-                    "time": _time,
-                    "odds_str": odds_str,
-                    "decimal": round(dec, 3),
-                    "confidence": round(conf, 3),
-                    "ev": round(ev, 3),
-                })
-            pool.sort(key=lambda x: x["ev"], reverse=True)
-        else:
-            # Sample pool — multiples only, short-priced horses (EV < 0.50) excluded
-            # Crystal Island excluded: 4/6 price too compressed to add multiple value
-            pool = [
-                {"horse": "Mister Mojito",   "course": "Yarmouth",       "time": "4:55", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.67, "ev": 4.03},
-                {"horse": "Yorkshire Glory", "course": "Pontefract",     "time": "4:02", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.67, "ev": 1.35},
-                {"horse": "Beaune",          "course": "Wolverhampton",  "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
-                {"horse": "Kaaranah",        "course": "Wolverhampton",  "time": "8:30", "odds_str": "13/8",  "decimal": 2.625, "confidence": 0.70, "ev": 0.84},
-                {"horse": "Lady Youmzain",   "course": "Pontefract",     "time": "2:17", "odds_str": "11/10", "decimal": 2.10,  "confidence": 0.70, "ev": 0.47},
-            ]
-        if not pool:
-            return [], [], {}
-        # Singles removed from staking plan — not viable as individual wagers at these price levels
-        # Full budget goes into multiples. EV filter also removes short-priced horses (e.g. 4/6) automatically.
-        singles_budget  = 0  # always zero — singles disabled
-        doubles_budget  = round(budget * (splits["doubles_pct"] + splits["singles_pct"] * 0.33), 2) if use_doubles else 0
-        trebles_budget  = round(budget * (splits["trebles_pct"] + splits["singles_pct"] * 0.33), 2) if use_trebles else 0
-        fourfold_budget = round(budget * (splits["4fold_pct"]   + splits["singles_pct"] * 0.34), 2) if use_4fold   else 0
-        fivefold_budget = round(budget * splits["5fold_pct"],   2) if use_5fold   else 0
-        singles = []  # always empty — singles disabled
-        multiples = []
-        all_legs = pool[:max_legs] if len(pool) > max_legs else pool
+    # ── Build pool from live data or sample ────────────────────────────────
+    _conf_threshold = st.session_state.get("conf_threshold", 0.55)
+    _six_pool  = []  # All qualifying selections — goes in six-timer
 
-        # Identify the top EV horse (likely the highest-odds value pick e.g. Mister Mojito)
-        top_ev = all_legs[0] if all_legs else None
-        non_anchor = [x for x in all_legs if x != top_ev]
-
-        # Split budget: 60% on anchor-inclusive multiples, 40% on independent non-anchor multiples
-        # This ensures if the anchor loses, non-anchor multiples still pay out
-        anchor_ratio   = 0.60
-        noanchor_ratio = 0.40
-
-        def _add_combos(legs_pool, n_legs, budget_for_type, label_prefix, group_tag=""):
-            combos = list(combinations(legs_pool, n_legs))
-            if not combos or budget_for_type <= 0:
-                return
-            combos.sort(key=lambda c: np.prod([x["ev"] for x in c]), reverse=True)
-            n_show = min(len(combos), max(1, round(budget_for_type / 2)))
-            per_bet = round(budget_for_type / max(n_show, 1), 2)
-            for combo in combos[:n_show]:
-                comb_dec = round(np.prod([x["decimal"] for x in combo]), 2)
-                ret = round(per_bet * comb_dec, 2)
-                multiples.append({
-                    "type": f"{label_prefix}{' ★' if group_tag == 'anchor' else ''}",
-                    "legs": n_legs,
-                    "selections": " + ".join([x["horse"] for x in combo]),
-                    "courses": " | ".join([f"{x['time']} {x['course']}" for x in combo]),
-                    "combined_decimal": comb_dec,
-                    "stake": per_bet,
-                    "projected_return": ret,
-                    "projected_profit": round(ret - per_bet, 2),
-                    "group": group_tag,
-                })
-
-        # Group A — anchor-inclusive (high upside, needs anchor to win)
-        if top_ev and len(all_legs) >= 2:
-            anchor_pool = all_legs  # includes anchor
-            if use_doubles: _add_combos(anchor_pool, 2, round(doubles_budget  * anchor_ratio, 2), "Double",  "anchor")
-            if use_trebles: _add_combos(anchor_pool, 3, round(trebles_budget  * anchor_ratio, 2), "Treble",  "anchor")
-            if use_4fold:   _add_combos(anchor_pool, 4, round(fourfold_budget * anchor_ratio, 2), "4-fold",  "anchor")
-            if use_5fold and len(anchor_pool) >= 5:
-                            _add_combos(anchor_pool, 5, round(fivefold_budget * anchor_ratio, 2), "5-fold",  "anchor")
-
-        # Group B — non-anchor independent (pays out even if anchor loses)
-        if len(non_anchor) >= 2:
-            if use_doubles and len(non_anchor) >= 2:
-                            _add_combos(non_anchor, 2, round(doubles_budget  * noanchor_ratio, 2), "Double",  "cover")
-            if use_trebles and len(non_anchor) >= 3:
-                            _add_combos(non_anchor, 3, round(trebles_budget  * noanchor_ratio, 2), "Treble",  "cover")
-            if use_4fold   and len(non_anchor) >= 4:
-                            _add_combos(non_anchor, 4, round(fourfold_budget * noanchor_ratio, 2), "4-fold",  "cover")
-
-        multiples.sort(key=lambda x: x["projected_return"], reverse=True)
-        top_ev_horse = pool[0] if pool else None
-        scenarios = {}
-        if top_ev_horse:
-            support = [x for x in pool[1:] if x["horse"] != top_ev_horse["horse"]][:2]
-            sa_wins = [top_ev_horse] + support
-            sa_return = sum(
-                m["projected_return"] for m in multiples
-                if all(h["horse"] in m["selections"] for h in sa_wins)
-            ) + sum(s["projected_return"] for s in singles if s["horse"] in [x["horse"] for x in sa_wins])
-            scenarios["A"] = {"label": f"{top_ev_horse['horse']} wins + 2 others", "return": round(sa_return, 2), "profit": round(sa_return - budget, 2)}
-            sb_return = sum(m["projected_return"] for m in multiples) + sum(s["projected_return"] for s in singles)
-            scenarios["B"] = {"label": "All selections win", "return": round(sb_return, 2), "profit": round(sb_return - budget, 2)}
-            sc_return = sum(s["projected_return"] for s in singles if s["horse"] != top_ev_horse["horse"])
-            scenarios["C"] = {"label": f"{top_ev_horse['horse']} loses — singles salvage", "return": round(sc_return, 2), "profit": round(sc_return - budget, 2)}
-        return singles, multiples, scenarios
-
-    _plan_singles, _plan_multiples, _plan_scenarios = _build_todays_plan(
-        _live_df, _is_live,
-        st.session_state.get("daily_budget", 50),
-        st.session_state.get("risk_profile", "Balanced"),
-        st.session_state.get("conf_threshold", 0.55),
-        st.session_state.get("max_legs", 6),
-        st.session_state.get("use_singles", True),
-        st.session_state.get("use_doubles", True),
-        st.session_state.get("use_trebles", True),
-        st.session_state.get("use_4fold", True),
-        st.session_state.get("use_5fold", True),
-    )
-
-    if _plan_singles or _plan_multiples:
-        if _plan_singles and st.session_state.get("use_singles", True):
-            st.markdown("#### Singles (insurance layer)")
-            _sing_rows = []
-            for s in _plan_singles:
-                _sing_rows.append({
-                    "Time": s["time"], "Course": s["course"], "Horse": s["horse"],
-                    "Odds": s["odds_str"], "Confidence": f"{s['confidence']:.0%}",
-                    "EV": f"+{s['ev']:.2f}", "Stake (£)": f"£{s['stake']:.2f}",
-                    "To Return (£)": f"£{s['projected_return']:.2f}",
-                    "Profit (£)": f"£{s['projected_profit']:.2f}"
-                })
-            st.dataframe(pd.DataFrame(_sing_rows), use_container_width=True, hide_index=True)
-        if _plan_multiples:
-            st.markdown("#### ★ Anchor Multiples — high upside, need top EV horse to win")
-            st.caption("If the top EV horse loses, these lose. 60% of budget.")
-            _anchor_rows = []
-            _cover_rows  = []
-            for m in _plan_multiples[:20]:
-                row = {
-                    "Type": m["type"],
-                    "Selections": m["selections"],
-                    "Times": m["courses"],
-                    "Comb. Odds": f"{m['combined_decimal']:.2f}x",
-                    "Stake (£)": f"£{m['stake']:.2f}",
-                    "To Return (£)": f"£{m['projected_return']:.2f}",
-                    "Profit (£)": f"£{m['projected_profit']:.2f}",
-                }
-                if m.get("group") == "cover":
-                    _cover_rows.append(row)
+    if _is_live and len(_live_df) > 0:
+        for _, _row in _live_df.iterrows():
+            _conf = float(_row.get("Confidence", 0))
+            if _conf < _conf_threshold:
+                continue
+            _odds_str = str(_row.get("Odds", "Evs"))
+            try:
+                if "/" in _odds_str:
+                    _n, _d = _odds_str.split("/")
+                    _dec = float(_n) / float(_d) + 1
                 else:
-                    _anchor_rows.append(row)
-            _mult_rows = _anchor_rows  # for colour styling below
-            _mult_df = pd.DataFrame(_mult_rows)
-            def _colour_profit(val):
-                try:
-                    v = float(str(val).replace("£",""))
-                    if v > 100: return "background-color: #002200; color: #00ff88; font-weight: bold"
-                    if v > 20:  return "background-color: #001a00; color: #66ff66"
-                    if v > 0:   return "background-color: #001100; color: #aaffaa"
-                    return ""
-                except Exception: return ""
-            if _anchor_rows:
-                st.dataframe(
-                    pd.DataFrame(_anchor_rows).style.map(_colour_profit, subset=["Profit (£)"]),
-                    use_container_width=True, hide_index=True
-                )
-            if _cover_rows:
-                st.markdown("#### Cover Multiples — independent of top EV horse")
-                st.caption("These pay out even if the top EV horse loses. 40% of budget.")
-                st.dataframe(
-                    pd.DataFrame(_cover_rows).style.map(_colour_profit, subset=["Profit (£)"]),
-                    use_container_width=True, hide_index=True
-                )
-        _total_staked = sum(s["stake"] for s in _plan_singles) + sum(m["stake"] for m in _plan_multiples)
-        st.markdown("---")
-        _sc1, _sc2, _sc3 = st.columns(3)
-        with _sc1:
-            st.metric("Total Staked", f"£{_total_staked:.2f}", f"Budget: £{st.session_state.get('daily_budget',50)}")
-        with _sc2:
-            st.metric("Total Bets", str(len(_plan_singles) + len(_plan_multiples)),
-                      f"{len(_plan_singles)} singles + {len(_plan_multiples)} multiples")
-        with _sc3:
-            _best_return = max((m["projected_return"] for m in _plan_multiples), default=0)
-            st.metric("Best Case Return", f"£{_best_return:.2f}", "If top multiple lands")
-        if _plan_scenarios:
-            st.markdown("#### Return Scenarios")
-            _scen_rows = []
-            for k, v in _plan_scenarios.items():
-                _scen_rows.append({
-                    "Scenario": v["label"],
-                    "Return (£)": f"£{v['return']:.2f}",
-                    "Profit/Loss (£)": f"+£{v['profit']:.2f}" if v['profit'] >= 0 else f"-£{abs(v['profit']):.2f}"
-                })
-            st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
-        if not _is_live:
-            st.info("📌 Showing today's manually-scored selections. Live data will populate automatically when the market feed connects.")
+                    _dec = float(_odds_str)
+            except Exception:
+                _dec = 2.0
+            _ev = round(_conf * _dec - 1, 3)
+            _course = str(_row.get("Course", ""))
+            _time   = str(_row.get("Time", ""))
+            if not _course and "Race" in _row:
+                _rp = str(_row["Race"]).split(" ", 1)
+                _time   = _rp[0] if len(_rp) > 0 else ""
+                _course = _rp[1] if len(_rp) > 1 else str(_row["Race"])
+            _six_pool.append({
+                "horse": str(_row.get("Horse", _row.get("Selection", "Unknown"))),
+                "course": _course, "time": _time,
+                "odds_str": _odds_str, "decimal": round(_dec, 3),
+                "confidence": round(_conf, 3), "ev": _ev,
+            })
     else:
-        st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
+        # Sample pool for today's card (21 April 2026)
+        _six_pool = [
+            {"horse": "Lady Youmzain",   "course": "Pontefract",    "time": "2:17", "odds_str": "11/10", "decimal": 2.10,  "confidence": 0.70, "ev": 0.47},
+            {"horse": "Yorkshire Glory", "course": "Pontefract",    "time": "4:02", "odds_str": "7/2",   "decimal": 4.50,  "confidence": 0.67, "ev": 1.35},
+            {"horse": "Crystal Island",  "course": "Ffos Las",      "time": "4:38", "odds_str": "4/6",   "decimal": 1.67,  "confidence": 0.79, "ev": 0.31},
+            {"horse": "Mister Mojito",   "course": "Yarmouth",      "time": "4:55", "odds_str": "13/2",  "decimal": 7.50,  "confidence": 0.67, "ev": 4.03},
+            {"horse": "Beaune",          "course": "Wolverhampton", "time": "6:30", "odds_str": "7/4",   "decimal": 2.75,  "confidence": 0.73, "ev": 1.01},
+            {"horse": "Kaaranah",        "course": "Wolverhampton", "time": "8:30", "odds_str": "13/8",  "decimal": 2.625, "confidence": 0.70, "ev": 0.84},
+        ]
+
+    # ── Run Lucky15Planner ─────────────────────────────────────────
+    _l15_plan = None
+    _l15_err  = None
+    try:
+        import sys as _l15_sys, os as _l15_os
+        _l15_sys.path.insert(0, _l15_os.path.join(_l15_os.path.dirname(__file__), ".."))
+        from permutations.lucky15_planner import Lucky15Planner as _Lucky15Planner
+        if len(_six_pool) >= 2:
+            _planner = _Lucky15Planner(_six_pool, stake_per_bet=2.00, sixtimer_stake=20.00)
+            _l15_plan = _planner.build_plan()
+    except Exception as _e:
+        _l15_err = str(_e)
+
+    if _l15_plan:
+        _l15_sels  = _l15_plan["lucky15_selections"]
+        _scen      = _l15_plan["lucky15_scenarios"]
+        _six_ret   = _l15_plan["sixtimer_projected_return"]
+        _six_dec   = _l15_plan["sixtimer_combined_decimal"]
+        _total_stk = _l15_plan["total_staked"]
+
+        # ── KPI row ──
+        _kc1, _kc2, _kc3, _kc4 = st.columns(4)
+        _kc1.metric("🎰 Six-Timer Stake", "£20.00", f"Return if all win: £{_six_ret:,.2f}")
+        _kc2.metric("♥ Lucky 15 Stake", "£30.00", "15 bets × £2")
+        _kc3.metric("Total Staked", f"£{_total_stk:.2f}")
+        _kc4.metric("Six-Timer Odds", f"{_six_dec:.2f}x", f"All {len(_six_pool)} selections")
+
+        st.markdown("---")
+
+        # ── Six-Timer box ──
+        st.markdown("#### 🎰 Six-Timer Accumulator (£20 stake)")
+        st.caption("All qualifying selections in one accumulator. Maximum potential return — all must win.")
+        _six_df_rows = [{"Horse": s, "In Six-Timer": "✅"} for s in _l15_plan["sixtimer_selections"]]
+        _six_extra   = [s for s in _six_pool if s["horse"] not in [x["horse"] for x in _l15_sels]]
+        if _six_extra:
+            for sx in _six_extra:
+                for row in _six_df_rows:
+                    if row["Horse"] == sx["horse"]:
+                        row["Note"] = f"Excluded from Lucky 15 (≤ 4/6 price)"
+        st.dataframe(pd.DataFrame(_six_df_rows), use_container_width=True, hide_index=True)
+        st.success(f"Six-Timer projected return: **£{_six_ret:,.2f}** (combined odds: {_six_dec:.2f}x). Stake: £20.00.")
+
+        st.markdown("---")
+
+        # ── Lucky 15 selections with tier badges ──
+        st.markdown("#### ♥ Lucky 15 — Tiered Selections (£30 = 15 bets × £2)")
+        st.caption("4 horses selected by tier: Banker (shortest) anchors singles, Value/Longshot supercharges trebles/4-folds.")
+
+        _tier_colours = {
+            "banker":   ("#003300", "#00ff88", "BANKER — ≤ 6/4"),
+            "mid":      ("#1a1200", "#ffcc00", "MID — 6/4 to 4/1"),
+            "value":    ("#00001a", "#66aaff", "VALUE — 4/1 to 9/1"),
+            "longshot": ("#1a0000", "#ff6666", "LONGSHOT — 10/1+"),
+        }
+        _tier_df_rows = []
+        for _s in _l15_sels:
+            _tc = _tier_colours.get(_s["tier"], ("", "#ffffff", _s["tier"].upper()))
+            _tier_df_rows.append({
+                "Tier":   _tc[2],
+                "Horse":  _s["horse"],
+                "Course": _s["course"],
+                "Time":   _s["time"],
+                "Odds":   _s["odds_str"],
+                "Decimal": f"{_s['decimal']:.2f}x",
+            })
+        st.dataframe(pd.DataFrame(_tier_df_rows), use_container_width=True, hide_index=True)
+
+        # ── Scenario table ──
+        st.markdown("#### Return Scenarios (Lucky 15)")
+        _scen_rows = [
+            {"Scenario": "1 winner (best case single)",   "Min Return": f"£{_scen['1_winner']['min_return']:.2f}",  "Max Return": f"£{_scen['1_winner']['max_return']:.2f}",  "vs £30 stake": f"£{_scen['1_winner']['min_profit']:.2f}"},
+            {"Scenario": "2 winners",                     "Min Return": f"£{_scen['2_winners']['min_return']:.2f}", "Max Return": f"£{_scen['2_winners']['max_return']:.2f}", "vs £30 stake": f"£{_scen['2_winners']['min_profit']:.2f}"},
+            {"Scenario": "3 winners",                     "Min Return": f"£{_scen['3_winners']['min_return']:.2f}", "Max Return": f"£{_scen['3_winners']['max_return']:.2f}", "vs £30 stake": f"£{_scen['3_winners']['min_profit']:.2f}"},
+            {"Scenario": "ALL 4 winners",                 "Min Return": f"£{_scen['4_winners']['max_return']:.2f}", "Max Return": f"£{_scen['4_winners']['max_return']:.2f}", "vs £30 stake": f"+£{_scen['4_winners']['min_profit']:.2f}"},
+        ]
+        st.dataframe(pd.DataFrame(_scen_rows), use_container_width=True, hide_index=True)
+
+        st.markdown("---")
+
+        # ── Loss Learning summary (live) ──
+        st.markdown("#### 🔍 Loss Learning — Recent Diagnoses")
+        try:
+            import sys as _ls_sys, os as _ls_os
+            _ls_sys.path.insert(0, _ls_os.path.join(_ls_os.path.dirname(__file__), ".."))
+            from learning.loss_analyser import get_loss_report as _get_loss_report
+            _loss_txt = _get_loss_report(last_n=5)
+            st.text(_loss_txt)
+        except Exception as _le:
+            st.caption(f"Loss report: accumulates after races are settled. ({_le})")
+
+        if not _is_live:
+            st.info("📌 Showing today's manually-scored selections (21 Apr 2026). Live data will populate automatically when the market feed connects.")
+    else:
+        _err_msg = f" ({_l15_err})" if _l15_err else ""
+        st.info(f"No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.{_err_msg}")
     st.markdown("---")
-    st.caption("All figures are research estimates only. Phase 1 personal research tool.")
+    st.caption("All figures are research estimates only. Phase 1 personal research tool. Singles removed from plan permanently.")
+
+
 
 
 # ── Tab 2: Today's Selections ─────────────────────────────────

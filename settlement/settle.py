@@ -183,6 +183,10 @@ class SettlementEngine:
         # Trigger learning loop
         self._trigger_learning(race_id, winner.get("horse", ""))
 
+        # If engine tipped a horse that lost — diagnose why
+        if not engine_tipped and engine_confidence and engine_confidence >= 0.55:
+            self._trigger_loss_analysis(settlement)
+
         # Send instant alert email if high-confidence hit
         if engine_tipped and engine_confidence and engine_confidence >= 0.65:
             self._send_winner_alert(settlement)
@@ -259,6 +263,39 @@ class SettlementEngine:
             LearningLoop().record_outcome(race_id, winner)
         except Exception as e:
             print(f"[Settlement] Learning loop trigger failed: {e}")
+
+    def _trigger_loss_analysis(self, settlement: dict):
+        """
+        For horses the engine recommended but that LOST,
+        run loss diagnosis to identify why and update signal weights.
+        """
+        try:
+            from learning.loss_analyser import diagnose_loss
+            # Build a result dict with the fields loss_analyser expects
+            result = {
+                "horse":                settlement.get("winner"),   # winner of race
+                "course":               settlement.get("course"),
+                "time":                 settlement.get("time"),
+                "race_date":            settlement.get("date"),
+                "forecast_going":       settlement.get("_forecast_going", ""),
+                "actual_going":         settlement.get("going", ""),
+                "morning_decimal":      settlement.get("_engine_morning_decimal", 0),
+                "bsp":                  settlement.get("_engine_bsp", 0),
+                "rival_morning_decimals": settlement.get("_rival_morning_decimals", []),
+                "rival_bsps":           settlement.get("_rival_bsps", []),
+                "avg_recent_placing":   settlement.get("_avg_recent_placing", 0),
+                "finishing_position":   settlement.get("_engine_finishing_pos", 99),
+                "trainer_win_pct_14d":  settlement.get("_trainer_win_pct_14d", 100),
+                "engine_accuracy_race_type": settlement.get("_engine_accuracy_race_type", 100),
+                "confidence":           settlement.get("engine_confidence", 0),
+            }
+            diagnosis = diagnose_loss(result)
+            if diagnosis["faults"]:
+                print(f"[LossAnalyser] {diagnosis['summary']}")
+            else:
+                print(f"[LossAnalyser] {settlement.get('winner')} — no specific fault detected")
+        except Exception as e:
+            print(f"[Settlement] Loss analysis failed: {e}")
 
     def _send_winner_alert(self, s: dict):
         """Email instant alert when a high-confidence selection wins."""

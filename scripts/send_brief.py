@@ -171,19 +171,114 @@ def build_brief_data():
             {"course": "Ffos Las",      "going": "Good to Soft (5.0)",   "trend": "Official", "updated": TIME},
         ]
 
-    # Staking plan — two groups to ensure coverage if top EV horse (Mister Mojito) loses
-    # Group A (60% budget — ★): MM-anchored, high upside
-    # Group B (40% budget): Non-MM cover multiples, pay out independently
-    staking_summary = [
-        {"bet": "★ MM + Yorkshire Glory (double)",           "stake": "£4.00", "odds": "26.25x",  "return": "£105.00",  "group": "A"},
-        {"bet": "★ MM + Beaune (double)",                   "stake": "£4.00", "odds": "20.63x",  "return": "£82.50",   "group": "A"},
-        {"bet": "★ MM + Beaune + Yorkshire Glory (treble)", "stake": "£6.00", "odds": "72.19x",  "return": "£433.13",  "group": "A"},
-        {"bet": "★ MM + Kaaranah + Yorkshire Glory",        "stake": "£6.00", "odds": "68.91x",  "return": "£413.44",  "group": "A"},
-        {"bet": "★ MM + Beaune + Kaaranah + YG (4-fold)",  "stake": "£8.00", "odds": "189.49x", "return": "£1515.94", "group": "A"},
-        {"bet": "COVER: Beaune + Yorkshire Glory (double)",  "stake": "£4.00", "odds": "12.38x",  "return": "£49.50",   "group": "B"},
-        {"bet": "COVER: Kaaranah + Yorkshire Glory (double)","stake": "£4.00", "odds": "11.81x",  "return": "£47.25",   "group": "B"},
-        {"bet": "COVER: Beaune + Kaaranah + YG (treble)",   "stake": "£14.00","odds": "32.39x",  "return": "£453.47",  "group": "B"},
-    ]
+    # ── Lucky 15 + Six-Timer plan (permanent structure from v2.0) ──────────
+    # Lucky 15: 4 tiered selections × 15 bets × £2 = £30 total
+    # Six-Timer: All qualifying selections × £20 = £20 stake
+    # Total: £50 staked
+    # Tier logic:
+    #   Banker  = decimal <= 2.50 (up to 6/4) — anchors the Lucky 15
+    #   Mid     = decimal 2.51–5.00 — adds to doubles
+    #   Value   = decimal 5.01–10.00 — supercharges trebles/4-folds
+    #   Longshot= decimal > 10.00 — lottery element
+    # Excludes horses at or below 4/6 (1.67) from Lucky 15; they go in six-timer only
+    # ────────────────────────────────────────────────────────────────────────
+    try:
+        import sys as _sys, os as _os
+        _sys.path.insert(0, _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), ".."))
+        from permutations.lucky15_planner import Lucky15Planner as _L15
+
+        # Build pool from live selections — include ALL qualifying selections (conf >= 0.65)
+        _pool = []
+        _six_pool = []  # six-timer includes ALL, even short-priced
+        for s in selections:
+            try:
+                if s["confidence"] < 0.65:
+                    continue
+                odds_s = str(s.get("odds", "Evs"))
+                if "/" in odds_s:
+                    n, d = odds_s.split("/")
+                    dec = (float(n) + float(d)) / float(d)
+                else:
+                    dec = float(odds_s)
+                entry = {
+                    "horse":      s.get("horse", "-"),
+                    "course":     s.get("race", "-").split(" ", 1)[-1] if " " in str(s.get("race","")) else "",
+                    "time":       s.get("race", "-").split(" ", 1)[0] if " " in str(s.get("race","")) else "",
+                    "odds_str":   odds_s,
+                    "decimal":    dec,
+                    "confidence": s["confidence"],
+                    "ev":         round(s["confidence"] * dec - 1, 3),
+                }
+                _six_pool.append(entry)
+                if dec > 1.67:  # exclude 4/6 or shorter from Lucky 15
+                    _pool.append(entry)
+            except Exception:
+                continue
+
+        if len(_pool) >= 4 and len(_six_pool) >= 2:
+            _planner  = _L15(_six_pool, stake_per_bet=2.00, sixtimer_stake=20.00)
+            _plan     = _planner.build_plan()
+            _l15_sels = _plan["lucky15_selections"]
+            _scen     = _plan["lucky15_scenarios"]
+            _six_dec  = _plan["sixtimer_combined_decimal"]
+            _six_ret  = _plan["sixtimer_projected_return"]
+
+            # Build staking_summary rows for email
+            staking_summary = []
+            # Six-timer first
+            staking_summary.append({
+                "bet":    f"SIX-TIMER: " + " + ".join(_plan["sixtimer_selections"]),
+                "stake":  f"£{_plan['sixtimer_stake']:.2f}",
+                "odds":   f"{_six_dec:.2f}x",
+                "return": f"£{_six_ret:.2f}",
+                "group":  "SIX",
+            })
+            # Lucky 15 scenarios
+            staking_summary.append({
+                "bet":    "LUCKY 15 (15 bets × £2): " + " / ".join(
+                    f"{s['horse']} [{s['tier'].upper()}]"
+                    for s in _l15_sels
+                ),
+                "stake":  "£30.00 (15×£2)",
+                "odds":   "Multiple",
+                "return": f"1 winner: £{_scen['1_winner']['min_return']:.2f}–£{_scen['1_winner']['max_return']:.2f}",
+                "group":  "L15",
+            })
+            staking_summary.append({
+                "bet":    "  2 winners return:",
+                "stake":  "",
+                "odds":   "",
+                "return": f"£{_scen['2_winners']['min_return']:.2f} – £{_scen['2_winners']['max_return']:.2f}",
+                "group":  "L15",
+            })
+            staking_summary.append({
+                "bet":    "  3 winners return:",
+                "stake":  "",
+                "odds":   "",
+                "return": f"£{_scen['3_winners']['min_return']:.2f} – £{_scen['3_winners']['max_return']:.2f}",
+                "group":  "L15",
+            })
+            staking_summary.append({
+                "bet":    "  ALL 4 winners return:",
+                "stake":  "",
+                "odds":   "",
+                "return": f"£{_scen['4_winners']['max_return']:.2f} (profit £{_scen['4_winners']['min_profit']:.2f})",
+                "group":  "L15",
+            })
+        else:
+            raise ValueError("Not enough selections for Lucky 15")
+
+    except Exception as _l15_err:
+        print(f"[Brief] Lucky15Planner fallback: {_l15_err}")
+        # Fallback — static today's plan
+        staking_summary = [
+            {"bet": "SIX-TIMER: All 6 selections",                              "stake": "£20.00", "odds": "664.55x", "return": "£13,291",  "group": "SIX"},
+            {"bet": "LUCKY 15 × £2: Yorkshire Glory / Beaune / Kaaranah / Mister Mojito", "stake": "£30.00", "odds": "Multiple", "return": "See below", "group": "L15"},
+            {"bet": "  1 winner:",  "stake": "", "odds": "", "return": "£5.25 – £15.00",  "group": "L15"},
+            {"bet": "  2 winners:", "stake": "", "odds": "", "return": "£18.38 – £73.13", "group": "L15"},
+            {"bet": "  3 winners:", "stake": "", "odds": "", "return": "£73.13 – £410.16","group": "L15"},
+            {"bet": "  ALL 4 win:", "stake": "", "odds": "", "return": "£1,269 (profit £1,239)", "group": "L15"},
+        ]
 
     return {
         "brief_type":      BRIEF_TYPE,
@@ -253,29 +348,45 @@ def build_html(data):
             </tr>"""
         return rows
 
+    # Loss learning report — wrapped in light container for email
+    try:
+        import sys as _sys2, os as _os2
+        _sys2.path.insert(0, _os2.path.join(_os2.path.dirname(_os2.path.abspath(__file__)), ".."))
+        from learning.loss_analyser import get_loss_report_html as _loss_html
+        loss_report_html = f'<div style="background:#1c1f2e;border-radius:12px;padding:20px;margin-bottom:16px;">' + _loss_html(last_n=10) + '</div>'
+    except Exception as _lr_err:
+        loss_report_html = f'<!-- Loss report unavailable: {_lr_err} -->'
+
     def staking_rows():
         rows = ""
         last_group = None
+        group_headers = {
+            "SIX": ('<tr><td colspan="4" style="padding:8px 6px;color:#ff9100;font-weight:bold;background:#1a0e00;">'
+                    '🎰 SIX-TIMER ACCUMULATOR — £20 stake — all selections must win — maximum upside</td></tr>'),
+            "L15": ('<tr><td colspan="4" style="padding:8px 6px;color:#00c853;font-weight:bold;background:#001a0e;">'
+                    '♥ LUCKY 15 — £30 stake (15 bets × £2) — any 1 winner returns — tiered selections</td></tr>'),
+            "A":   ('<tr><td colspan="4" style="padding:8px 6px;color:#ffcc00;font-weight:bold;background:#1a1600;">'
+                    '&#9733; Group A — Anchor multiples (60% budget)</td></tr>'),
+            "B":   ('<tr><td colspan="4" style="padding:8px 6px;color:#00c8ff;font-weight:bold;background:#001a22;">'
+                    '&#9632; Group B — Cover multiples (40% budget)</td></tr>'),
+        }
+        bg_map = {"SIX": "#1a0e00", "L15": "#001a0e", "A": "#1a1600", "B": "#001a22"}
         for b in data.get("staking_summary", []):
             grp = b.get("group", "A")
-            # Insert group header row when group changes
             if grp != last_group:
-                if grp == "A":
-                    rows += '<tr><td colspan="4" style="padding:8px 6px;color:#ffcc00;font-weight:bold;background:#1a1600;">&#9733; Group A — Anchor multiples (60% budget). Need Mister Mojito to win.</td></tr>'
-                else:
-                    rows += '<tr><td colspan="4" style="padding:8px 6px;color:#00c8ff;font-weight:bold;background:#001a22;">&#9632; Group B — Cover multiples (40% budget). Pay out even if Mister Mojito loses.</td></tr>'
+                rows += group_headers.get(grp, "")
                 last_group = grp
-            ret_val = b['return'].replace("£","")
+            ret_val = str(b.get('return', '')).replace("£","").replace(",","")
             try:
                 rc = "#00ff88" if float(ret_val) > 200 else "#66ff66" if float(ret_val) > 50 else "#aaffaa"
             except Exception:
                 rc = "#aaffaa"
-            bg = "#1a1600" if grp == "A" else "#001a22"
+            bg = bg_map.get(grp, "#1c1f2e")
             rows += f"""<tr style="background:{bg}">
               <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;">{b['bet']}</td>
-              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;font-weight:bold;color:#fff;">{b['stake']}</td>
-              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;">{b['odds']}</td>
-              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;color:{rc};font-weight:bold;">{b['return']}</td>
+              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;font-weight:bold;color:#fff;">{b.get('stake','')}</td>
+              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;">{b.get('odds','')}</td>
+              <td style="padding:8px 6px;border-bottom:1px solid #2a2a2a;color:{rc};font-weight:bold;">{b.get('return','')}</td>
             </tr>"""
         return rows
 
@@ -311,7 +422,7 @@ def build_html(data):
 
   <!-- Staking Plan -->
   <div style="background:#1c1f2e;border-radius:12px;padding:20px;margin-bottom:16px;">
-    <h2 style="color:#fff;margin-top:0;font-size:16px;">💰 Today's £50 Staking Plan — Multiples Only</h2>
+    <h2 style="color:#fff;margin-top:0;font-size:16px;">💰 Today's £50 Staking Plan — Lucky 15 + Six-Timer</h2>
     <table style="width:100%;border-collapse:collapse;font-size:13px;">
       <thead><tr style="color:#666;text-align:left;">
         <th style="padding:6px;">Bet</th>
@@ -322,10 +433,10 @@ def build_html(data):
       <tbody>{staking_rows()}</tbody>
     </table>
     <p style="margin:12px 0 0;color:#888;font-size:12px;">
-      ★ Group A (yellow): MM-anchored multiples — high upside, need Mister Mojito to win.<br>
-      &#9632; Group B (blue): Cover multiples — Beaune/Kaaranah/Yorkshire Glory only. Pay out even if MM loses.<br>
-      Total staked: £50. If MM wins + 2 others: ~£500+. If MM loses: Group B treble still live (£453 return on £14 stake).<br>
-      Crystal Island excluded — 4/6 price too short to add multiple value.
+      🎰 Six-Timer (£20): All selections in one acca — maximum potential return.<br>
+      ♥ Lucky 15 (£30): 4 tiered horses, 15 bets at £2 each — any single winner pays back. 4 winners = £1,000+<br>
+      Horses priced 4/6 (1.67) or shorter are in the six-timer only — too short for Lucky 15 value.<br>
+      Total staked: £50. Singles permanently removed — not viable as individual wagers.
     </p>
   </div>
 
@@ -358,9 +469,12 @@ def build_html(data):
     </table>
   </div>
 
+  <!-- Loss Learning Report -->
+  {loss_report_html}
+
   <!-- Footer -->
   <div style="text-align:center;color:#444;font-size:12px;padding:16px 0;">
-    Racing Engine v1.9 &nbsp;|&nbsp; Phase 1: Personal Research Tool<br>
+    Racing Engine v2.0 &nbsp;|&nbsp; Phase 1: Personal Research Tool<br>
     <a href="{DASHBOARD_URL}" style="color:#00c853;">Open Dashboard (PIN: 1012)</a>
     &nbsp;|&nbsp; Odds are indicative — verify before placing.
   </div>
