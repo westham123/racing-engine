@@ -533,43 +533,72 @@ with tab1:
         return "LONGSHOT"
 
     if _is_live and len(_live_df) > 0:
-        for _, _row in _live_df.iterrows():
-            _conf = float(_row.get("Confidence", 0))
-            if _conf < _conf_threshold:
-                continue
-            # Use Current Odds (live market price) for the 4/6 cut-off and EV
-            # Fall back to Odds (best bk price) if Current Odds not available
-            _curr_odds = str(_row.get("Current Odds", "")).strip()
-            _odds_str  = _curr_odds if _curr_odds and _curr_odds not in ("", "N/A", "None") \
-                         else str(_row.get("Odds", "Evs"))
-            _disp_odds = str(_row.get("Odds", _odds_str))  # display best bk price
-            try:
-                if "/" in _odds_str:
-                    _n, _d = _odds_str.split("/")
-                    _dec = float(_n) / float(_d) + 1
-                else:
-                    _dec = float(_odds_str)
-            except Exception:
-                _dec = 2.0
-            if _dec <= 1.67:  # Hard 4/6 cut-off on current market price
-                continue
-            _ev = round(_conf * _dec - 1, 3)
-            _course = str(_row.get("Course", ""))
-            _time   = str(_row.get("Time", ""))
-            if not _course and "Race" in _row:
-                _rp = str(_row["Race"]).split(" ", 1)
-                _time   = _rp[0] if len(_rp) > 0 else ""
-                _course = _rp[1] if len(_rp) > 1 else str(_row["Race"])
-            _six_pool.append({
-                "horse":      str(_row.get("Horse", _row.get("Selection", "Unknown"))),
-                "course":     _course,
-                "time":       _time,
-                "odds_str":   _disp_odds,
-                "decimal":    round(_dec, 3),
-                "confidence": round(_conf, 3),
-                "ev":         _ev,
-                "tier":       _assign_tier(round(_dec, 3)),
-            })
+        # Load the odds model fresh so Tab 1 always uses the latest scoring logic
+        # This bypasses any stale confidence scores in the cached dataframe
+        try:
+            from engine.odds_model import OddsModel as _OddsModel
+            _tab1_model = _OddsModel()
+        except Exception:
+            _tab1_model = None
+
+        # Rebuild runner dicts from live_df for rescoring
+        from dashboard.live_data import get_todays_meetings as _get_meetings
+        from dashboard.live_data import get_race_runners as _get_runners
+        from dashboard.live_data import _utc_to_bst as _to_bst
+        try:
+            import zoneinfo as _zi2
+            _now_live = __import__('datetime').datetime.now(
+                _zi2.ZoneInfo('Europe/London')).strftime('%H:%M')
+        except Exception:
+            _now_live = __import__('datetime').datetime.utcnow().strftime('%H:%M')
+
+        _meetings_live = _get_meetings()
+        for _ml in _meetings_live:
+            for _rl in _ml['races']:
+                _tl = _to_bst(_rl.get('time',''))
+                if _tl < _now_live:
+                    continue  # skip past races
+                _sl = _rl.get('slug')
+                if not _sl:
+                    continue
+                for _rn in _get_runners(_sl):
+                    if _rn.get('status') == 'NON_RUNNER':
+                        continue
+                    # Score with current model
+                    if _tab1_model:
+                        _conf = _tab1_model.calculate_confidence(_rn)
+                    else:
+                        _conf = float(_rn.get('confidence', 0.5))
+                    if _conf < _conf_threshold:
+                        continue
+                    # Current odds for cut-off
+                    _curr = _rn.get('current_odds') or _rn.get('odds','Evs')
+                    _odds_str = str(_curr) if _curr and str(_curr) not in ('','N/A','None') \
+                                else str(_rn.get('odds','Evs'))
+                    _disp_odds = str(_rn.get('odds', _odds_str))
+                    try:
+                        if '/' in _odds_str:
+                            _n2, _d2 = _odds_str.split('/')
+                            _dec = float(_n2) / float(_d2) + 1
+                        else:
+                            _dec = float(_odds_str)
+                    except Exception:
+                        _dec = 2.0
+                    if _dec <= 1.67:
+                        continue
+                    _ev = round(_conf * _dec - 1, 3)
+                    _six_pool.append({
+                        'horse':      _rn['horse'],
+                        'course':     _ml['course'],
+                        'time':       _tl,
+                        'odds_str':   _disp_odds,
+                        'decimal':    round(_dec, 3),
+                        'confidence': round(_conf, 3),
+                        'ev':         _ev,
+                        'tier':       _assign_tier(round(_dec, 3)),
+                    })
+        # Sort by confidence descending
+        _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
     else:
         # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf, future races only)
         try:
