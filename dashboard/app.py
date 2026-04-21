@@ -267,7 +267,7 @@ if not st.session_state.unlocked:
     st.stop()
 
 # ── Live Data Loader ─────────────────────────────────────────
-@st.cache_data(ttl=90)  # cache for 5 minutes
+@st.cache_data(ttl=60)  # 60s — short enough to catch model changes
 def load_live_selections():
     """Fetch live UK/Irish selections. Returns (df, is_live)."""
     if not LIVE_DATA_AVAILABLE:
@@ -533,10 +533,11 @@ with tab1:
         if dec <= 10.00: return "VALUE"
         return "LONGSHOT"
 
-    if _is_live and len(_live_df) > 0:
-        # Rescore each row from _live_df using the fresh model.
-        # We use _live_df (cached, consistent) rather than making new HTTP calls,
-        # so Streamlit Cloud and the server see identical data.
+    # Always call load_live_selections() directly here — do NOT use the top-level
+    # _live_df which was bound before the Refresh button could clear the cache.
+    _t1_df, _t1_is_live = load_live_selections()
+
+    if _t1_is_live and len(_t1_df) > 0:
         try:
             from engine.odds_model import OddsModel as _OddsModel
             _tab1_model = _OddsModel()
@@ -550,7 +551,7 @@ with tab1:
         except Exception:
             _now_live = __import__('datetime').datetime.utcnow().strftime('%H:%M')
 
-        for _, _row in _live_df.iterrows():
+        for _, _row in _t1_df.iterrows():
             _time = str(_row.get('Time', ''))
             if _time < _now_live:
                 continue  # skip past races
