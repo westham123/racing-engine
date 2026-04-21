@@ -15,16 +15,20 @@ BETFAIR_PASSWORD = ""  # Your Betfair password
 # ── Scope ────────────────────────────────────────────────────
 COUNTRIES = ["GB", "IE"]  # UK and Irish racing only
 
-# ── Signal Weightings (initial — learning loop will adjust) ──
+# ── Signal Weightings (v1.1 — 10 signals, learning loop will adjust) ──
+# Total must sum to 1.0
+# BSP and race_pace start at low weight until live data confirms their value
 WEIGHTS = {
-    "market_odds":    0.25,
-    "horse_form":     0.20,
-    "track_form":     0.15,
-    "going":          0.10,
-    "trainer_form":   0.10,
-    "jockey_form":    0.10,
-    "market_moves":   0.07,
-    "jump_index":     0.03,
+    "market_odds":    0.22,   # Implied prob from bookmaker odds
+    "horse_form":     0.18,   # Recent form string (weighted recency)
+    "track_form":     0.14,   # Course-specific form
+    "going":          0.10,   # Going preference match
+    "trainer_form":   0.09,   # Trainer 14/30-day win rate
+    "jockey_form":    0.09,   # Jockey 14/30-day win rate
+    "market_moves":   0.07,   # Steam/drift signal
+    "bsp_signal":     0.05,   # Betfair BSP vs bookmaker price
+    "jump_index":     0.03,   # Jump ability proxy
+    "race_pace":      0.03,   # Speed rating vs course par
 }
 
 # ── Accumulator Settings ─────────────────────────────────────

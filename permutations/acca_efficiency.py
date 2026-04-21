@@ -1,6 +1,29 @@
 # Racing Engine — Accumulator Efficiency Engine
-# Version: 0.6
-# Date: 20 April 2026
+# Version: 1.1  (improved multiple selection logic + value filter)
+# Date: 21 April 2026
+#
+# KEY CONCEPT: Why adding a leg to a multiple isn't always better
+# ----------------------------------------------------------------
+# When you add a selection to an accumulator, two things happen:
+#   1. The PAYOUT multiplies (e.g. adding a 3/1 shot makes the pot 4x bigger)
+#   2. The PROBABILITY of the whole bet winning DROPS (by that horse's win chance)
+#
+# Net effect: ONLY worth adding if the horse has POSITIVE EXPECTED VALUE (EV):
+#   EV = (engine_confidence * payout) - (1 - engine_confidence)
+#   EV > 0 = adds value. EV < 0 = destroys value (better to leave it out).
+#
+# A 3/1 shot (25% bookie implied) with our model at 40% confidence:
+#   EV = (0.40 * 3) - (0.60) = 1.20 - 0.60 = +0.60 → STRONG value, add it
+#
+# A 3/1 shot (25% bookie implied) with our model at 22% confidence:
+#   EV = (0.22 * 3) - (0.78) = 0.66 - 0.78 = -0.12 → DESTROYS value, skip it
+#
+# This is the engine’s competitive advantage: bookmakers price accas on
+# their own implied probability. If we have even a small edge on one leg,
+# that edge COMPOUNDS across all legs — making multiples MORE powerful than singles.
+#
+# The value_filter_selections() method enforces this — it only permits legs
+# where the EV is positive, regardless of confidence score.
 # Calculates true probability, expected value, and coverage options for accas
 
 from itertools import combinations
@@ -71,15 +94,65 @@ class AccaEfficiencyEngine:
 
         return results
 
-    def build_permutations(self, selections: list, min_legs: int = 2, max_legs: int = 6) -> list:
+    def value_filter_selections(self, selections: list) -> list:
+        """
+        Filter selections to only those with POSITIVE expected value.
+        This is the key quality gate before building any multiple.
+
+        A selection passes if:
+          EV = (engine_confidence * decimal_odds) - 1 > 0
+
+        A selection with EV < 0 should NEVER be added to a multiple
+        because it reduces the bet’s overall expected return.
+
+        Returns a filtered list sorted by EV descending.
+        """
+        value_sels = []
+        for sel in selections:
+            bookie_prob = odds_to_probability(sel["odds"])
+            if bookie_prob <= 0:
+                continue
+            decimal_odds = 1 / bookie_prob
+            engine_prob  = sel["confidence"]
+            ev = (engine_prob * decimal_odds) - 1
+
+            # Also compute: edge = how much better are we than the bookie?
+            edge = engine_prob - bookie_prob
+            edge_pct = round(edge * 100, 1)
+
+            sel_copy = dict(sel)
+            sel_copy["ev"]         = round(ev, 4)
+            sel_copy["edge_pct"]   = edge_pct
+            sel_copy["decimal_odds"] = round(decimal_odds, 2)
+            sel_copy["bookie_prob_pct"] = round(bookie_prob * 100, 1)
+            sel_copy["engine_prob_pct"] = round(engine_prob * 100, 1)
+
+            if ev > 0:
+                sel_copy["leg_quality"] = "Strong" if ev > 0.5 else "Good" if ev > 0.2 else "Marginal"
+                value_sels.append(sel_copy)
+
+        value_sels.sort(key=lambda x: x["ev"], reverse=True)
+        return value_sels
+
+    def build_permutations(self, selections: list, min_legs: int = 2, max_legs: int = 6,
+                           value_filter: bool = True) -> list:
         """
         Build all accumulator permutations from selections.
-        Returns ranked by combined confidence and expected value.
+        Returns ranked by combined EV.
+
+        value_filter=True (default): only use selections with positive EV.
+        This is the correct approach — never include a negative-EV leg.
+        Set False only for analysis/comparison purposes.
         """
+        if value_filter:
+            sels_to_use = self.value_filter_selections(selections)
+        else:
+            sels_to_use = selections
+
         perms = []
 
-        for n_legs in range(min_legs, min(max_legs + 1, len(selections) + 1)):
-            for combo in combinations(selections, n_legs):
+        for n_legs in range(min_legs, min(max_legs + 1, len(sels_to_use) + 1)):
+            for combo in combinations(sels_to_use, n_legs):
                 # Combined engine probability (product of individual probs)
                 combined_engine_prob = np.prod([s["confidence"] for s in combo])
 
@@ -93,20 +166,28 @@ class AccaEfficiencyEngine:
                 ev = (combined_engine_prob * combined_decimal) - 1
 
                 # Bet type name
-                type_names = {2: "Double", 3: "Treble", 4: "Lucky 15 leg", 5: "Lucky 31 leg", 6: "Lucky 63 leg"}
+                type_names = {2: "Double", 3: "Treble", 4: "Fourfold (L15)",
+                               5: "Fivefold (L31)", 6: "Sixfold (L63)"}
                 bet_type = type_names.get(n_legs, f"{n_legs}-fold")
 
+                # Individual leg EV summary
+                leg_evs = [s.get("ev", None) for s in combo]
+                weakest_leg = min((s for s in combo), key=lambda x: x.get("ev", 0))
+
                 perms.append({
-                    "type":                bet_type,
-                    "legs":                n_legs,
-                    "selections":          " + ".join([s["horse"] for s in combo]),
-                    "races":               " | ".join([s["race"] for s in combo]),
+                    "type":                 bet_type,
+                    "legs":                 n_legs,
+                    "selections":           " + ".join([s["horse"] for s in combo]),
+                    "races":                " | ".join([s["race"] for s in combo]),
                     "combined_engine_prob": round(combined_engine_prob * 100, 1),
                     "combined_bookie_prob": round(combined_bookie_prob * 100, 1),
-                    "combined_odds":       f"{combined_decimal - 1:.1f}/1",
-                    "expected_value":      round(ev, 3),
-                    "ev_rating":           "✅ Value" if ev > 0.1 else "⚠️ Marginal" if ev > 0 else "❌ Avoid",
-                    "confidence_gap":      round((combined_engine_prob - combined_bookie_prob * 100), 1),
+                    "combined_odds":        f"{combined_decimal - 1:.1f}/1",
+                    "expected_value":       round(ev, 3),
+                    "ev_rating":            "✅ Value" if ev > 0.1 else "⚠️ Marginal" if ev > 0 else "❌ Avoid",
+                    "confidence_gap":       round((combined_engine_prob - combined_bookie_prob * 100), 1),
+                    "leg_evs":              [round(e, 3) for e in leg_evs if e is not None],
+                    "weakest_leg":          weakest_leg.get("horse", ""),
+                    "all_positive_ev":      all((e or 0) > 0 for e in leg_evs),
                 })
 
         # Sort by expected value descending

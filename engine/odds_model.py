@@ -1,23 +1,36 @@
 # Racing Engine — Hybrid Odds Model
-# Version: 1.0
-# Date: 20 April 2026
-# Purpose: Combines 8 signals into a confidence score (0–1) per runner.
-#          Replaces the old odds-only proxy.
+# Version: 1.1  (added BSP + race pace signals)
+# Date: 21 April 2026
+# Purpose: Combines 10 signals into a confidence score (0–1) per runner.
 #
-# 8 SIGNALS:
-#   1. market_odds    (25%) — implied probability from bookmaker odds
-#   2. horse_form     (20%) — recent form string score (weighted recency)
-#   3. track_form     (15%) — course-specific form (future: via Racing API)
+# 10 SIGNALS:
+#   1. market_odds    (22%) — implied probability from bookmaker odds
+#   2. horse_form     (18%) — recent form string score (weighted recency)
+#   3. track_form     (14%) — course-specific form
 #   4. going          (10%) — going preference match
-#   5. trainer_form   (10%) — trainer's rolling 14/30-day win rate
-#   6. jockey_form    (10%) — jockey's rolling 14/30-day win rate
+#   5. trainer_form   (9%)  — trainer's rolling 14/30-day win rate
+#   6. jockey_form    (9%)  — jockey's rolling 14/30-day win rate
 #   7. market_moves   (7%)  — steam / drift signal from bet movements
-#   8. jump_index     (3%)  — jumping ability (future: via Racing API)
+#   8. jump_index     (3%)  — jumping ability proxy
+#   9. bsp_signal     (5%)  — Betfair BSP projection vs bookmaker price
+#  10. race_pace      (3%)  — race time / speed rating vs course par
 
 from config.settings import WEIGHTS
 from engine.form_parser import parse_form
 from engine.going_matcher import score_going_preference, score_going_from_form_string
 from engine.form_scorer import score_trainer_form, score_jockey_form
+from engine.race_times_stride import score_race_pace, RaceTimesStore
+
+# Lazy-init global times store (shared across all model instances)
+_times_store = None
+def _get_times_store():
+    global _times_store
+    if _times_store is None:
+        try:
+            _times_store = RaceTimesStore()
+        except Exception:
+            pass
+    return _times_store
 
 
 class OddsModel:
@@ -34,6 +47,10 @@ class OddsModel:
             self.weights = LearningLoop.get_current_weights()
         except Exception:
             self.weights = WEIGHTS
+
+        # Betfair BSP client — initialised lazily when credentials available
+        self._bsp_client = None
+        self._bsp_cache: dict = {}   # market_id → bsp data, avoids repeated API calls
 
     # ── Signal 1: Market Odds ─────────────────────────────────
     def _score_market_odds(self, odds_str) -> float:
@@ -169,9 +186,7 @@ class OddsModel:
     def _score_jump_index(self, runner_data: dict) -> float:
         """
         Jumping ability score for National Hunt races.
-        Pending full build — Racing API provides jumping stats.
-        Returns neutral 0.50 until wired in.
-        Uses Timeform stars as a lightweight proxy in the interim.
+        Uses Timeform stars as a proxy (Racing API would improve this).
         """
         tf_stars = runner_data.get("tf_stars")
         try:
@@ -180,6 +195,39 @@ class OddsModel:
         except Exception:
             pass
         return 0.50   # Neutral
+
+    # ── Signal 9: Betfair BSP ─────────────────────────────────
+    def _score_bsp(self, runner_data: dict) -> float:
+        """
+        Betfair BSP projection score.
+        Compares Betfair's 'smart money' price to the bookmaker price.
+
+        If BSP is SHORTER than bookie → market smarter → value signal → high score
+        If BSP roughly matches → fair priced → neutral score
+        If BSP is LONGER than bookie → market more cautious → low score
+
+        Falls back to 0.50 (neutral) if no Betfair credentials or data unavailable.
+        """
+        # Use pre-computed bsp_score if already attached to runner_data
+        # (set by the live_data fetcher which calls BetfairBSP separately)
+        bsp_result = runner_data.get("bsp_result")
+        if bsp_result and isinstance(bsp_result, dict):
+            return bsp_result.get("bsp_score", 0.50)
+        return 0.50   # Neutral until Betfair credentials wired in
+
+    # ── Signal 10: Race Pace / Times ──────────────────────────
+    def _score_race_pace(self, runner_data: dict) -> float:
+        """
+        Speed rating / race times signal.
+        Compares the horse's recorded winning time against course/distance/going par.
+        Faster than par = positive signal. Slower = negative.
+        Falls back to neutral 0.50 if no time data available.
+        """
+        try:
+            ts = _get_times_store()
+            return score_race_pace(runner_data, times_store=ts)
+        except Exception:
+            return 0.50
 
     # ── Main Confidence Calculator ────────────────────────────
     def calculate_confidence(self, runner_data: dict) -> float:
@@ -192,14 +240,19 @@ class OddsModel:
             form          — form string e.g. "080-141"
             last_ran_days — days since last run (optional)
             going         — today's going e.g. "Good to Firm"
-            going_history — list of {going, position} dicts (from Racing API, optional)
+            going_history — list of {going, position} dicts (optional)
             trainer       — trainer name
             jockey        — jockey name
             signal        — "Steam" / "Drift" / "Stable" etc.
             bet_movements — list of movement dicts (optional)
             tf_stars      — Timeform stars (optional)
-            track_wins    — wins at this course (from Racing API, optional)
-            track_runs    — runs at this course (from Racing API, optional)
+            track_wins    — wins at this course (optional)
+            track_runs    — runs at this course (optional)
+            bsp_result    — dict from BetfairBSP.score_bsp_signal() (optional)
+            winning_time  — str, horse's recorded winning time e.g. "1m 12.3s" (optional)
+            distance      — race distance e.g. "6f" or "1m 2f" (optional)
+            race_type     — "Flat", "Hurdle", "Chase" (optional, default Flat)
+            best_time_going— going when the best time was set (optional)
         """
         w = self.weights
 
@@ -224,19 +277,34 @@ class OddsModel:
             runner_data.get("bet_movements")
         )
         s8 = self._score_jump_index(runner_data)
+        s9 = self._score_bsp(runner_data)
+        s10 = self._score_race_pace(runner_data)
+
+        # Updated weights: 22+18+14+10+9+9+7+3+5+3 = 100
+        w_market_odds  = w.get("market_odds",  0.22)
+        w_horse_form   = w.get("horse_form",   0.18)
+        w_track_form   = w.get("track_form",   0.14)
+        w_going        = w.get("going",        0.10)
+        w_trainer_form = w.get("trainer_form", 0.09)
+        w_jockey_form  = w.get("jockey_form",  0.09)
+        w_market_moves = w.get("market_moves", 0.07)
+        w_jump_index   = w.get("jump_index",   0.03)
+        w_bsp          = w.get("bsp_signal",   0.05)
+        w_race_pace    = w.get("race_pace",    0.03)
 
         raw_score = (
-            s1 * w["market_odds"]  +
-            s2 * w["horse_form"]   +
-            s3 * w["track_form"]   +
-            s4 * w["going"]        +
-            s5 * w["trainer_form"] +
-            s6 * w["jockey_form"]  +
-            s7 * w["market_moves"] +
-            s8 * w["jump_index"]
+            s1  * w_market_odds  +
+            s2  * w_horse_form   +
+            s3  * w_track_form   +
+            s4  * w_going        +
+            s5  * w_trainer_form +
+            s6  * w_jockey_form  +
+            s7  * w_market_moves +
+            s8  * w_jump_index   +
+            s9  * w_bsp          +
+            s10 * w_race_pace
         )
 
-        # Normalise: weights sum to 1.0 already (25+20+15+10+10+10+7+3 = 100)
         # Cap at 0.97 — no selection should ever be "certain"
         confidence = round(min(raw_score, 0.97), 4)
 
@@ -256,6 +324,8 @@ class OddsModel:
             "jockey_form":  round(self._score_jockey_form(runner_data.get("jockey", ""), runner_data.get("tf_stars")), 3),
             "market_moves": round(self._score_market_moves(runner_data.get("signal", "Stable"), runner_data.get("bet_movements")), 3),
             "jump_index":   round(self._score_jump_index(runner_data), 3),
+            "bsp_signal":   round(self._score_bsp(runner_data), 3),
+            "race_pace":    round(self._score_race_pace(runner_data), 3),
         }
 
     def rank_runners(self, race_data: list) -> list:
