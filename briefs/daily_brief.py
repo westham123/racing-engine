@@ -191,7 +191,21 @@ def _calc_staking(selections: list, budget: float = 50.0) -> dict:
 
 
 # ── Shared Email Shell ─────────────────────────────────────────
+def _get_version() -> str:
+    """Read live version from app.py VERSION line."""
+    try:
+        app_path = os.path.join(os.path.dirname(__file__), "..", "dashboard", "app.py")
+        with open(app_path) as f:
+            for line in f:
+                if line.strip().startswith("VERSION"):
+                    return line.split('"')[1] if '"' in line else line.split("'")[1]
+    except Exception:
+        pass
+    return "2.5"
+
+
 def _email_shell(title: str, label_color: str, label_text: str, body_html: str) -> str:
+    version = _get_version()
     return f"""<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -212,7 +226,7 @@ def _email_shell(title: str, label_color: str, label_text: str, body_html: str) 
 
   <!-- Footer -->
   <div style="text-align:center;color:#444;font-size:11px;padding:14px;">
-    Racing Engine v2.5.1 &nbsp;|&nbsp; Phase 1 — Personal Research Tool &nbsp;|&nbsp;
+    Racing Engine {version} &nbsp;|&nbsp; Phase 1 — Personal Research Tool &nbsp;|&nbsp;
     <a href="https://racing-engine-dash.streamlit.app" style="color:#01696F;">Dashboard (PIN: 1012)</a>
   </div>
 
@@ -331,7 +345,7 @@ def build_morning_brief(budget: float = 50.0) -> str:
     if not selections:
         body += _section(
             "Status",
-            '<p style="color:#964219;font-size:13px;margin:0;">Live feed unavailable or no qualifiers yet — check dashboard after 10:00 BST.</p>',
+            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at 08:00 BST — markets are live but no horses have cleared all filters yet. Check dashboard from 10:30 BST for developing selections.</p>',
             "#964219"
         )
 
@@ -553,6 +567,23 @@ def send_email(subject: str, html_content: str, recipient: str = RECIPIENT) -> b
     except Exception as e:
         print(f"[Email] Failed: {e}")
         return False
+
+
+# ── Top-level convenience functions (used by crons) ───────────
+def send_morning_brief(budget: float = 50.0):
+    """Called directly by the 08:00 BST cron."""
+    html    = build_morning_brief(budget)
+    subject = f"Racing Engine — Morning Brief | {_date_bst()}"
+    return send_email(subject, html)
+
+
+def send_evening_summary(budget: float = 50.0):
+    """Called directly by the 19:00 BST cron. Fetches live results internally."""
+    selections = _get_official_selections()
+    results    = _get_todays_results()
+    html       = build_evening_summary(results, selections, budget)
+    subject    = f"Racing Engine — Evening Summary | {_date_bst()}"
+    return send_email(subject, html)
 
 
 # ── Dispatcher ─────────────────────────────────────────────────
