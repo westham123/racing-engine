@@ -366,28 +366,6 @@ with st.sidebar:
     )
     st.session_state["daily_budget"] = _daily_budget
 
-    _risk_profile = st.select_slider(
-        "Risk Profile",
-        options=["Conservative", "Balanced", "Aggressive"],
-        value=st.session_state.get("risk_profile", "Balanced"),
-        help="Conservative = more singles, smaller multiples. Aggressive = concentrate on high-odds multiples."
-    )
-    st.session_state["risk_profile"] = _risk_profile
-
-    st.markdown("**Bet Types**")
-    _use_singles   = st.toggle("Singles",   value=st.session_state.get("use_singles", True))
-    _use_doubles   = st.toggle("Doubles",   value=st.session_state.get("use_doubles", True))
-    _use_trebles   = st.toggle("Trebles",   value=st.session_state.get("use_trebles", True))
-    _use_4fold     = st.toggle("4-folds",   value=st.session_state.get("use_4fold", True))
-    _use_5fold     = st.toggle("5-folds+",  value=st.session_state.get("use_5fold", True))
-    _use_lucky15   = st.toggle("Lucky 15/31/63", value=st.session_state.get("use_lucky15", False))
-    st.session_state["use_singles"]  = _use_singles
-    st.session_state["use_doubles"]  = _use_doubles
-    st.session_state["use_trebles"]  = _use_trebles
-    st.session_state["use_4fold"]    = _use_4fold
-    st.session_state["use_5fold"]    = _use_5fold
-    st.session_state["use_lucky15"]  = _use_lucky15
-
     _conf_threshold = st.slider(
         "Min Confidence Threshold",
         min_value=0.55, max_value=0.80, value=st.session_state.get("conf_threshold", 0.55),
@@ -397,21 +375,9 @@ with st.sidebar:
     st.caption(f"Currently: **{_conf_threshold:.0%}** — {'⚠️ Relaxed filter (more selections)' if _conf_threshold < 0.60 else '✅ Standard filter' if _conf_threshold == 0.60 else '🔒 Tight filter (fewer, higher-confidence only)'}")
     st.session_state["conf_threshold"] = _conf_threshold
 
-    _max_legs = st.slider(
-        "Max Accumulator Legs",
-        min_value=2, max_value=6, value=st.session_state.get("max_legs", 6), step=1,
-        help="Maximum number of selections in a single multiple bet"
-    )
-    st.session_state["max_legs"] = _max_legs
-
-    # Stake split ratios by risk profile
-    _risk_splits = {
-        "Conservative": {"singles_pct": 0.50, "doubles_pct": 0.25, "trebles_pct": 0.15, "4fold_pct": 0.07, "5fold_pct": 0.03},
-        "Balanced":     {"singles_pct": 0.20, "doubles_pct": 0.20, "trebles_pct": 0.27, "4fold_pct": 0.24, "5fold_pct": 0.09},
-        "Aggressive":   {"singles_pct": 0.10, "doubles_pct": 0.10, "trebles_pct": 0.20, "4fold_pct": 0.35, "5fold_pct": 0.25},
-    }
-    _split = _risk_splits[_risk_profile]
-    st.session_state["stake_splits"] = _split
+    st.markdown("---")
+    st.caption("3-Bet plan: BET 1 (60%) + BET 2 (25%) + BET 3 (15%)")
+    st.caption("Singles, Doubles, Lucky 15 permanently removed.")
 
     st.markdown("---")
     st.markdown("**Coverage**")
@@ -427,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.24** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.25** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -705,7 +671,7 @@ with tab1:
     if _t1col2.button("🔄 Refresh", help="Clear cache and reload live data"):
         st.cache_data.clear()
         st.rerun()
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 100)}** | Accum is main bet | Min conf: **{st.session_state.get('conf_threshold', 0.55):.0%}** (handicaps: +10%) | Fields 16+ excluded | Need 2+ signals")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 100)}** | 3-Bet plan: BET 1 (60%) + BET 2 (25%) + BET 3 (15%) | Min conf: **{st.session_state.get('conf_threshold', 0.55):.0%}** (handicaps: +10%) | Short price cut-off: 4/6 | Fields 16+ excluded")
 
     # Show NR and one-per-race warnings here in Tab 1
     if _nr_removed_names:
@@ -722,24 +688,6 @@ with tab1:
     if len(_six_pool) == 0:
         st.info("No qualifying selections yet — check back once today's markets are live, or lower the confidence threshold in the sidebar.")
     else:
-        # ── Combined accumulator odds ──
-        _combined_dec = 1.0
-        for _ps in _six_pool:
-            _combined_dec *= _ps["decimal"]
-        _combined_dec = round(_combined_dec, 2)
-        _acc_stake    = round(st.session_state.get("daily_budget", 100) * 0.40, 2)
-        _acc_return   = round(_acc_stake * _combined_dec, 2)
-
-        # ── KPI row ──
-        _kc1, _kc2, _kc3, _kc4 = st.columns(4)
-        _kc1.metric("🎯 Qualifying Selections", str(len(_six_pool)))
-        _kc2.metric("🎰 Accumulator Odds", f"{_combined_dec:,.0f}x")
-        _kc3.metric("💰 Acc Stake", f"£{_acc_stake:.2f}", f"Return if all win: £{_acc_return:,.2f}")
-        _l15_eligible  = [s for s in _six_pool if s["decimal"] > 1.67]
-        _l15_available = len(_l15_eligible) >= 4
-        _kc4.metric("♥ Lucky 15", "✅ Available" if _l15_available else "✖ Not enough horses",
-                    f"{len(_l15_eligible)} of 4 needed" if not _l15_available else "Optional — see below")
-
         st.markdown("---")
 
         # ── Overnight market moves ───────────────────────────────────
@@ -995,38 +943,42 @@ with tab2:
             'Course':      s['course'],
             'Horse':       s['horse'],
             'Odds':        s['odds_str'],
+            'Decimal':     f"{s['decimal']:.2f}x",
             'Confidence':  s['confidence'],
+            'Signal':      s.get('signal', 'Stable'),
             'Tier':        s['tier'],
-            'EV':          s['ev'],
+            'EV':          round(s['ev'], 3),
         } for s in _six_pool])
     else:
-        df = get_sample_selections()
-    # Ensure Confidence column exists and is numeric
-    if "Confidence" not in df.columns:
-        df["Confidence"] = 0.5
-    df["Confidence"] = pd.to_numeric(df["Confidence"], errors="coerce").fillna(0.5)
+        df = pd.DataFrame()
 
-    def colour_confidence(val):
-        if val >= 0.80:
-            return "background-color: #003300; color: #00ff88"
-        elif val >= 0.70:
-            return "background-color: #332200; color: #ffaa00"
-        else:
-            return "background-color: #330000; color: #ff6666"
+    if df.empty:
+        st.info("No qualifying selections — check back once markets are live.")
+    else:
+        # Ensure Confidence column is numeric
+        df["Confidence"] = pd.to_numeric(df["Confidence"], errors="coerce").fillna(0.5)
 
-    def colour_signal(val):
-        if "Steam" in str(val) or "Move" in str(val):
-            return "color: #00ff88; font-weight: bold"
-        elif "Drift" in str(val):
-            return "color: #ff4444; font-weight: bold"
-        return "color: #aaaaaa"
+        def colour_confidence(val):
+            if val >= 0.80:
+                return "background-color: #003300; color: #00ff88"
+            elif val >= 0.70:
+                return "background-color: #332200; color: #ffaa00"
+            else:
+                return "background-color: #330000; color: #ff6666"
 
-    styled = df.style\
-        .map(colour_confidence, subset=["Confidence"])\
-        .map(colour_signal, subset=["Signal"])\
-        .format({"Confidence": "{:.0%}"})
+        def colour_signal(val):
+            if "Steam" in str(val) or "Move" in str(val):
+                return "color: #00ff88; font-weight: bold"
+            elif "Drift" in str(val):
+                return "color: #ff4444; font-weight: bold"
+            return "color: #aaaaaa"
 
-    st.dataframe(styled, width="stretch", hide_index=True)
+        # Only style columns that actually exist in the dataframe
+        _style = df.style.map(colour_confidence, subset=["Confidence"]).format({"Confidence": "{:.0%}"})
+        if "Signal" in df.columns:
+            _style = _style.map(colour_signal, subset=["Signal"])
+
+        st.dataframe(_style, use_container_width=True, hide_index=True)
 
     st.markdown("---")
     st.markdown("### Signal Breakdown")
