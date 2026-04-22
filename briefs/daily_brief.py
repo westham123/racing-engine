@@ -54,6 +54,24 @@ def _to_decimal(odds_str) -> float:
         return 2.0
 
 # ── Live Data Helpers ──────────────────────────────────────────
+def _get_overnight_moves(today: str = None) -> list:
+    """
+    Returns horses that have moved significantly since yesterday's show prices.
+    Pulls from early_market snapshot — steamers and drifters above 15%.
+    Returns empty list if no baseline exists.
+    """
+    try:
+        from dashboard.early_market import get_market_movers, _today_bst
+        target = today or _today_bst()
+        movers = get_market_movers(target, min_move_pct=0.15, vs="show")
+        if not movers or (len(movers) == 1 and "error" in movers[0]):
+            return []
+        return movers
+    except Exception as e:
+        print(f"[Brief] Overnight moves unavailable: {e}")
+        return []
+
+
 def _get_official_selections(conf_threshold: float = 0.55) -> list:
     """
     Returns only official selections: cleared threshold + 4/6 cut-off
@@ -243,10 +261,20 @@ def _section(title: str, content_html: str, border_color: str = "#01696F") -> st
   </div>"""
 
 
-def _sel_table(selections: list) -> str:
+def _moves_lookup(movers: list) -> dict:
+    """Build a horse-name keyed dict of overnight move data for quick lookup."""
+    out = {}
+    for m in movers:
+        key = m.get("horse", "").lower().strip()
+        out[key] = m
+    return out
+
+
+def _sel_table(selections: list, movers: list = None) -> str:
     if not selections:
         return '<p style="color:#888;font-size:13px;margin:0;">No qualifying selections at this time.</p>'
 
+    moves_map = _moves_lookup(movers or [])
     rows = ""
     for s in selections:
         conf_pct = int(s["confidence"] * 100)
@@ -254,9 +282,24 @@ def _sel_table(selections: list) -> str:
         sig_col  = "#437A22" if any(x in s["signal"] for x in ["Steam","Move","⬆"]) \
                    else "#A13544" if "Drift" in s["signal"] else "#888"
         hcap_tag = ' <span style="font-size:10px;color:#964219;">[H]</span>' if s.get("is_handicap") else ""
+
+        # Overnight move tag
+        mv = moves_map.get(s["horse"].lower().strip())
+        if mv:
+            mv_dir   = mv["direction"]
+            mv_pct   = mv["move_pct"]
+            mv_from  = mv["baseline_odds"]
+            mv_col   = "#437A22" if mv_dir == "STEAM" else "#A13544"
+            mv_arrow = "⬆" if mv_dir == "STEAM" else "⬇"
+            mv_tag   = (f' <span style="font-size:10px;font-weight:bold;color:{mv_col};"'
+                        f'title="Show: {mv_from} → Now: {mv["current_odds"]}">'  
+                        f'{mv_arrow}{mv_pct:.0f}% overnight</span>')
+        else:
+            mv_tag = ""
+
         rows += f"""<tr>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s['time']}<br><span style="font-size:11px;">{s['course']}</span></td>
-          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}</td>
+          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s['curr_odds']}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{conf_col};">{conf_pct}%</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:12px;color:{sig_col};">{s['signal']}</td>
@@ -312,40 +355,92 @@ def _staking_block(staking: dict) -> str:
 
 
 # ── Email Type 1: Morning Brief ────────────────────────────────
+def _moves_section_html(movers: list) -> str:
+    """HTML block listing all significant overnight market moves."""
+    if not movers:
+        return '<p style="color:#888;font-size:13px;margin:0;">No significant moves recorded vs yesterday\'s show prices.</p>'
+
+    steamers = [m for m in movers if m["direction"] == "STEAM"]
+    drifters = [m for m in movers if m["direction"] == "DRIFT"]
+    html = ""
+
+    for group, label, col, arrow in [
+        (steamers, "Shorteners — money coming in", "#437A22", "⬆"),
+        (drifters, "Drifters — market cooling",    "#A13544", "⬇"),
+    ]:
+        if not group:
+            continue
+        rows = ""
+        for m in group:
+            rows += f"""<tr>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:12px;color:#888;">{m['time']}<br><span style="font-size:11px;">{m['course']}</span></td>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:#fff;">{m['horse']}</td>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:12px;color:#888;">{m['baseline_odds']}</td>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{m['current_odds']}</td>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:12px;font-weight:bold;color:{col};">{arrow}{m['move_pct']:.0f}%</td>
+              <td style="padding:6px 5px;border-bottom:1px solid #2a2a2a;font-size:11px;color:#888;">{m.get('tf_stars','-')} ★</td>
+            </tr>"""
+        html += f"""
+        <div style="font-size:11px;font-weight:bold;color:{col};text-transform:uppercase;
+                    letter-spacing:0.5px;margin:10px 0 4px;">{arrow} {label}</div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+          <thead><tr style="color:#555;font-size:10px;text-transform:uppercase;">
+            <th style="padding:4px 5px;text-align:left;">Time</th>
+            <th style="padding:4px 5px;text-align:left;">Horse</th>
+            <th style="padding:4px 5px;text-align:left;">Show</th>
+            <th style="padding:4px 5px;text-align:left;">Now</th>
+            <th style="padding:4px 5px;text-align:left;">Move</th>
+            <th style="padding:4px 5px;text-align:left;">TF</th>
+          </tr></thead>
+          <tbody>{rows}</tbody>
+        </table>"""
+    return html
+
+
 def build_morning_brief(budget: float = 50.0) -> str:
     selections = _get_official_selections()
+    movers     = _get_overnight_moves()
     staking    = _calc_staking(selections, budget)
 
     body = ""
 
-    # Selections
+    # 1. Overnight market moves — always first, key intelligence
+    body += _section(
+        f"Overnight Market Moves ({len(movers)} significant)",
+        _moves_section_html(movers),
+        "#437A22" if any(m["direction"] == "STEAM" for m in movers) else "#2a2a2a"
+    )
+
+    # 2. Official selections with overnight move tags inline
     body += _section(
         f"Today's Official Selections ({len(selections)})",
-        _sel_table(selections),
+        _sel_table(selections, movers),
         "#01696F"
     )
 
-    # Staking plan
+    # 3. Staking plan
     if selections:
         body += _section("Staking Plan", _staking_block(staking), "#437A22")
 
-    # Filters note
+    # 4. Filters note — concise one-liner
     body += _section(
         "Active Filters",
-        """<p style="font-size:12px;color:#888;margin:0;line-height:1.6;">
-        Confidence threshold: <strong style="color:#e0e0e0;">55%</strong> &nbsp;|&nbsp;
-        Handicap uplift: <strong style="color:#e0e0e0;">+10%</strong> &nbsp;|&nbsp;
-        Price cut-off: <strong style="color:#e0e0e0;">4/6 (1.67)</strong> &nbsp;|&nbsp;
-        Large fields excluded: <strong style="color:#e0e0e0;">12+ runners</strong> &nbsp;|&nbsp;
-        Dual signal required
-        </p>""",
+        '<p style="font-size:12px;color:#888;margin:0;line-height:1.8;">'
+        'Confidence: <strong style="color:#e0e0e0;">55%</strong> &nbsp;|&nbsp; '
+        'Handicap: <strong style="color:#e0e0e0;">65%</strong> &nbsp;|&nbsp; '
+        'Price cut-off: <strong style="color:#e0e0e0;">4/6</strong> &nbsp;|&nbsp; '
+        'Large fields: <strong style="color:#e0e0e0;">&ge;12 excluded</strong> &nbsp;|&nbsp; '
+        'Dual signal required'
+        '</p>',
         "#2a2a2a"
     )
 
     if not selections:
         body += _section(
             "Status",
-            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at 08:00 BST — markets are live but no horses have cleared all filters yet. Check dashboard from 10:30 BST for developing selections.</p>',
+            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at 08:00 BST — '
+            'markets are live but no horses have cleared all filters yet. '
+            'Check dashboard from 10:30 BST for developing selections.</p>',
             "#964219"
         )
 

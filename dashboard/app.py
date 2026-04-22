@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.6** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.7** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -634,20 +634,40 @@ with tab1:
 
         st.markdown("---")
 
+        # ── Overnight market moves ───────────────────────────────────
+        try:
+            import sys as _sys
+            _sys.path.insert(0, ".")
+            from dashboard.early_market import get_market_movers, _today_bst as _em_today
+            _overnight_movers = get_market_movers(_em_today(), min_move_pct=0.15, vs="show")
+            if _overnight_movers and "error" in _overnight_movers[0]:
+                _overnight_movers = []
+        except Exception:
+            _overnight_movers = []
+
+        _mv_lookup = {m["horse"].lower().strip(): m for m in _overnight_movers}
+
         # ── All qualifying selections table ──
         st.markdown("#### 📋 All Qualifying Selections")
-        st.caption(f"All {len(_six_pool)} horses above {_conf_threshold:.0%} confidence and above 4/6 price. Put all of these in your accumulator.")
+        st.caption(f"All {len(_six_pool)} horses above {_conf_threshold:.0%} confidence and above 4/6 price. Overnight move = % change vs yesterday's show price.")
         _sel_rows = []
         for _s in _six_pool:
+            _mv  = _mv_lookup.get(_s["horse"].lower().strip())
+            if _mv:
+                _mv_str = f"⬆{_mv['move_pct']:.0f}% ({_mv['baseline_odds']}→{_mv['current_odds']})" \
+                          if _mv["direction"] == "STEAM" \
+                          else f"⬇{_mv['move_pct']:.0f}% ({_mv['baseline_odds']}→{_mv['current_odds']})"
+            else:
+                _mv_str = "—"
             _sel_rows.append({
-                "Time":       _s["time"],
-                "Horse":      _s["horse"],
-                "Course":     _s["course"],
-                "Odds":       _s["odds_str"],
-                "Dec":        f"{_s['decimal']:.2f}x",
-                "Confidence": f"{_s['confidence']:.1%}",
-                "EV":         f"+{_s['ev']:.2f}" if _s["ev"] >= 0 else str(_s["ev"]),
-                "Tier":       _s["tier"],
+                "Time":           _s["time"],
+                "Horse":          _s["horse"],
+                "Course":         _s["course"],
+                "Odds":           _s["odds_str"],
+                "Confidence":     f"{_s['confidence']:.1%}",
+                "Overnight Move": _mv_str,
+                "Signal":         _s.get("signal", "Stable"),
+                "Tier":           _s["tier"],
             })
         st.dataframe(pd.DataFrame(_sel_rows), use_container_width=True, hide_index=True)
 

@@ -81,8 +81,10 @@ def _save_json(path: str, data: dict):
 def get_next_day_card(target_date: str = None) -> list:
     """
     Fetch race card from Sporting Life for target_date (default: tomorrow).
+    Uses the same slug-building logic as live_data.py to ensure runners populate.
     Returns list of races with runners and current odds.
     """
+    import re as _re
     if not target_date:
         target_date = _tomorrow_bst()
 
@@ -90,8 +92,15 @@ def get_next_day_card(target_date: str = None) -> list:
     data = _get_page_json(url)
     meetings = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
-    UK_COUNTRIES = {"ENG", "SCO", "Scot", "Scotland", "WAL", "Wale", "Wales", "IRL", "IRE", "IE", "Ire", "Eire", "GB", "UK", "Northern Ireland", "NI"}
+    UK_COUNTRIES = {"ENG", "SCO", "Scot", "Scotland", "WAL", "Wale", "Wales",
+                   "IRL", "IRE", "IE", "Ire", "Eire", "GB", "UK", "Northern Ireland", "NI"}
     races_out = []
+
+    def _make_slug(course: str, rc_id: str, rc_name: str) -> str:
+        """Matches live_data.py slug builder exactly."""
+        course_slug = _re.sub(r"[^a-z0-9]+", "-", course.lower()).strip("-")
+        name_slug   = _re.sub(r"[^a-z0-9]+", "-", rc_name.lower()).strip("-")
+        return f"/racing/racecards/{target_date}/{course_slug}/racecard/{rc_id}/{name_slug}"
 
     for mt in meetings:
         ms      = mt.get("meeting_summary", {})
@@ -105,36 +114,33 @@ def get_next_day_card(target_date: str = None) -> list:
         going   = ms.get("going", "TBC")
 
         for rc in mt.get("races", []):
-            slug = rc.get("url", "") or rc.get("slug", "")
-            if not slug:
-                rc_id = rc.get("race_summary_reference", {}).get("id", "")
-                if rc_id:
-                    slug = f"/racing/racecards/{target_date}/{course.lower().replace(' ','-')}/{rc_id}"
+            rc_id    = str(rc.get("race_summary_reference", {}).get("id", ""))
+            rc_name  = rc.get("name", "")
+            time_str = _utc_to_bst(rc.get("time", ""))   # convert UTC → BST
+            is_hcap  = any(x in rc_name.lower() for x in ["handicap", "hcap", "h'cap"])
 
-            time_str = rc.get("time", "")
-            name     = rc.get("name", "")
-            is_hcap  = rc.get("has_handicap", False) or "handicap" in name.lower() or "hcap" in name.lower()
-            runners  = []
+            slug = _make_slug(course, rc_id, rc_name) if rc_id and rc_name else None
+            runners = []
 
             if slug:
-                full_url = f"https://www.sportinglife.com{slug}" if slug.startswith("/") else slug
-                rdata    = _get_page_json(full_url)
-                race_detail = rdata.get("props",{}).get("pageProps",{}).get("race",{})
+                full_url    = f"https://www.sportinglife.com{slug}"
+                rdata       = _get_page_json(full_url)
+                race_detail = rdata.get("props", {}).get("pageProps", {}).get("race", {}) if rdata else {}
                 for ride in race_detail.get("rides", []):
-                    if ride.get("ride_status","") == "NON_RUNNER":
+                    if ride.get("ride_status", "") == "NON_RUNNER":
                         continue
-                    horse     = ride.get("horse",{}).get("name","Unknown")
-                    betting   = ride.get("betting",{})
-                    curr_odds = betting.get("current_odds","N/A")
-                    tf_stars  = ride.get("timeform_stars","-")
-                    form      = ride.get("horse",{}).get("formsummary",{}).get("display_text","-") or "-"
-                    trainer   = ride.get("trainer",{}).get("name","-")
-                    jockey    = ride.get("jockey",{}).get("name","-")
+                    horse     = ride.get("horse", {}).get("name", "Unknown")
+                    betting   = ride.get("betting", {})
+                    curr_odds = betting.get("current_odds", "N/A")
+                    tf_stars  = ride.get("timeform_stars", "-")
+                    form      = ride.get("horse", {}).get("formsummary", {}).get("display_text", "-") or "-"
+                    trainer   = ride.get("trainer", {}).get("name", "-")
+                    jockey    = ride.get("jockey", {}).get("name", "-")
                     runners.append({
                         "horse":   horse,
                         "odds":    curr_odds,
                         "decimal": _to_decimal(curr_odds),
-                        "tf_stars":tf_stars,
+                        "tf_stars": tf_stars,
                         "form":    form,
                         "trainer": trainer,
                         "jockey":  jockey,
@@ -144,7 +150,7 @@ def get_next_day_card(target_date: str = None) -> list:
                 "date":        target_date,
                 "course":      course,
                 "time":        time_str,
-                "name":        name,
+                "name":        rc_name,
                 "going":       going,
                 "is_handicap": is_hcap,
                 "field_size":  len(runners),
