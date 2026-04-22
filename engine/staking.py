@@ -1,242 +1,374 @@
-# Racing Engine — Adaptive Staking Engine
-# Version: 1.0 — 22 April 2026
+# Racing Engine — Staking Engine v2.0
+# Updated: 22 April 2026
 #
 # PHILOSOPHY:
-#   Staking should adapt to what the card actually looks like.
-#   Short-priced cards = full accumulator, be brave.
-#   Longer-priced horses = cover accumulators protect the stake.
-#   Very long prices = flag separately, never damage the main bet.
+#   Three-bet structure designed to maximise profit on £100 budget
+#   with a target of £2,000+ profit. No singles. No Lucky 15.
 #
-# ADAPTIVE RULES:
-#   All selections < 2.50x  -> 100% full accumulator. No cover needed.
-#   Any selection >= 2.50x  -> 70% main acc + 30% cover (omit value horse(s))
-#   Any selection >= 4.00x  -> 50% main acc + 50% cover (value horse is real risk)
-#   Any selection >= 8.00x  -> Flag as optional side bet. Exclude from main acc.
+# STRUCTURE:
+#   BET 1 — Main Accumulator (60% of budget)
+#     Highest-confidence legs + best EV value horse(s).
+#     This is the profit engine. Targets £2,000+ return.
 #
-# Lucky 15:
-#   Removed from core plan — at short prices (< 2.50x) L15 singles return
-#   almost nothing. Cover accumulators deploy stake more efficiently.
-#   L15 only reinstated if user explicitly requests it or majority > 3.0x.
+#   BET 2 — Cover Accumulator (25% of budget)
+#     Banker horses only (conf >= 61%, price <= 4.0x).
+#     Safety net — lands more often, still returns £1,500+.
+#
+#   BET 3 — Value Double (15% of budget)
+#     The two highest-EV selections (price >= 4.0x).
+#     ~1 in 3 chance of landing. Returns independently of accas.
+#     If fewer than 2 value horses exist, stake rolls into main acc.
+#
+# CLASSIFICATION:
+#   BANKER  : conf >= 61% AND price <= 4.0x  — core accumulator legs
+#   VALUE   : price >= 4.0x AND conf >= 55%  — high EV, goes in main + double
+#   WEAK    : conf < 61% AND price < 4.0x    — excluded from all bets
+#
+# ONE-HORSE-PER-RACE: enforced upstream. Engine assumes pool is pre-filtered.
+# NR GATE: enforced upstream. Engine assumes pool contains no non-runners.
 
 from itertools import combinations as _combs
 
 
-# ── Price tier thresholds ─────────────────────────────────────────────────────
-BANKER_THRESHOLD   = 2.50   # below this = short-priced banker, full acc
-VALUE_THRESHOLD    = 4.00   # above this = value horse, needs cover
-SPECULATIVE_THRESHOLD = 8.00  # above this = side bet only, excluded from main acc
+# ── Thresholds ────────────────────────────────────────────────────────────────
+BANKER_CONF      = 0.61    # minimum confidence to be a banker leg
+BANKER_MAX_PRICE = 4.00    # maximum price to be a banker leg
+VALUE_MIN_PRICE  = 4.00    # minimum price to be a value leg
+VALUE_MIN_CONF   = 0.55    # minimum confidence to be a value leg
+
+MAIN_PCT   = 0.60          # 60% of budget on main accumulator
+COVER_PCT  = 0.25          # 25% of budget on cover accumulator
+DOUBLE_PCT = 0.15          # 15% of budget on value double
 
 
 def classify_selections(selections: list) -> dict:
     """
-    Classify selections into tiers based on decimal odds.
-    Returns dict with bankers, value, speculative lists and the recommended plan.
+    Classify selections into BANKER, VALUE, and WEAK tiers.
 
-    selections: list of dicts with at least {'horse', 'decimal', 'confidence', 'time', 'course'}
+    BANKER : conf >= 61% AND price <= 4.0x
+    VALUE  : price >= 4.0x AND conf >= 55%
+    WEAK   : everything else (excluded from all bets)
+
+    A horse can appear in both BANKER and VALUE lists if it straddles the
+    boundary — in practice this won't happen given the thresholds, but the
+    logic handles it cleanly.
     """
-    bankers      = [s for s in selections if s["decimal"] < BANKER_THRESHOLD]
-    value        = [s for s in selections if BANKER_THRESHOLD <= s["decimal"] < SPECULATIVE_THRESHOLD]
-    speculative  = [s for s in selections if s["decimal"] >= SPECULATIVE_THRESHOLD]
+    bankers = [s for s in selections
+               if s["confidence"] >= BANKER_CONF and s["decimal"] <= BANKER_MAX_PRICE]
+    value   = [s for s in selections
+               if s["decimal"] >= VALUE_MIN_PRICE and s["confidence"] >= VALUE_MIN_CONF]
+    weak    = [s for s in selections
+               if s not in bankers and s not in value]
 
-    # Horses that go into the main accumulator (exclude speculative)
-    main_pool = [s for s in selections if s["decimal"] < SPECULATIVE_THRESHOLD]
-
-    # Determine plan
-    has_value       = len(value) > 0
-    has_speculative = len(speculative) > 0
-    all_short       = len(value) == 0 and len(speculative) == 0
-
-    if all_short:
-        plan = "FULL_ACC"
-    elif any(s["decimal"] >= VALUE_THRESHOLD for s in value):
-        plan = "COVER_50"   # 50/50 split
-    else:
-        plan = "COVER_70"   # 70/30 split
+    # Sort bankers by confidence desc, value by EV desc
+    bankers.sort(key=lambda x: -x["confidence"])
+    value.sort(key=lambda x: -(x["confidence"] * x["decimal"] - 1))
 
     return {
-        "bankers":       bankers,
-        "value":         value,
-        "speculative":   speculative,
-        "main_pool":     main_pool,
-        "plan":          plan,
-        "all_short":     all_short,
-        "has_value":     has_value,
-        "has_speculative": has_speculative,
+        "bankers": bankers,
+        "value":   value,
+        "weak":    weak,
     }
 
 
 def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     """
-    Build the full adaptive staking plan for the day.
+    Build the 3-bet staking plan.
 
-    Returns a dict with:
-      plan_type       : FULL_ACC | COVER_70 | COVER_50
-      plan_label      : human-readable description
-      main_stake      : £ on main accumulator
-      main_pool       : list of horses in main acc
-      main_dec        : combined decimal odds of main acc
-      main_return     : projected return if main acc wins
-      covers          : list of cover accumulators [{omit, stake, dec, projected_return}]
-      cover_total     : total £ on cover accumulators
-      speculative     : list of flagged side-bet horses
-      budget          : total budget
-      plan_rationale  : one-line explanation
+    Returns a dict with all fields needed by app.py Tab 1 and daily_brief.py.
+
+    Keys (backwards-compatible with old engine where possible):
+      plan_type         : THREE_BET | MAIN_ONLY | FULL_ACC (fallback)
+      plan_label        : human-readable title
+      plan_rationale    : one-line explanation
+      budget            : total budget
+      main_stake        : £ on main accumulator
+      main_pool         : list of horse dicts in main acc
+      main_dec          : combined decimal odds of main acc
+      main_return       : projected return if main acc wins
+      cover_pool        : list of horse dicts in cover acc (may be empty)
+      cover_stake       : £ on cover accumulator
+      cover_dec         : combined decimal odds of cover acc
+      cover_return      : projected return if cover wins
+      double_pool       : list of 2 horse dicts in value double (may be empty)
+      double_stake      : £ on value double
+      double_dec        : combined decimal odds of double
+      double_return     : projected return if double wins
+      speculative       : horses flagged but not placed (weak tier)
+      covers            : legacy list format expected by old scenario builder
+      cover_total       : legacy total cover stake
+      scenarios         : list of scenario dicts for display table
     """
+    if not selections:
+        return _empty_plan(budget)
+
     classified = classify_selections(selections)
-    plan       = classified["plan"]
-    main_pool  = classified["main_pool"]
-    speculative = classified["speculative"]
+    bankers    = classified["bankers"]
+    value      = classified["value"]
+    weak       = classified["weak"]
 
-    # ── Calculate main accumulator ────────────────────────────────────────────
-    if plan == "FULL_ACC":
-        main_pct   = 1.00
-        cover_pct  = 0.00
-        plan_label = "Full Accumulator"
-        rationale  = (f"All {len(main_pool)} selections are short-priced bankers (below 2.5x). "
-                      f"Cover accumulators return minimal value at these odds. "
-                      f"Full stake on the accumulator maximises profit.")
-    elif plan == "COVER_70":
-        main_pct   = 0.70
-        cover_pct  = 0.30
-        plan_label = "Accumulator + Cover"
-        rationale  = (f"{len(classified['value'])} selection(s) above 2.5x detected. "
-                      f"70% on main accumulator, 30% spread across cover bets "
-                      f"that protect if the longer-priced horse fails.")
-    else:  # COVER_50
-        main_pct   = 0.50
-        cover_pct  = 0.50
-        plan_label = "Accumulator + Full Cover"
-        rationale  = (f"{len(classified['value'])} selection(s) above 4.0x detected — real risk to accumulator. "
-                      f"50/50 split: main accumulator and full cover protection.")
+    # ── Decide structure based on what's available ────────────────────────────
+    has_bankers = len(bankers) >= 2
+    has_value   = len(value)   >= 2
 
-    main_stake = round(budget * main_pct, 2)
-    cover_budget = round(budget * cover_pct, 2)
+    if not has_bankers and not has_value:
+        # Nothing qualifies — full acc on whatever we have
+        return _full_acc_fallback(selections, budget)
 
-    # Combined odds of main pool
-    main_dec = 1.0
+    # ── BET 1: Main Accumulator ───────────────────────────────────────────────
+    # Bankers + top value horse (best EV). If no value, bankers only.
+    if has_value:
+        # Include top value horse in main acc alongside all bankers
+        top_value = value[0]
+        main_pool = bankers + ([top_value] if top_value not in bankers else [])
+    else:
+        main_pool = bankers
+
+    # Sort by race time
+    main_pool = sorted(main_pool, key=lambda x: x["time"])
+
+    main_stake = round(budget * MAIN_PCT, 2)
+    main_dec   = 1.0
     for s in main_pool:
         main_dec *= s["decimal"]
     main_dec    = round(main_dec, 2)
     main_return = round(main_stake * main_dec, 2)
 
-    # ── Build cover accumulators ──────────────────────────────────────────────
-    # One cover per horse in main pool (omit one each time)
-    # Only build covers if cover_pct > 0 and 3+ horses in pool
-    covers = []
-    if cover_pct > 0 and len(main_pool) >= 3:
-        # Prioritise covers that omit higher-priced horses (most risk)
-        sorted_pool = sorted(main_pool, key=lambda x: x["decimal"], reverse=True)
-        # Number of covers = number of value horses (at least 1, max all)
-        n_covers = len(classified["value"]) if classified["value"] else len(main_pool)
-        n_covers = min(n_covers, len(main_pool))
-        stake_per_cover = round(cover_budget / n_covers, 2)
+    # ── BET 2: Cover Accumulator ──────────────────────────────────────────────
+    # Bankers only — no value horses. Safety net.
+    if has_bankers and len(bankers) >= 2:
+        cover_pool  = sorted(bankers, key=lambda x: x["time"])
+        cover_stake = round(budget * COVER_PCT, 2)
+        cover_dec   = 1.0
+        for s in cover_pool:
+            cover_dec *= s["decimal"]
+        cover_dec    = round(cover_dec, 2)
+        cover_return = round(cover_stake * cover_dec, 2)
+    else:
+        cover_pool   = []
+        cover_stake  = 0.0
+        cover_dec    = 1.0
+        cover_return = 0.0
 
-        for omit_horse in sorted_pool[:n_covers]:
-            pool = [s for s in main_pool if s["horse"] != omit_horse["horse"]]
-            dec  = 1.0
-            for s in pool:
-                dec *= s["decimal"]
-            dec = round(dec, 2)
-            covers.append({
-                "omit":             omit_horse["horse"],
-                "omit_odds":        omit_horse["decimal"],
-                "omit_conf":        omit_horse["confidence"],
-                "pool":             [s["horse"] for s in pool],
-                "stake":            stake_per_cover,
-                "dec":              dec,
-                "projected_return": round(stake_per_cover * dec, 2),
-                "fold":             len(pool),
-            })
+    # ── BET 3: Value Double ───────────────────────────────────────────────────
+    # Top 2 value horses by EV. If only 1 value horse, roll stake into main.
+    if has_value and len(value) >= 2:
+        double_pool  = value[:2]
+        double_stake = round(budget * DOUBLE_PCT, 2)
+    elif has_value and len(value) == 1:
+        # Only 1 value horse — no double, roll its stake into main
+        double_pool  = []
+        double_stake = 0.0
+        main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
+    else:
+        double_pool  = []
+        double_stake = 0.0
+        main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
 
-    # ── Scenario projections ──────────────────────────────────────────────────
-    scenarios = _build_scenarios(main_pool, main_stake, main_dec, covers, budget)
+    if double_pool:
+        double_pool  = sorted(double_pool, key=lambda x: x["time"])
+        double_dec   = 1.0
+        for s in double_pool:
+            double_dec *= s["decimal"]
+        double_dec    = round(double_dec, 2)
+        double_return = round(double_stake * double_dec, 2)
+    else:
+        double_dec    = 1.0
+        double_return = 0.0
+
+    # ── Plan label + rationale ────────────────────────────────────────────────
+    plan_type = "THREE_BET" if double_pool else ("MAIN_COVER" if cover_pool else "MAIN_ONLY")
+
+    if plan_type == "THREE_BET":
+        plan_label = "3-Bet Plan: Main Acc + Cover + Value Double"
+        rationale  = (
+            f"{len(bankers)} banker leg(s) (≥61% conf, ≤4x price) form the core. "
+            f"{len(value)} value horse(s) (≥4x price) targeted in main acc and value double. "
+            f"Main acc targets £{main_return:,.0f} return. "
+            f"Cover protects if value leg fails. "
+            f"Double fires ~1 in {round(1/(value[0]['confidence']*value[1]['confidence'])):.0f} days."
+        )
+    elif plan_type == "MAIN_COVER":
+        plan_label = "2-Bet Plan: Main Acc + Cover"
+        rationale  = (
+            f"No value horses above 4x today. "
+            f"{len(bankers)} banker legs form both the main and cover accumulator. "
+            f"Full 15% double stake rolled into main accumulator."
+        )
+    else:
+        plan_label = "Main Accumulator"
+        rationale  = "Single accumulator — insufficient bankers for a cover bet."
+
+    # ── Build legacy 'covers' list for scenario engine compatibility ──────────
+    legacy_covers = []
+    if cover_pool and cover_stake > 0:
+        legacy_covers.append({
+            "omit":             "value legs",
+            "omit_odds":        0.0,
+            "omit_conf":        0.0,
+            "pool":             [s["horse"] for s in cover_pool],
+            "stake":            cover_stake,
+            "dec":              cover_dec,
+            "projected_return": cover_return,
+            "fold":             len(cover_pool),
+        })
+    if double_pool and double_stake > 0:
+        legacy_covers.append({
+            "omit":             "non-value legs",
+            "omit_odds":        0.0,
+            "omit_conf":        0.0,
+            "pool":             [s["horse"] for s in double_pool],
+            "stake":            double_stake,
+            "dec":              double_dec,
+            "projected_return": double_return,
+            "fold":             len(double_pool),
+        })
+
+    # ── Scenarios ─────────────────────────────────────────────────────────────
+    scenarios = _build_scenarios(
+        main_pool, main_stake, main_dec,
+        cover_pool, cover_stake, cover_dec,
+        double_pool, double_stake, double_dec,
+        budget
+    )
 
     return {
-        "plan_type":      plan,
+        # Primary fields
+        "plan_type":      plan_type,
         "plan_label":     plan_label,
         "plan_rationale": rationale,
         "budget":         budget,
+        # Main acc
         "main_stake":     main_stake,
         "main_pool":      main_pool,
         "main_dec":       main_dec,
         "main_return":    main_return,
-        "covers":         covers,
-        "cover_total":    cover_budget,
-        "speculative":    speculative,
+        # Cover acc
+        "cover_pool":     cover_pool,
+        "cover_stake":    cover_stake,
+        "cover_dec":      cover_dec,
+        "cover_return":   cover_return,
+        # Value double
+        "double_pool":    double_pool,
+        "double_stake":   double_stake,
+        "double_dec":     double_dec,
+        "double_return":  double_return,
+        # Legacy compatibility
+        "covers":         legacy_covers,
+        "cover_total":    round(cover_stake + double_stake, 2),
+        "speculative":    weak,
         "classified":     classified,
         "scenarios":      scenarios,
     }
 
 
-def _build_scenarios(main_pool: list, main_stake: float, main_dec: float,
-                     covers: list, budget: float) -> list:
-    """
-    Build a scenario table showing P&L for key win/loss combinations.
-    """
-    n = len(main_pool)
+def _build_scenarios(
+    main_pool, main_stake, main_dec,
+    cover_pool, cover_stake, cover_dec,
+    double_pool, double_stake, double_dec,
+    budget
+) -> list:
+    """Build scenario table for all meaningful win/loss combinations."""
     rows = []
+    total_staked = main_stake + cover_stake + double_stake
 
-    def _check(win_set: set) -> dict:
-        # Main acc
-        main_won = all(s["horse"] in win_set for s in main_pool)
-        main_ret = round(main_stake * main_dec, 2) if main_won else 0.0
-        # Covers
-        cover_ret = 0.0
-        for c in covers:
-            pool_won = all(h in win_set for h in c["pool"])
-            if pool_won:
-                cover_ret += c["projected_return"]
-        cover_ret = round(cover_ret, 2)
-        total = round(main_ret + cover_ret, 2)
-        net   = round(total - budget, 2)
-        return {"main": main_ret, "cover": cover_ret, "total": total, "net": net}
+    def _calc(main_wins, cover_wins, double_wins):
+        ret  = (main_stake * main_dec   if main_wins   else 0.0)
+        ret += (cover_stake * cover_dec if cover_wins  else 0.0)
+        ret += (double_stake * double_dec if double_wins else 0.0)
+        ret  = round(ret, 2)
+        net  = round(ret - total_staked, 2)
+        return {
+            "Acc Return":    f"£{main_stake * main_dec:,.2f}"   if main_wins   else "—",
+            "Cover Return":  f"£{cover_stake * cover_dec:,.2f}" if cover_wins  else ("—" if cover_pool else "n/a"),
+            "Double Return": f"£{double_stake * double_dec:,.2f}" if double_wins else ("—" if double_pool else "n/a"),
+            "Total Back":    f"£{ret:,.2f}",
+            "Net P&L":       f"£{net:+,.2f}",
+        }
 
-    # All win
-    win_all = {s["horse"] for s in main_pool}
-    r = _check(win_all)
-    rows.append({"scenario": f"All {n} win", **r})
+    has_cover  = bool(cover_pool)
+    has_double = bool(double_pool)
 
-    # Each horse loses (one at a time)
-    for omit in main_pool:
-        win_set = {s["horse"] for s in main_pool if s["horse"] != omit["horse"]}
-        r = _check(win_set)
-        rows.append({"scenario": f"{n-1} win (excl. {omit['horse']})", **r})
-
-    # Two losers (brief summary)
-    if n >= 4:
-        worst_two = sorted(main_pool, key=lambda x: x["decimal"], reverse=True)[:2]
-        win_set = {s["horse"] for s in main_pool
-                   if s["horse"] not in {w["horse"] for w in worst_two}}
-        r = _check(win_set)
-        rows.append({"scenario": f"{n-2} win (2 fail)", **r})
-
-    # None win
-    r = _check(set())
-    rows.append({"scenario": "None win", **r})
+    rows.append({"Scenario": "All bets win",        **_calc(True,  True,  True)})
+    rows.append({"Scenario": "Main acc wins only",   **_calc(True,  False, False)})
+    if has_cover:
+        rows.append({"Scenario": "Cover wins only",  **_calc(False, True,  False)})
+    if has_double:
+        rows.append({"Scenario": "Double wins only", **_calc(False, False, True)})
+    if has_cover and has_double:
+        rows.append({"Scenario": "Cover + Double win", **_calc(False, True, True)})
+    rows.append({"Scenario": "Nothing wins",         **_calc(False, False, False)})
 
     return rows
 
 
+def _empty_plan(budget: float) -> dict:
+    return {
+        "plan_type": "EMPTY", "plan_label": "No Qualifying Selections",
+        "plan_rationale": "No selections cleared the confidence and price thresholds.",
+        "budget": budget,
+        "main_stake": 0, "main_pool": [], "main_dec": 1.0, "main_return": 0,
+        "cover_pool": [], "cover_stake": 0, "cover_dec": 1.0, "cover_return": 0,
+        "double_pool": [], "double_stake": 0, "double_dec": 1.0, "double_return": 0,
+        "covers": [], "cover_total": 0, "speculative": [], "classified": {},
+        "scenarios": [],
+    }
+
+
+def _full_acc_fallback(selections: list, budget: float) -> dict:
+    """Fallback when no horses hit banker/value thresholds — full acc on all."""
+    pool = sorted(selections, key=lambda x: x["time"])
+    dec  = 1.0
+    for s in pool:
+        dec *= s["decimal"]
+    dec    = round(dec, 2)
+    ret    = round(budget * dec, 2)
+    return {
+        "plan_type": "FULL_ACC", "plan_label": "Full Accumulator (fallback)",
+        "plan_rationale": "No horses cleared banker/value thresholds. Full budget on accumulator.",
+        "budget": budget,
+        "main_stake": budget, "main_pool": pool, "main_dec": dec, "main_return": ret,
+        "cover_pool": [], "cover_stake": 0, "cover_dec": 1.0, "cover_return": 0,
+        "double_pool": [], "double_stake": 0, "double_dec": 1.0, "double_return": 0,
+        "covers": [], "cover_total": 0, "speculative": [],
+        "classified": classify_selections(selections),
+        "scenarios": [{"Scenario": "All win", "Acc Return": f"£{ret:,.2f}",
+                        "Cover Return": "n/a", "Double Return": "n/a",
+                        "Total Back": f"£{ret:,.2f}", "Net P&L": f"£{ret-budget:+,.2f}"},
+                       {"Scenario": "Nothing wins", "Acc Return": "—",
+                        "Cover Return": "n/a", "Double Return": "n/a",
+                        "Total Back": "£0.00", "Net P&L": f"£{-budget:+,.2f}"}],
+    }
+
+
 def format_plan_summary(plan: dict) -> str:
-    """Plain-text summary of the staking plan for emails/logging."""
+    """Plain-text summary for emails and logging."""
     lines = [
         f"STAKING PLAN: {plan['plan_label']}",
         f"Budget: £{plan['budget']:.2f}",
         f"",
-        f"Main {len(plan['main_pool'])}-fold accumulator: £{plan['main_stake']:.2f}",
-        f"  Odds: {plan['main_dec']:.1f}x | Return if all win: £{plan['main_return']:,.2f}",
+        f"BET 1 — Main {len(plan['main_pool'])}-fold Accumulator: £{plan['main_stake']:.2f}",
+        f"  Legs: {', '.join(s['horse'] for s in plan['main_pool'])}",
+        f"  Combined odds: {plan['main_dec']:.1f}x | Return if wins: £{plan['main_return']:,.2f}",
     ]
-    if plan["covers"]:
-        lines.append(f"")
-        lines.append(f"Cover accumulators: £{plan['cover_total']:.2f} total")
-        for c in plan["covers"]:
-            lines.append(f"  {c['fold']}-fold (omit {c['omit']}): "
-                         f"£{c['stake']:.2f} @ {c['dec']:.1f}x = £{c['projected_return']:.2f} if wins")
-    if plan["speculative"]:
-        lines.append(f"")
-        lines.append(f"Flagged side bets (excluded from main acc):")
-        for s in plan["speculative"]:
-            lines.append(f"  {s['horse']} @ {s['decimal']:.2f}x — consider separate small stake")
-    lines.append(f"")
-    lines.append(f"Rationale: {plan['plan_rationale']}")
+    if plan.get("cover_pool"):
+        lines += [
+            f"",
+            f"BET 2 — Cover {len(plan['cover_pool'])}-fold Accumulator: £{plan['cover_stake']:.2f}",
+            f"  Legs: {', '.join(s['horse'] for s in plan['cover_pool'])}",
+            f"  Combined odds: {plan['cover_dec']:.1f}x | Return if wins: £{plan['cover_return']:,.2f}",
+        ]
+    if plan.get("double_pool"):
+        lines += [
+            f"",
+            f"BET 3 — Value Double: £{plan['double_stake']:.2f}",
+            f"  Legs: {', '.join(s['horse'] for s in plan['double_pool'])}",
+            f"  Combined odds: {plan['double_dec']:.1f}x | Return if wins: £{plan['double_return']:,.2f}",
+        ]
+    if plan.get("speculative"):
+        lines += [
+            f"",
+            f"Excluded (below thresholds): {', '.join(s['horse'] for s in plan['speculative'])}",
+        ]
+    lines += [f"", f"Rationale: {plan['plan_rationale']}"]
     return "\n".join(lines)

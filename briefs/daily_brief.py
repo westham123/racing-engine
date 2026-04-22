@@ -235,7 +235,7 @@ def _calc_staking(selections: list, budget: float = 100.0) -> dict:
     try:
         from engine.staking import build_staking_plan
         plan = build_staking_plan(selections, budget=budget)
-        # Expose flat fields expected by legacy callers + staking block
+        # Expose all fields for 3-bet display
         combined_dec = plan["main_dec"]
         return {
             "budget":         budget,
@@ -243,19 +243,33 @@ def _calc_staking(selections: list, budget: float = 100.0) -> dict:
             "acc_return":     plan["main_return"],
             "acc_legs":       len(plan["main_pool"]),
             "combined_dec":   combined_dec,
-            "l15_available":  False,   # Lucky 15 permanently removed
+            "l15_available":  False,
             "l15_stake":      0,
             "l15_per_bet":    0,
             "l15_horses":     0,
-            # Extended adaptive fields
+            # Core plan
             "plan_type":      plan["plan_type"],
             "plan_label":     plan["plan_label"],
             "plan_rationale": plan["plan_rationale"],
+            "main_pool":      plan["main_pool"],
+            "main_stake":     plan["main_stake"],
+            "main_dec":       plan["main_dec"],
+            "main_return":    plan["main_return"],
+            # Cover accumulator (BET 2)
+            "cover_pool":     plan["cover_pool"],
+            "cover_stake":    plan["cover_stake"],
+            "cover_dec":      plan["cover_dec"],
+            "cover_return":   plan["cover_return"],
+            # Value double (BET 3)
+            "double_pool":    plan["double_pool"],
+            "double_stake":   plan["double_stake"],
+            "double_dec":     plan["double_dec"],
+            "double_return":  plan["double_return"],
+            # Legacy fields
             "covers":         plan["covers"],
             "cover_total":    plan["cover_total"],
             "speculative":    plan["speculative"],
             "scenarios":      plan["scenarios"],
-            "main_pool":      plan["main_pool"],
         }
     except Exception as e:
         # Fallback: simple full accumulator
@@ -387,79 +401,160 @@ def _sel_table(selections: list, movers: list = None) -> str:
 
 
 def _staking_block(staking: dict) -> str:
-    """Adaptive staking plan HTML block for morning brief email."""
+    """3-Bet staking plan HTML block — BET 1 / BET 2 / BET 3 layout."""
     if not staking:
         return '<p style="color:#888;font-size:13px;margin:0;">No staking data.</p>'
 
     plan_type  = staking.get("plan_type", "FULL_ACC")
     plan_label = staking.get("plan_label", "Full Accumulator")
     rationale  = staking.get("plan_rationale", "")
-    covers     = staking.get("covers", [])
-    speculative = staking.get("speculative", [])
 
-    # Plan banner colour
-    if plan_type == "FULL_ACC":
-        banner_col = "#437A22"   # green — be brave
-        banner_txt = f"PLAN: {plan_label} — all selections are short-priced bankers. Full stake on the accumulator."
-    elif plan_type == "COVER_70":
-        banner_col = "#964219"   # amber — cover needed
-        banner_txt = f"PLAN: {plan_label} — longer-priced selection detected. 70% accumulator + 30% cover."
+    main_pool    = staking.get("main_pool",    [])
+    main_stake   = staking.get("main_stake",   staking.get("acc_stake", 0))
+    main_dec     = staking.get("main_dec",     staking.get("combined_dec", 1.0))
+    main_return  = staking.get("main_return",  staking.get("acc_return", 0))
+
+    cover_pool   = staking.get("cover_pool",   [])
+    cover_stake  = staking.get("cover_stake",  0)
+    cover_dec    = staking.get("cover_dec",    1.0)
+    cover_return = staking.get("cover_return", 0)
+
+    double_pool   = staking.get("double_pool",   [])
+    double_stake  = staking.get("double_stake",  0)
+    double_dec    = staking.get("double_dec",    1.0)
+    double_return = staking.get("double_return", 0)
+
+    budget       = staking.get("budget", 100)
+    scenarios    = staking.get("scenarios", [])
+
+    # ── Plan banner ──────────────────────────────────────────────────
+    if plan_type == "THREE_BET":
+        banner_col = "#437A22"
+        banner_txt = f"3-BET PLAN — Main Acc + Cover Acc + Value Double | Target: £2,000+ uncapped"
+    elif plan_type == "MAIN_COVER":
+        banner_col = "#964219"
+        banner_txt = f"2-BET PLAN — Main Acc + Cover Acc (no value double today)"
+    elif plan_type == "MAIN_ONLY":
+        banner_col = "#01696F"
+        banner_txt = f"MAIN ACCUMULATOR — bankers only, no cover or double needed"
     else:
-        banner_col = "#A13544"   # red — high risk
-        banner_txt = f"PLAN: {plan_label} — high-value selection detected. 50/50 split: accumulator + full cover."
+        banner_col = "#888"
+        banner_txt = f"FULL ACCUMULATOR — fallback plan"
 
-    # Cover rows
-    cover_rows = ""
-    if covers:
-        cover_rows = f"""
+    # ── BET 1: Main accumulator ──────────────────────────────────────
+    main_horses = ", ".join(s["horse"] for s in main_pool) if main_pool else "—"
+    bet1_html = f"""
+      <tr style="background:#1a2a1a;">
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#437A22;white-space:nowrap;">BET 1</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Main Accumulator</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{main_stake:.2f}</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">{len(main_pool)}-fold @ {main_dec:.1f}x</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#437A22;">£{main_return:,.2f}</td>
+      </tr>
       <tr>
-        <td colspan="2" style="padding:8px 0 2px;color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
-          Cover Accumulators — £{staking['cover_total']:.2f} total
-        </td>
-      </tr>"""
-        for c in covers:
-            cover_rows += f"""
-      <tr>
-        <td style="padding:3px 0;color:#888;font-size:12px;">{c['fold']}-fold (omit {c['omit']} @ {c['omit_odds']:.2f}x)</td>
-        <td style="padding:3px 0;font-size:12px;font-weight:bold;">£{c['stake']:.2f} → £{c['projected_return']:.2f} if wins</td>
+        <td colspan="5" style="padding:2px 10px 8px;font-size:11px;color:#666;">{main_horses}</td>
       </tr>"""
 
-    # Speculative flags
-    spec_rows = ""
-    if speculative:
-        spec_rows = f"""
+    # ── BET 2: Cover accumulator ─────────────────────────────────────
+    if cover_pool:
+        cover_horses = ", ".join(s["horse"] for s in cover_pool)
+        bet2_html = f"""
+      <tr style="background:#1a221a;">
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;white-space:nowrap;">BET 2</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Cover Accumulator</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{cover_stake:.2f}</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">{len(cover_pool)}-fold @ {cover_dec:.1f}x</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;">£{cover_return:,.2f}</td>
+      </tr>
       <tr>
-        <td colspan="2" style="padding:8px 0 2px;color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
-          Flagged Side Bets (excluded from main acc)
-        </td>
+        <td colspan="5" style="padding:2px 10px 8px;font-size:11px;color:#666;">{cover_horses}</td>
       </tr>"""
-        for s in speculative:
-            spec_rows += f"""
+    else:
+        bet2_html = f"""
       <tr>
-        <td style="padding:3px 0;color:#964219;font-size:12px;">{s['horse']} @ {s['decimal']:.2f}x</td>
-        <td style="padding:3px 0;font-size:12px;color:#888;">Consider small separate stake</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#555;white-space:nowrap;">BET 2</td>
+        <td colspan="4" style="padding:8px 10px;font-size:12px;color:#555;">Cover Acc — not applicable today (bankers only)</td>
       </tr>"""
+
+    # ── BET 3: Value double ──────────────────────────────────────────
+    if double_pool:
+        double_horses = " + ".join(s["horse"] for s in double_pool)
+        double_odds   = " / ".join(s.get("odds_str", f"{s['decimal']:.2f}x") for s in double_pool)
+        bet3_html = f"""
+      <tr style="background:#1a1a2a;">
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#964219;white-space:nowrap;">BET 3</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Value Double</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{double_stake:.2f}</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Double @ {double_dec:.1f}x</td>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#964219;">£{double_return:,.2f}</td>
+      </tr>
+      <tr>
+        <td colspan="5" style="padding:2px 10px 8px;font-size:11px;color:#666;">{double_horses} ({double_odds})</td>
+      </tr>"""
+    else:
+        bet3_html = f"""
+      <tr>
+        <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#555;white-space:nowrap;">BET 3</td>
+        <td colspan="4" style="padding:8px 10px;font-size:12px;color:#555;">Value Double — no qualifying value horses today (need ≥4x price)</td>
+      </tr>"""
+
+    # ── Scenario table ───────────────────────────────────────────────
+    scen_rows = ""
+    for sc in scenarios:
+        net_val = sc.get("Net P&L", "£0.00")
+        try:
+            net_num = float(str(net_val).replace("£","").replace("+","").replace(",",""))
+            net_col = "#437A22" if net_num > 0 else "#A13544" if net_num < 0 else "#888"
+        except Exception:
+            net_col = "#888"
+        scen_rows += f"""
+      <tr style="border-bottom:1px solid #2a2a2a;">
+        <td style="padding:5px 8px;font-size:12px;color:#aaa;">{sc.get("Scenario","")}</td>
+        <td style="padding:5px 8px;font-size:12px;">{sc.get("Acc Return","—")}</td>
+        <td style="padding:5px 8px;font-size:12px;">{sc.get("Cover Return","n/a")}</td>
+        <td style="padding:5px 8px;font-size:12px;">{sc.get("Double Return","n/a")}</td>
+        <td style="padding:5px 8px;font-size:12px;">{sc.get("Total Back","£0.00")}</td>
+        <td style="padding:5px 8px;font-size:12px;font-weight:bold;color:{net_col};">{net_val}</td>
+      </tr>"""
+
+    scen_table = f"""
+    <table style="width:100%;border-collapse:collapse;margin-top:10px;">
+      <thead>
+        <tr style="color:#555;font-size:11px;text-transform:uppercase;">
+          <th style="padding:5px 8px;text-align:left;">Scenario</th>
+          <th style="padding:5px 8px;text-align:left;">BET 1</th>
+          <th style="padding:5px 8px;text-align:left;">BET 2</th>
+          <th style="padding:5px 8px;text-align:left;">BET 3</th>
+          <th style="padding:5px 8px;text-align:left;">Total Back</th>
+          <th style="padding:5px 8px;text-align:left;">Net P&L</th>
+        </tr>
+      </thead>
+      <tbody>{scen_rows}</tbody>
+    </table>""" if scen_rows else ""
 
     return f"""
-    <div style="background:{banner_col};border-radius:4px;padding:8px 12px;margin-bottom:8px;">
+    <div style="background:{banner_col};border-radius:4px;padding:8px 12px;margin-bottom:10px;">
       <span style="color:#fff;font-size:13px;font-weight:bold;">{banner_txt}</span>
     </div>
-    <table style="width:100%;border-collapse:collapse;">
-      <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Budget</td>
-        <td style="padding:6px 0;font-size:13px;font-weight:bold;">£{staking['budget']:.2f}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">{staking['acc_legs']}-fold Accumulator</td>
-        <td style="padding:6px 0;font-size:13px;font-weight:bold;">
-          £{staking['acc_stake']:.2f}
-          <span style="color:#888;font-weight:normal;">→ returns £{staking['acc_return']:,.2f} if all win</span>
-        </td>
-      </tr>{cover_rows}{spec_rows}
-      <tr>
-        <td colspan="2" style="padding:6px 0 0;color:#888;font-size:11px;font-style:italic;">{rationale}</td>
-      </tr>
-    </table>"""
+    <table style="width:100%;border-collapse:collapse;margin-bottom:4px;">
+      <thead>
+        <tr style="color:#555;font-size:11px;text-transform:uppercase;border-bottom:1px solid #333;">
+          <th style="padding:5px 10px;text-align:left;">Bet</th>
+          <th style="padding:5px 10px;text-align:left;">Type</th>
+          <th style="padding:5px 10px;text-align:left;">Stake</th>
+          <th style="padding:5px 10px;text-align:left;">Odds</th>
+          <th style="padding:5px 10px;text-align:left;">Potential Return</th>
+        </tr>
+      </thead>
+      <tbody>{bet1_html}{bet2_html}{bet3_html}
+        <tr style="border-top:2px solid #444;">
+          <td colspan="2" style="padding:8px 10px;font-size:13px;font-weight:bold;color:#aaa;">TOTAL STAKE</td>
+          <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{budget:.2f}</td>
+          <td colspan="2" style="padding:8px 10px;font-size:11px;color:#666;font-style:italic;">{rationale}</td>
+        </tr>
+      </tbody>
+    </table>
+    {scen_table}"""
 
 
 # ── Email Type 1: Morning Brief ────────────────────────────────
