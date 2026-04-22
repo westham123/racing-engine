@@ -146,6 +146,20 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
+
+        # ── HARD NR GATE — final check before any selection reaches the email ──
+        # Even if the dataframe is cached, this strips NRs unconditionally.
+        try:
+            from dashboard.live_data import get_non_runners as _gnr
+            _nr_names = {nr['Horse'].lower().strip() for nr in _gnr()}
+            _before = len(out)
+            out = [s for s in out if s['horse'].lower().strip() not in _nr_names]
+            _dropped = _before - len(out)
+            if _dropped:
+                print(f"[Brief] NR gate removed {_dropped} non-runner(s) from selections")
+        except Exception as _nr_err:
+            print(f"[Brief] NR gate warning: {_nr_err}")
+
         return out
     except Exception as e:
         print(f"[Brief] Selections unavailable: {e}")

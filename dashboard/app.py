@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.10** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.11** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -619,6 +619,28 @@ with tab1:
             _now_str = __import__('datetime').datetime.utcnow().strftime("%H:%M")
         # No hardcoded fallback — if live feed is down, pool is empty
         _six_pool = []
+
+    # ── HARD NR GATE — strip any non-runners from pool before display ────────
+    # This is the final safety net. Even if cached data contains a horse that
+    # has since been declared a non-runner, this removes it unconditionally.
+    # Runs a FRESH (uncached) non-runner check every time Tab 1 loads.
+    if _six_pool:
+        try:
+            from dashboard.live_data import get_non_runners as _get_nrs
+            _nr_list = _get_nrs()  # always fresh — not cached
+            _nr_names = {nr['Horse'].lower().strip() for nr in _nr_list}
+            _before_nr  = len(_six_pool)
+            _removed    = [s['horse'] for s in _six_pool
+                           if s['horse'].lower().strip() in _nr_names]
+            _six_pool   = [s for s in _six_pool
+                           if s['horse'].lower().strip() not in _nr_names]
+            if _removed:
+                st.warning(
+                    f"⚠️ Non-runner(s) removed from staking plan: "
+                    + ", ".join(_removed)
+                )
+        except Exception:
+            pass  # NR gate failed silently — do not block display
 
     # ── Main display ────────────────────────────────────────────────────────
     if len(_six_pool) == 0:
