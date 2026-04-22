@@ -22,8 +22,25 @@
 
 import os, json, datetime, zoneinfo
 import requests, re
+from datetime import date, timezone
 
 _LONDON        = zoneinfo.ZoneInfo("Europe/London")
+
+
+def _utc_to_bst(utc_time_str: str) -> str:
+    """Convert HH:MM UTC string to HH:MM BST (Europe/London)."""
+    if not utc_time_str:
+        return utc_time_str
+    try:
+        _today = date.today()
+        _h, _m = map(int, str(utc_time_str).strip().split(":"))
+        _utc_dt = datetime.datetime(_today.year, _today.month, _today.day, _h, _m,
+                                    tzinfo=timezone.utc)
+        return _utc_dt.astimezone(_LONDON).strftime("%H:%M")
+    except Exception:
+        return utc_time_str
+
+
 _SNAPSHOT_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "early_market_snapshot.json")
 _SHOW_FILE     = os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json")
 

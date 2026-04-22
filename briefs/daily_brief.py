@@ -152,6 +152,17 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         return []
 
 
+def _get_going() -> list:
+    """Returns going description for every UK/Irish meeting today."""
+    try:
+        from dashboard.live_data import get_todays_meetings
+        meetings = get_todays_meetings()
+        return [{"course": m["course"], "going": m["going"], "races": len(m["races"])}
+                for m in meetings]
+    except Exception:
+        return []
+
+
 def _get_todays_results() -> list:
     """Returns settled races from today's results feed."""
     try:
@@ -355,6 +366,43 @@ def _staking_block(staking: dict) -> str:
 
 
 # ── Email Type 1: Morning Brief ────────────────────────────────
+def _going_section_html(going: list) -> str:
+    """Compact going table — one row per course."""
+    if not going:
+        return '<p style="color:#888;font-size:13px;margin:0;">Going not yet available.</p>'
+
+    def _going_colour(g: str) -> str:
+        g = g.lower()
+        if "heavy" in g:                          return "#6B2737"  # deep red
+        if "soft" in g and "good" not in g:       return "#964219"  # amber
+        if "good to soft" in g:                   return "#7A6A1A"  # yellow-brown
+        if "good" in g and "firm" not in g:       return "#437A22"  # green
+        if "good to firm" in g or "firm" in g:    return "#1A6A6A"  # teal
+        if "standard" in g or "fast" in g:        return "#1A6A6A"
+        return "#888"
+
+    rows = ""
+    for m in going:
+        col = _going_colour(m["going"])
+        rows += f"""<tr>
+          <td style="padding:6px 8px;border-bottom:1px solid #2a2a2a;font-size:13px;
+                     font-weight:bold;color:#fff;">{m['course']}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #2a2a2a;font-size:13px;
+                     font-weight:bold;color:{col};">{m['going']}</td>
+          <td style="padding:6px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                     color:#888;">{m['races']} races</td>
+        </tr>"""
+
+    return f"""<table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="color:#555;font-size:10px;text-transform:uppercase;">
+        <th style="padding:4px 8px;text-align:left;">Course</th>
+        <th style="padding:4px 8px;text-align:left;">Going</th>
+        <th style="padding:4px 8px;text-align:left;">Races</th>
+      </tr></thead>
+      <tbody>{rows}</tbody>
+    </table>"""
+
+
 def _moves_section_html(movers: list) -> str:
     """HTML block listing all significant overnight market moves."""
     if not movers:
@@ -400,29 +448,38 @@ def _moves_section_html(movers: list) -> str:
 def build_morning_brief(budget: float = 50.0) -> str:
     selections = _get_official_selections()
     movers     = _get_overnight_moves()
+    going      = _get_going()
     staking    = _calc_staking(selections, budget)
 
     body = ""
 
-    # 1. Overnight market moves — always first, key intelligence
+    # 1. Going — first, sets the context for every selection
     body += _section(
-        f"Overnight Market Moves ({len(movers)} significant)",
+        f"Today's Going — {len(going)} Meetings",
+        _going_section_html(going),
+        "#2a2a2a"
+    )
+
+    # 2. Overnight market moves — key intelligence before selections
+    body += _section(
+        f"Overnight Market Moves ({len([m for m in movers if m['direction']=='STEAM'])} shorteners, "
+        f"{len([m for m in movers if m['direction']=='DRIFT'])} drifters)",
         _moves_section_html(movers),
         "#437A22" if any(m["direction"] == "STEAM" for m in movers) else "#2a2a2a"
     )
 
-    # 2. Official selections with overnight move tags inline
+    # 3. Official selections with overnight move tags inline
     body += _section(
         f"Today's Official Selections ({len(selections)})",
         _sel_table(selections, movers),
         "#01696F"
     )
 
-    # 3. Staking plan
+    # 4. Staking plan
     if selections:
         body += _section("Staking Plan", _staking_block(staking), "#437A22")
 
-    # 4. Filters note — concise one-liner
+    # 5. Active filters — concise one-liner
     body += _section(
         "Active Filters",
         '<p style="font-size:12px;color:#888;margin:0;line-height:1.8;">'
@@ -438,7 +495,7 @@ def build_morning_brief(budget: float = 50.0) -> str:
     if not selections:
         body += _section(
             "Status",
-            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at 08:00 BST — '
+            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at this time — '
             'markets are live but no horses have cleared all filters yet. '
             'Check dashboard from 10:30 BST for developing selections.</p>',
             "#964219"
