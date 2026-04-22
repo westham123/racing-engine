@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.13** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.14** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -936,7 +936,29 @@ with tab2:
         st.warning("🟡 Showing sample data — live feed unavailable")
     st.markdown("Runners ranked by engine confidence. Steam/Move = shortening in market. Form string shows last 6 runs.")
 
-    df = _live_df if _is_live else get_sample_selections()
+    # Tab 2 must show only qualifying selections — NOT the raw 290-runner feed.
+    # Re-use _six_pool (built in Tab 1) if available, else filter live_df.
+    if _is_live and len(_live_df) > 0:
+        _t2_conf_thresh = st.session_state.get("conf_threshold", 0.55)
+        _t2_rows = []
+        for _, _t2r in _live_df.iterrows():
+            _t2_conf = float(_t2r.get('Confidence', 0))
+            _t2_odds = str(_t2r.get('Current Odds','') or _t2r.get('Odds','') or '')
+            if not _t2_odds or _t2_odds in ('nan','None','N/A',''):
+                _t2_odds = str(_t2r.get('Odds','') or '')
+            try:
+                if '/' in _t2_odds:
+                    _t2n, _t2d = _t2_odds.split('/')
+                    _t2_dec = float(_t2n) / float(_t2d) + 1
+                else:
+                    _t2_dec = float(_t2_odds)
+            except Exception:
+                _t2_dec = 2.0
+            if _t2_conf >= _t2_conf_thresh and _t2_dec > 1.67:
+                _t2_rows.append(_t2r)
+        df = pd.DataFrame(_t2_rows).reset_index(drop=True) if _t2_rows else get_sample_selections()
+    else:
+        df = get_sample_selections()
     # Ensure Confidence column exists and is numeric
     if "Confidence" not in df.columns:
         df["Confidence"] = 0.5
@@ -1017,10 +1039,15 @@ with tab3:
             return "background-color: #332200; color: #ffaa00"
         return "background-color: #330000; color: #ff6666"
 
-    st.dataframe(
-        acca_df.style.map(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
-        width="stretch", hide_index=True
-    )
+    if not acca_df.empty and "Confidence" in acca_df.columns:
+        st.dataframe(
+            acca_df.style.map(colour_acca_conf, subset=["Confidence"]).format({"Confidence": "{:.0%}"}),
+            width="stretch", hide_index=True
+        )
+    elif not acca_df.empty:
+        st.dataframe(acca_df, width="stretch", hide_index=True)
+    else:
+        st.info("Accumulator permutations will populate once today's qualifying selections are confirmed. Check Tab 1 for the current staking plan.")
 
     st.markdown("---")
     col1, col2 = st.columns(2)
