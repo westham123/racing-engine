@@ -987,3 +987,201 @@ class DailyBrief:
         html    = build_market_alert(horse, race, move_type, from_odds, to_odds, move_pct)
         subject = f"Racing Engine — {move_type}: {horse} | {_now_bst()} BST"
         send_email(subject, html)
+
+
+# ── Operator Daily Brief ────────────────────────────────────────
+def send_operator_brief():
+    """
+    Sends a plain-text operator briefing to richardking123@outlook.com at 08:00 BST.
+    Designed to be pasted directly into a new Computer/AI session to instantly
+    resume work on the racing engine without needing any prior context.
+    """
+    import os, json, datetime, zoneinfo
+
+    _LONDON  = zoneinfo.ZoneInfo("Europe/London")
+    now      = datetime.datetime.now(_LONDON)
+    date_str = now.strftime("%A, %d %B %Y")
+    time_str = now.strftime("%H:%M BST")
+
+    # ── Version ──────────────────────────────────────────────────
+    try:
+        app_path = os.path.join(os.path.dirname(__file__), "..", "dashboard", "app.py")
+        version  = "unknown"
+        with open(app_path) as f:
+            for line in f:
+                if line.strip().startswith("VERSION"):
+                    version = line.split('"')[1] if '"' in line else line.split("'")[1]
+                    break
+    except Exception:
+        version = "unknown"
+
+    # ── ML learning status ───────────────────────────────────────
+    try:
+        recs_path     = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+        results_path  = os.path.join(os.path.dirname(__file__), "..", "learning", "results_store.json")
+        recs_count    = len(json.load(open(recs_path))) if os.path.exists(recs_path) else 0
+        results_count = len(json.load(open(results_path))) if os.path.exists(results_path) else 0
+    except Exception:
+        recs_count, results_count = 0, 0
+
+    # ── Git status ───────────────────────────────────────────────
+    try:
+        import subprocess
+        git_log = subprocess.check_output(
+            ["git", "-C", os.path.join(os.path.dirname(__file__), ".."),
+             "log", "--oneline", "-3"],
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+    except Exception:
+        git_log = "unavailable"
+
+    body = f"""RACING ENGINE — OPERATOR BRIEF
+{date_str} | {time_str}
+Dashboard: https://racing-engine-dash.streamlit.app (PIN: 1012)
+Version: {version}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+HOW TO USE THIS BRIEF
+─────────────────────
+If your session has dropped or you are starting a new task, paste
+this entire email into the new session as your first message.
+The AI will resume with full context instantly.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM RULES (CRITICAL — preserve at all times)
+────────────────────────────────────────────────
+1. Anonymity is crucial. Security paramount. All code pushed to
+   GitHub regularly with versioning. Repo: westham123/racing-engine
+2. Always tidy loose ends from previous session first.
+3. Explain all technical terms clearly — user is not a coder.
+4. When decisions required: give 3 options + 1 recommendation.
+5. Ask for confirmation before each build step.
+6. Create daily briefs with clear loose ends and daily tasks.
+7. Carry out all tasks possible — minimise operator actions.
+8. Phase 1 = personal research tool ONLY. No payments. No commercial.
+9. Phase 2 (commercial) is future only — never conflate the two.
+10. VPN/anonymity measures NOT required for Phase 1.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STAKING RULES (PERMANENT)
+──────────────────────────
+Budget: £100 | Singles: REMOVED | Lucky 15: REMOVED
+Short price cut-off: 4/6 (1.67 decimal) — hard exclusion from ALL bets
+Confidence threshold: 55% minimum (handicaps: 65%)
+One horse per race — highest confidence only
+
+3-BET STRUCTURE:
+  BET 1 — Main Accumulator (£60, 60%) — BANKERS ONLY
+           Bankers = conf ≥ 61% AND price ≤ 4.0x
+  BET 2 — Cover Accumulator (£25, 25%) — all bankers MINUS riskiest leg
+           Safety net: lands if BET 1's longest-priced horse fails
+  BET 3 — Value Double (£15, 15%) — top 2 VALUE horses only
+           Value = price ≥ 4.0x AND conf ≥ 55%
+
+Target: £2,000+ profit, uncapped.
+
+Exclusion rules:
+  - VALUE horses (4x+) NEVER enter BET 1
+  - Favourite gap: exclude if market fav is >35% shorter than our horse
+  - Drifters: flag only (auto-drop coming in next build)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCHEDULED CRONS
+───────────────
+[4eac6ab1] 07:00 BST daily  — Morning racing brief → richardking123@outlook.com
+[THIS JOB] 08:00 BST daily  — Operator brief (this email) → richardking123@outlook.com
+[c58b4236] 15:30 BST daily  — Show price snapshot (tomorrow's card)
+[de70bd36] Hourly 15:09–06:09 — Market movers check (notify if ≥15% move)
+[385f97ff] 21:00 BST daily  — Evening results summary → richardking123@outlook.com
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KEY FILES (workspace: /home/user/workspace/racing-engine)
+──────────────────────────────────────────────────────────
+engine/staking.py          — 3-bet staking engine
+engine/odds_model.py       — confidence scoring + exclusion filters
+dashboard/app.py           — Streamlit dashboard
+dashboard/live_data.py     — Sporting Life feed parser
+dashboard/early_market.py  — market movers / show price snapshot
+briefs/daily_brief.py      — email brief builder + cron entry points
+learning/                  — ML loop, loss analyser, weights
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+MACHINE LEARNING STATUS
+───────────────────────
+Recommendations logged : {recs_count}
+Results fed back       : {results_count}
+Learning loop status   : NOT YET CLOSED
+Next build priority    : Evening summary must call record_outcome()
+                         after results settle so weights self-adjust.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+RECENT GIT COMMITS
+──────────────────
+{git_log}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+EXTERNAL SERVICES
+──────────────────
+GitHub     : westham123/racing-engine (private)
+             Push always needs api_credentials=["github"]
+Streamlit  : https://racing-engine-dash.streamlit.app
+             Must be MANUALLY REBOOTED after each push
+             (hamburger → Settings → Reboot app)
+Gmail send : racingengine.sender@gmail.com
+Recipient  : richardking123@outlook.com
+Betfair    : BSP data only — App Key 1Bj49mxBZBQ961WM (403 fail-fast)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+KNOWN ISSUES / NEXT BUILDS
+───────────────────────────
+1. ML LOOP NOT CLOSED — most critical next build after today
+   Evening summary needs to call record_outcome() for each result
+2. DRIFT AUTO-DROP — horses drifting >20% from morning price
+   should be auto-excluded mid-race-day (currently flag only)
+3. FAVOURITE CHECK — live, but threshold (35%) may need tuning
+   after a week of data. Review Friday 24 April.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+TO RESUME IN A NEW SESSION
+───────────────────────────
+Paste this entire email as your first message. Then say what you
+want to work on. The AI will have full context immediately.
+
+Racing Engine {version} | Phase 1 Personal Research Tool
+"""
+
+    subject = f"Racing Engine — Operator Brief | {date_str}"
+
+    # Send as plain text
+    import smtplib
+    from email.mime.text import MIMEText
+    from email.mime.multipart import MIMEMultipart
+
+    SENDER_EMAIL = "racingengine.sender@gmail.com"
+    SENDER_PASS  = "aase pwst fcbf smfs"
+    RECIPIENT    = "richardking123@outlook.com"
+
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"]    = SENDER_EMAIL
+        msg["To"]      = RECIPIENT
+        msg.attach(MIMEText(body, "plain"))
+
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as srv:
+            srv.login(SENDER_EMAIL, SENDER_PASS)
+            srv.sendmail(SENDER_EMAIL, RECIPIENT, msg.as_string())
+        print(f"[OperatorBrief] Sent to {RECIPIENT}")
+        return True
+    except Exception as e:
+        print(f"[OperatorBrief] Send failed: {e}")
+        return False
