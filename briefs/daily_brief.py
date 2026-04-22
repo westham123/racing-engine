@@ -90,6 +90,22 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         now_bst  = datetime.now(_zi.ZoneInfo("Europe/London")).strftime("%H:%M")
         out      = []
 
+        # ── Favourite gap lookup ─────────────────────────────────────────────
+        # Build race-level shortest price lookup before iterating.
+        # Excludes selections running against a dominant market leader (>35% gap).
+        _FAV_GAP_PCT = 0.35
+        _race_fav_price_brief = {}
+        for _, _fr in df.iterrows():
+            _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
+            _frodds = str(_fr.get('Current Odds','') or _fr.get('Odds','N/A')).strip()
+            try:
+                _frdec = _to_decimal(_frodds)
+            except Exception:
+                _frdec = 99.0
+            if _frdec > 1.0:
+                if _frkey not in _race_fav_price_brief or _frdec < _race_fav_price_brief[_frkey]:
+                    _race_fav_price_brief[_frkey] = _frdec
+
         for _, row in df.iterrows():
             t = str(row.get("Time", ""))
 
@@ -103,6 +119,16 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
 
             if dec <= 1.67:
                 continue  # 4/6 cut-off
+
+            # Favourite gap check — skip if dominant market leader exists in this race
+            _bracekey = f"{t}::{str(row.get('Course',''))}"
+            _bfav_dec = _race_fav_price_brief.get(_bracekey, dec)
+            if _bfav_dec < dec:
+                _bgap = (dec - _bfav_dec) / _bfav_dec
+                if _bgap > _FAV_GAP_PCT:
+                    print(f"[Brief] Fav-gap excluded {row.get('Horse','')} @ {dec:.2f}x "
+                          f"(fav @ {_bfav_dec:.2f}x, gap {_bgap:.0%})")
+                    continue
 
             runner = {
                 "odds":         str(row.get("Odds", "N/A")),

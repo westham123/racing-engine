@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.20** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.21** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -475,6 +475,40 @@ try:
         _zi_pool.ZoneInfo('Europe/London')).strftime('%H:%M')
 except Exception:
     _now_pool = __import__('datetime').datetime.utcnow().strftime('%H:%M')
+
+# ── Favourite rank pre-processing ───────────────────────────────────────────
+# For each race (Time + Course), rank all runners by decimal price.
+# Rank 1 = market favourite (shortest price).
+# We use this to exclude selections where a significantly shorter rival exists
+# in the same race — avoids backing non-favourites into our banker pool.
+#
+# FAV_GAP_PCT = 0.35 (35%): if the favourite is more than 35% shorter than
+# our selection, our horse is not market-backed and is excluded.
+# Example: our horse at 2.0x (Evens), favourite at 1.35x — gap = 48% → exclude.
+# Example: our horse at 2.0x (Evens), favourite at 1.60x — gap = 25% → allow.
+#
+# This is a SOFT exclusion — it only fires when both conditions are true:
+#   1. Our horse is NOT the favourite (rank > 1)
+#   2. The favourite is >35% shorter in decimal price
+_FAV_GAP_PCT = 0.35
+
+if _pool_is_live and len(_pool_df) > 0:
+    # Build race-level favourite price lookup {"HH:MM::Course": shortest_decimal}
+    _race_fav_price = {}
+    for _, _fr in _pool_df.iterrows():
+        _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
+        _frodds = str(_fr.get('Current Odds', '') or _fr.get('Odds', 'N/A')).strip()
+        try:
+            if '/' in _frodds:
+                _fn, _fd = _frodds.split('/')
+                _frdec = float(_fn) / float(_fd) + 1
+            else:
+                _frdec = float(_frodds)
+        except Exception:
+            _frdec = 99.0
+        if _frdec > 1.0:
+            if _frkey not in _race_fav_price or _frdec < _race_fav_price[_frkey]:
+                _race_fav_price[_frkey] = _frdec
 
 if _pool_is_live and len(_pool_df) > 0:
     for _, _prow in _pool_df.iterrows():
@@ -563,6 +597,16 @@ if _pool_is_live and len(_pool_df) > 0:
             _pdec = 2.0
         if _pdec <= 1.67:
             continue
+
+        # ── Favourite gap check ───────────────────────────────────────────
+        # Exclude if a significantly shorter-priced horse exists in this race.
+        # Protects against selecting against a dominant market leader.
+        _pracekey = f"{_ptime}::{str(_prow.get('Course',''))}"
+        _pfav_dec = _race_fav_price.get(_pracekey, _pdec)
+        if _pfav_dec < _pdec:  # we are not the favourite
+            _pgap = (_pdec - _pfav_dec) / _pfav_dec
+            if _pgap > _FAV_GAP_PCT:
+                continue  # favourite is >35% shorter — market disagrees with us
 
         _six_pool.append({
             'horse':      str(_prow.get('Horse', 'Unknown')),
