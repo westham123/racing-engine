@@ -90,7 +90,7 @@ def get_next_day_card(target_date: str = None) -> list:
     data = _get_page_json(url)
     meetings = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
-    UK_COUNTRIES = {"ENG", "SCO", "WAL", "IRL", "IRE"}
+    UK_COUNTRIES = {"ENG", "SCO", "Scot", "Scotland", "WAL", "Wale", "Wales", "IRL", "IRE", "IE", "Ire", "Eire", "GB", "UK", "Northern Ireland", "NI"}
     races_out = []
 
     for mt in meetings:

@@ -209,8 +209,8 @@ def get_todays_meetings():
 
     meetings_raw = data.get("props", {}).get("pageProps", {}).get("meetings", [])
 
-    UK_IRE_LIVE = {"ENG", "SCO", "IRE", "IE", "WAL", "Wale", "Wales",
-                   "GB", "UK", "Northern Ireland", "NI", "Eire"}
+    UK_IRE_LIVE = {"ENG", "SCO", "Scot", "Scotland", "IRE", "IE", "WAL", "Wale", "Wales",
+                   "GB", "UK", "Northern Ireland", "NI", "Eire", "Ire"}
 
     def _make_slug(course: str, rc_id: str, rc_name: str) -> str:
         """Build full Sporting Life racecard slug from components."""
