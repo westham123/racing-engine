@@ -12,8 +12,9 @@
 #     This is the profit engine. Targets £2,000+ return.
 #
 #   BET 2 — Cover Accumulator (25% of budget)
-#     Banker horses only (conf >= 61%, price <= 4.0x).
-#     Safety net — lands more often, still returns £1,500+.
+#     All bankers MINUS the highest-priced one (the riskiest leg).
+#     If BET 1's riskiest banker fails, BET 2 still lands.
+#     Genuinely different from BET 1 — not a duplicate.
 #
 #   BET 3 — Value Double (15% of budget)
 #     The two highest-EV selections (price >= 4.0x).
@@ -133,15 +134,31 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     main_return = round(main_stake * main_dec, 2)
 
     # ── BET 2: Cover Accumulator ──────────────────────────────────────────────
-    # Bankers only — no value horses. Safety net.
+    # Bankers minus the highest-priced one — genuine safety net.
+    # If BET 1's riskiest banker fails, BET 2 still lands.
+    # Requires at least 2 bankers after removing the longest price.
     if has_bankers and len(bankers) >= 2:
-        cover_pool  = sorted(bankers, key=lambda x: x["time"])
-        cover_stake = round(budget * COVER_PCT, 2)
-        cover_dec   = 1.0
-        for s in cover_pool:
-            cover_dec *= s["decimal"]
-        cover_dec    = round(cover_dec, 2)
-        cover_return = round(cover_stake * cover_dec, 2)
+        # Remove the highest-priced (riskiest) banker from BET 2
+        _riskiest   = max(bankers, key=lambda x: x["decimal"])
+        cover_pool  = sorted(
+            [b for b in bankers if b is not _riskiest],
+            key=lambda x: x["time"]
+        )
+        if len(cover_pool) >= 2:
+            cover_stake = round(budget * COVER_PCT, 2)
+            cover_dec   = 1.0
+            for s in cover_pool:
+                cover_dec *= s["decimal"]
+            cover_dec    = round(cover_dec, 2)
+            cover_return = round(cover_stake * cover_dec, 2)
+        else:
+            # Only 1 banker after removing riskiest — no meaningful cover
+            cover_pool   = []
+            cover_stake  = 0.0
+            cover_dec    = 1.0
+            cover_return = 0.0
+            main_stake   = round(main_stake + budget * COVER_PCT, 2)
+            main_return  = round(main_stake * main_dec, 2)
     else:
         cover_pool   = []
         cover_stake  = 0.0

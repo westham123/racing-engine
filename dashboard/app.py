@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.21** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.22** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -872,11 +872,17 @@ with tab1:
                     "Tier":       "BANKER",
                 })
             st.dataframe(pd.DataFrame(_b2_rows), use_container_width=True, hide_index=True)
+            # Identify which banker was omitted (highest-priced in BET 1 not in BET 2)
+            _b1_horses = {s['horse'] for s in _stk['main_pool']}
+            _b2_horses = {s['horse'] for s in _stk['cover_pool']}
+            _omitted   = _b1_horses - _b2_horses
+            _omit_str  = f" | Omits: **{', '.join(_omitted)}** (riskiest leg)" if _omitted else ""
             st.info(
                 f"Stake **£{_stk['cover_stake']:.2f}** | "
-                f"{len(_stk['cover_pool'])}-fold (bankers only) @ **{_stk['cover_dec']:,.1f}x** | "
-                f"Return if wins: **£{_stk['cover_return']:,.2f}** | "
-                f"Safety net — lands more often than main acc"
+                f"{len(_stk['cover_pool'])}-fold @ **{_stk['cover_dec']:,.1f}x** | "
+                f"Return if wins: **£{_stk['cover_return']:,.2f}**"
+                f"{_omit_str} | "
+                f"Lands if BET 1's riskiest horse fails"
             )
         else:
             st.caption("No cover accumulator today — not enough bankers for a separate safety net.")

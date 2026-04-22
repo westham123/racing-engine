@@ -484,10 +484,15 @@ def _staking_block(staking: dict) -> str:
     # ── BET 2: Cover accumulator ─────────────────────────────────────
     if cover_pool:
         cover_horses = ", ".join(s["horse"] for s in cover_pool)
+        # Identify omitted horse (in BET 1 but not BET 2)
+        _main_names  = {s["horse"] for s in main_pool}
+        _cover_names = {s["horse"] for s in cover_pool}
+        _omitted_h   = _main_names - _cover_names
+        _omit_note   = f" — omits {', '.join(_omitted_h)} (riskiest leg)" if _omitted_h else ""
         bet2_html = f"""
       <tr style="background:#1a221a;">
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;white-space:nowrap;">BET 2</td>
-        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Cover Accumulator</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Cover Accumulator{_omit_note}</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{cover_stake:.2f}</td>
         <td style="padding:8px 10px;font-size:12px;color:#aaa;">{len(cover_pool)}-fold @ {cover_dec:.1f}x</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;">£{cover_return:,.2f}</td>
