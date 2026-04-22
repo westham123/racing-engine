@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.15** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.16** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -445,58 +445,6 @@ _live_df, _is_live = load_live_selections()
 _live_going_df, _going_live = load_live_going()
 _live_results_df, _results_live = load_live_results()
 _live_meetings_data, _meetings_live = load_live_meetings()
-
-# ── Top KPI Metrics ───────────────────────────────────────────
-# Race count: use live meetings if available, else count today's known card (6 races, 4 meetings)
-_races_today = sum(len(m.get('races', [])) for m in _live_meetings_data) if _meetings_live else 6
-# _top_sels: count of horses that clear BOTH confidence threshold (65%) AND 4/6 price cut-off
-# Do NOT use raw _live_df count — that includes all 290 runners before any filtering
-_top_sels = 0
-if _is_live and len(_live_df) > 0:
-    for _, _ks_row in _live_df.iterrows():
-        _ks_conf = float(_ks_row.get('Confidence', 0))
-        _ks_odds = str(_ks_row.get('Current Odds','') or _ks_row.get('Odds','') or '')
-        if not _ks_odds or _ks_odds in ('nan','None','N/A',''):
-            _ks_odds = str(_ks_row.get('Odds','') or '')
-        try:
-            if '/' in _ks_odds:
-                _ks_n, _ks_d = _ks_odds.split('/')
-                _ks_dec = float(_ks_n) / float(_ks_d) + 1
-            else:
-                _ks_dec = float(_ks_odds)
-        except Exception:
-            _ks_dec = 2.0
-        if _ks_conf >= 0.65 and _ks_dec > 1.67:
-            _top_sels += 1
-else:
-    _top_sels = 6
-_signal_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
-_steam_alerts = len(_signal_df[_signal_df['Signal'].str.contains('Steam|Move', na=False)])
-
-col1, col2, col3, col4, col5 = st.columns(5)
-with col1:
-    st.metric("Races Today", str(_races_today), "UK + IRE" + (" 🟢 LIVE" if _meetings_live else " (sample)"))
-with col2:
-    st.metric("Top Selections", str(_top_sels), "Above 65% confidence")
-with col3:
-    st.metric("Acca Permutations", "Auto", "From live runners")
-with col4:
-    # Pull real hit rate from settlement engine
-    try:
-        import sys as _s3
-        _s3.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
-        from settlement.settle import SettlementEngine as _SE
-        _kpi_stats = _SE().get_summary_stats()
-        _hit_rate_kpi = f"{_kpi_stats['hit_rate']:.1f}%" if _kpi_stats.get("total",0) > 0 else "—"
-        _hit_delta = f"{_kpi_stats['total']} races settled"
-    except Exception:
-        _hit_rate_kpi = "—"
-        _hit_delta = "Building..."
-    st.metric("Hit Rate", _hit_rate_kpi, _hit_delta)
-with col5:
-    st.metric("Steam Moves", str(_steam_alerts), "Runners shortening")
-
-st.markdown("---")
 
 # ── Global Qualifying Pool ────────────────────────────────────
 # Built ONCE here at top level — shared by KPI metrics, Tab 1, Tab 2.
@@ -625,6 +573,40 @@ if _six_pool:
 
 # Update top KPI from the real pool
 _top_sels = len(_six_pool)
+
+
+# ── Top KPI Metrics ───────────────────────────────────────────
+# Race count: use live meetings if available, else count today's known card (6 races, 4 meetings)
+_races_today = sum(len(m.get('races', [])) for m in _live_meetings_data) if _meetings_live else 6
+_top_sels = len(_six_pool)  # pool already built above
+
+_signal_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
+_steam_alerts = len(_signal_df[_signal_df['Signal'].str.contains('Steam|Move', na=False)])
+
+col1, col2, col3, col4, col5 = st.columns(5)
+with col1:
+    st.metric("Races Today", str(_races_today), "UK + IRE" + (" 🟢 LIVE" if _meetings_live else " (sample)"))
+with col2:
+    st.metric("Top Selections", str(_top_sels), "Above 65% confidence")
+with col3:
+    st.metric("Acca Permutations", "Auto", "From live runners")
+with col4:
+    # Pull real hit rate from settlement engine
+    try:
+        import sys as _s3
+        _s3.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
+        from settlement.settle import SettlementEngine as _SE
+        _kpi_stats = _SE().get_summary_stats()
+        _hit_rate_kpi = f"{_kpi_stats['hit_rate']:.1f}%" if _kpi_stats.get("total",0) > 0 else "—"
+        _hit_delta = f"{_kpi_stats['total']} races settled"
+    except Exception:
+        _hit_rate_kpi = "—"
+        _hit_delta = "Building..."
+    st.metric("Hit Rate", _hit_rate_kpi, _hit_delta)
+with col5:
+    st.metric("Steam Moves", str(_steam_alerts), "Runners shortening")
+
+st.markdown("---")
 
 # ── Main Tabs ─────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
