@@ -1035,126 +1035,198 @@ def send_operator_brief():
     except Exception:
         git_log = "unavailable"
 
+    # ── Loose ends from learning/results store ──────────────────
+    try:
+        settled = json.load(open(os.path.join(os.path.dirname(__file__), "..", "learning", "settled_races.json")))
+        pending_results = [r for r in settled if not r.get("outcome_recorded")]
+        pending_str = str(len(pending_results)) + " races awaiting outcome recording"
+    except Exception:
+        pending_str = "unavailable"
+
     body = f"""RACING ENGINE — OPERATOR BRIEF
 {date_str} | {time_str}
-Dashboard: https://racing-engine-dash.streamlit.app (PIN: 1012)
-Version: {version}
+Dashboard : https://racing-engine-dash.streamlit.app  PIN: 1012
+Version   : {version}
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-HOW TO USE THIS BRIEF
-─────────────────────
-If your session has dropped or you are starting a new task, paste
-this entire email into the new session as your first message.
-The AI will resume with full context instantly.
+▶ HOW TO RESUME IN A NEW SESSION
+──────────────────────────────────
+Paste this ENTIRE email as your first message in any new session.
+The AI will have full context and be ready to work immediately.
+No other setup needed.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-SYSTEM RULES (CRITICAL — preserve at all times)
-────────────────────────────────────────────────
-1. Anonymity is crucial. Security paramount. All code pushed to
-   GitHub regularly with versioning. Repo: westham123/racing-engine
-2. Always tidy loose ends from previous session first.
+⚠ CRITICAL OPERATOR ACTIONS (check these first every day)
+───────────────────────────────────────────────────────────
+1. After EVERY code push → MANUALLY REBOOT the Streamlit app
+   Go to: https://racing-engine-dash.streamlit.app
+   Click: hamburger menu (top right) → Settings → Reboot app
+   Auto-redeploy is UNRELIABLE — always reboot manually.
+
+2. Check morning brief arrived at 07:00 BST
+   If missing → data feed may be down, check dashboard
+
+3. Check evening summary arrived at 21:00 BST
+   If missing → results feed may be down or selections empty
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SYSTEM RULES (CRITICAL — AI must follow at all times)
+──────────────────────────────────────────────────────
+1. Anonymity & security paramount. Push ALL code to GitHub
+   with versioning. Repo: westham123/racing-engine (private).
+2. Begin every session by tidying loose ends from previous session.
 3. Explain all technical terms clearly — user is not a coder.
-4. When decisions required: give 3 options + 1 recommendation.
+4. When decisions required: always give 3 options + 1 recommendation.
 5. Ask for confirmation before each build step.
-6. Create daily briefs with clear loose ends and daily tasks.
-7. Carry out all tasks possible — minimise operator actions.
+6. End every session with a daily brief listing loose ends & next tasks.
+7. Carry out ALL tasks possible — minimise actions required from user.
 8. Phase 1 = personal research tool ONLY. No payments. No commercial.
-9. Phase 2 (commercial) is future only — never conflate the two.
+9. Phase 2 (commercial) is future only — NEVER conflate the two phases.
 10. VPN/anonymity measures NOT required for Phase 1.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-STAKING RULES (PERMANENT)
-──────────────────────────
-Budget: £100 | Singles: REMOVED | Lucky 15: REMOVED
-Short price cut-off: 4/6 (1.67 decimal) — hard exclusion from ALL bets
-Confidence threshold: 55% minimum (handicaps: 65%)
-One horse per race — highest confidence only
-
-3-BET STRUCTURE:
-  BET 1 — Main Accumulator (£60, 60%) — BANKERS ONLY
-           Bankers = conf ≥ 61% AND price ≤ 4.0x
-  BET 2 — Cover Accumulator (£25, 25%) — all bankers MINUS riskiest leg
-           Safety net: lands if BET 1's longest-priced horse fails
-  BET 3 — Value Double (£15, 15%) — top 2 VALUE horses only
-           Value = price ≥ 4.0x AND conf ≥ 55%
-
-Target: £2,000+ profit, uncapped.
-
-Exclusion rules:
-  - VALUE horses (4x+) NEVER enter BET 1
-  - Favourite gap: exclude if market fav is >35% shorter than our horse
-  - Drifters: flag only (auto-drop coming in next build)
+DATA INTEGRITY RULES (CRITICAL — these must never be broken)
+──────────────────────────────────────────────────────────────
+• OFFICIAL SELECTION: a horse is official ONLY if it cleared BOTH
+  the confidence threshold AND the 4/6 price cut-off. No exceptions.
+• NO HARDCODED / SAMPLE DATA: all selections must come from the
+  live Sporting Life feed. Never display example or fallback horses.
+• NON-RUNNERS: must be stripped at EVERY output point — app Tab 1,
+  morning brief, evening summary. NR gate runs fresh (uncached).
+• ONE HORSE PER RACE: only the highest-confidence selection per race.
+  Two horses in the same race is always a bug.
+• NEVER conflate unofficial mentions (e.g. "Final Appeal",
+  "Trust House") with official engine selections.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-SCHEDULED CRONS
-───────────────
-[4eac6ab1] 07:00 BST daily  — Morning racing brief → richardking123@outlook.com
-[THIS JOB] 08:00 BST daily  — Operator brief (this email) → richardking123@outlook.com
-[c58b4236] 15:30 BST daily  — Show price snapshot (tomorrow's card)
-[de70bd36] Hourly 15:09–06:09 — Market movers check (notify if ≥15% move)
-[385f97ff] 21:00 BST daily  — Evening results summary → richardking123@outlook.com
+STAKING RULES (PERMANENT — do not change without user approval)
+────────────────────────────────────────────────────────────────
+Budget: £100 | Singles: PERMANENTLY REMOVED | Lucky 15: PERMANENTLY REMOVED
+Short price cut-off : 4/6 (1.67 decimal) — hard exclusion from ALL bets
+Confidence threshold: 55% minimum (handicaps: 65%)
+One horse per race  : highest confidence only
+
+3-BET STRUCTURE (approved {date_str}):
+  BET 1 — Main Accumulator (£60) — BANKERS ONLY
+           Bankers = conf ≥ 61% AND price ≤ 4.0x
+           VALUE horses (4x+) are NEVER in BET 1
+  BET 2 — Cover Accumulator (£25) — all bankers MINUS riskiest leg
+           Riskiest = highest-priced banker in BET 1
+           Safety net: lands if BET 1's longest-priced horse fails
+           Must be genuinely different from BET 1 — never a duplicate
+  BET 3 — Value Double (£15) — top 2 VALUE horses only
+           Value = price ≥ 4.0x AND conf ≥ 55%
+           Independent of both accumulators
+
+Target: £2,000+ profit, uncapped.
+
+Additional exclusion rules:
+  - Favourite gap: exclude if market fav is >35% shorter in price
+  - Large fields: 16+ runners excluded entirely
+  - Drifters: flagged in Tab 2, auto-drop rule under development
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SCHEDULED CRONS (all times BST = UTC+1)
+────────────────────────────────────────
+[4eac6ab1] 07:00 daily — Morning racing brief → richardking123@outlook.com
+[operator] 08:00 daily — THIS EMAIL → richardking123@outlook.com
+[c58b4236] 15:30 daily — Show price snapshot (tomorrow's card baseline)
+[de70bd36] Hourly 15:09–06:09 — Market movers (silent if nothing ≥15%)
+[385f97ff] 21:00 daily — Evening results summary → richardking123@outlook.com
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 KEY FILES (workspace: /home/user/workspace/racing-engine)
 ──────────────────────────────────────────────────────────
-engine/staking.py          — 3-bet staking engine
-engine/odds_model.py       — confidence scoring + exclusion filters
-dashboard/app.py           — Streamlit dashboard
-dashboard/live_data.py     — Sporting Life feed parser
-dashboard/early_market.py  — market movers / show price snapshot
-briefs/daily_brief.py      — email brief builder + cron entry points
-learning/                  — ML loop, loss analyser, weights
+engine/staking.py          — 3-bet staking engine (v2.0)
+engine/odds_model.py       — confidence scoring + hard exclusion filters
+dashboard/app.py           — Streamlit dashboard (Tab 1 staking, Tab 2 runners)
+dashboard/live_data.py     — Sporting Life __NEXT_DATA__ feed parser
+dashboard/early_market.py  — market movers, show price snapshot
+briefs/daily_brief.py      — all email builders + cron entry points
+learning/                  — ML loop, loss analyser, learned weights
+
+ARCHITECTURE NOTES:
+  - Live data: Sporting Life __NEXT_DATA__ JSON
+  - UTC→BST: zoneinfo.ZoneInfo("Europe/London") — always use this
+  - OddsModel fails silently on Streamlit Cloud — raw-field fallback exists
+  - Pool must be built BEFORE st.metric() renders (Streamlit top-to-bottom)
+  - bookmakerOdds array = live price (current_odds field is stale)
+  - NONRUNNER (no underscore) = what feed returns — normalised in live_data.py
+  - Version auto-bumps on every commit via pre-commit hook
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 MACHINE LEARNING STATUS
-───────────────────────
+────────────────────────
 Recommendations logged : {recs_count}
 Results fed back       : {results_count}
-Learning loop status   : NOT YET CLOSED
-Next build priority    : Evening summary must call record_outcome()
-                         after results settle so weights self-adjust.
+Pending outcome records: {pending_str}
+Learned weights        : manual defaults (not yet self-adjusting)
+Learning loop status   : *** NOT YET CLOSED — TOP PRIORITY BUILD ***
+What's needed          : evening summary must call record_outcome()
+                         for each result so weights begin self-adjusting
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 RECENT GIT COMMITS
-──────────────────
+───────────────────
 {git_log}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-EXTERNAL SERVICES
-──────────────────
-GitHub     : westham123/racing-engine (private)
-             Push always needs api_credentials=["github"]
-Streamlit  : https://racing-engine-dash.streamlit.app
-             Must be MANUALLY REBOOTED after each push
-             (hamburger → Settings → Reboot app)
-Gmail send : racingengine.sender@gmail.com
+EXTERNAL SERVICES & CREDENTIALS
+─────────────────────────────────
+GitHub     : westham123/racing-engine (private repo)
+             git push needs api_credentials=["github"] in bash tool
+Streamlit  : https://racing-engine-dash.streamlit.app (PIN: 1012)
+             *** MANUAL REBOOT REQUIRED AFTER EVERY PUSH ***
+Gmail send : racingengine.sender@gmail.com / aase pwst fcbf smfs
 Recipient  : richardking123@outlook.com
-Betfair    : BSP data only — App Key 1Bj49mxBZBQ961WM (403 fail-fast)
+Betfair    : richardking123@outlook.com / Pa55word2018!
+             App Key: 1Bj49mxBZBQ961WM — BSP data only (403 fail-fast)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-KNOWN ISSUES / NEXT BUILDS
-───────────────────────────
-1. ML LOOP NOT CLOSED — most critical next build after today
-   Evening summary needs to call record_outcome() for each result
-2. DRIFT AUTO-DROP — horses drifting >20% from morning price
-   should be auto-excluded mid-race-day (currently flag only)
-3. FAVOURITE CHECK — live, but threshold (35%) may need tuning
-   after a week of data. Review Friday 24 April.
+KNOWN BUGS & NEXT BUILDS (in priority order)
+──────────────────────────────────────────────
+1. *** ML LOOP NOT CLOSED (CRITICAL) ***
+   Evening summary must call record_outcome() after results settle.
+   65 recommendations logged, weights still at manual defaults.
+   Build time: ~1 session.
+
+2. DRIFT AUTO-DROP
+   Horses drifting >20% from morning price should be auto-excluded.
+   Currently flagged in Tab 2 only — not acted on.
+   Build time: ~30 mins.
+
+3. FAVOURITE CHECK THRESHOLD REVIEW
+   35% gap exclusion is live. Review after 1 week of data.
+   Scheduled review: Friday 24 April 2026.
+
+4. SCENARIO TABLE — Double Return column
+   Verify "Double Return" column displays correctly after 3-bet rebuild.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-TO RESUME IN A NEW SESSION
-───────────────────────────
-Paste this entire email as your first message. Then say what you
-want to work on. The AI will have full context immediately.
+LESSONS LEARNED (do not repeat these mistakes)
+───────────────────────────────────────────────
+• BET 1 + BET 2 were identical — fixed 22 Apr. Always verify pools differ.
+• VALUE horses (4x+) were entering BET 1 — fixed 22 Apr. Never again.
+• Non-runners (Yorkshire Glory, Wolfburg) were appearing as selections.
+  Always run NR gate before ANY output.
+• App was showing 24 selections — root cause: pool built inside tab block,
+  rendered after KPI metric. Pool must always be built at TOP of script.
+• applymap() removed in pandas 3.0 — use .style.map() instead.
+• Streamlit Cloud does not reload automatically after push — always reboot.
+• bookmakerOdds array has live price; current_odds field is stale.
+• Snapshot date bug: snapshots were saving for tomorrow — fixed.
+• 200/1 outsiders were appearing in market movers — now capped at 20x baseline.
 
 Racing Engine {version} | Phase 1 Personal Research Tool
 """
