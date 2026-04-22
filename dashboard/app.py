@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.17** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.18** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -506,10 +506,44 @@ if _pool_is_live and len(_pool_df) > 0:
                 _pexclude = False
             if _pexclude:
                 continue
+        else:
+            # Model unavailable — apply hard exclusions from raw feed fields
+            # Mirror OddsModel.should_exclude() logic without the class
+            _pfs = int(_prow.get('Field Size', 0) or 0)
+            if _pfs >= 16:
+                continue  # large field
+            _psig = str(_prow.get('Signal', 'Stable')).lower()
+            _ptf  = _prow.get('TF Stars')
+            try:
+                _ptf_int = int(str(_ptf).strip())
+            except Exception:
+                _ptf_int = 0
+            # Require at least 2 of: decent form score, TF>=4, steam signal, short price
+            _pform_str = str(_prow.get('Form', '-'))
+            _pform_digits = [c for c in _pform_str if c.isdigit()]
+            _pform_score = (sum(1 for d in _pform_digits[-6:] if d in '123') / max(len(_pform_digits[-6:]),1)) if _pform_digits else 0
+            _pcurr_chk = str(_prow.get('Current Odds','')).strip() or str(_prow.get('Odds',''))
+            try:
+                if '/' in _pcurr_chk:
+                    _cn,_cd = _pcurr_chk.split('/')
+                    _cdec = float(_cn)/float(_cd)+1
+                else:
+                    _cdec = float(_pcurr_chk)
+            except Exception:
+                _cdec = 99.0
+            _psignals = 0
+            if _pform_score >= 0.50: _psignals += 1
+            if _ptf_int >= 4:        _psignals += 1
+            if 'steam' in _psig or 'move' in _psig: _psignals += 1
+            if _cdec <= 2.50:        _psignals += 1
+            if _psignals < 2:
+                continue
 
         _peff_thresh = _conf_threshold
         if _pool_model and _prunner.get('is_handicap'):
             _peff_thresh = _pool_model.get_handicap_threshold(_prunner, _conf_threshold)
+        elif not _pool_model and bool(_prow.get('Is Handicap', False)):
+            _peff_thresh = _conf_threshold + 0.10  # handicap uplift without model
 
         _pconf = _pool_model.calculate_confidence(_prunner) if _pool_model else float(_prow.get('Confidence', 0))
         if _pconf < _peff_thresh:
