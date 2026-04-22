@@ -7,7 +7,8 @@
 #
 # STRUCTURE:
 #   BET 1 — Main Accumulator (60% of budget)
-#     Highest-confidence legs + best EV value horse(s).
+#     BANKERS ONLY (conf >= 61%, price <= 4.0x). No value horses.
+#     Lesson: outlier prices (4x+) destroy acca probability.
 #     This is the profit engine. Targets £2,000+ return.
 #
 #   BET 2 — Cover Accumulator (25% of budget)
@@ -116,13 +117,10 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
         return _full_acc_fallback(selections, budget)
 
     # ── BET 1: Main Accumulator ───────────────────────────────────────────────
-    # Bankers + top value horse (best EV). If no value, bankers only.
-    if has_value:
-        # Include top value horse in main acc alongside all bankers
-        top_value = value[0]
-        main_pool = bankers + ([top_value] if top_value not in bankers else [])
-    else:
-        main_pool = bankers
+    # BANKERS ONLY — value horses are isolated to BET 3 to protect the acca.
+    # Lesson: outlier prices (4x+) destroy accumulator probability.
+    # VALUE horses never enter BET 1 regardless of EV.
+    main_pool = bankers
 
     # Sort by race time
     main_pool = sorted(main_pool, key=lambda x: x["time"])
@@ -151,19 +149,22 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
         cover_return = 0.0
 
     # ── BET 3: Value Double ───────────────────────────────────────────────────
-    # Top 2 value horses by EV. If only 1 value horse, roll stake into main.
+    # Top 2 value horses by EV — isolated here, never in BET 1.
+    # If only 1 value horse, or none, stake rolls into main acc.
     if has_value and len(value) >= 2:
         double_pool  = value[:2]
         double_stake = round(budget * DOUBLE_PCT, 2)
     elif has_value and len(value) == 1:
-        # Only 1 value horse — no double, roll its stake into main
+        # Only 1 value horse — no double, roll stake into main
         double_pool  = []
         double_stake = 0.0
         main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
+        main_return  = round(main_stake * main_dec, 2)  # recalc with extra stake
     else:
         double_pool  = []
         double_stake = 0.0
         main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
+        main_return  = round(main_stake * main_dec, 2)  # recalc with extra stake
 
     if double_pool:
         double_pool  = sorted(double_pool, key=lambda x: x["time"])

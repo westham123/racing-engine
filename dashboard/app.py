@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.19** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.20** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -739,7 +739,7 @@ with tab1:
 
         # ══════════════════════════════════════════════════════════════
         # STAKING ENGINE v3.0 — 3-Bet Structure
-        # BET 1: Main accumulator (60%) — bankers + best EV value leg
+        # BET 1: Main accumulator (60%) — BANKERS ONLY (value horses isolated to BET 3)
         # BET 2: Cover accumulator (25%) — bankers only, safety net
         # BET 3: Value double (15%) — top 2 highest-EV horses (≥4x)
         # Target: £2,000+ profit, uncapped
@@ -789,7 +789,7 @@ with tab1:
         st.markdown("---")
 
         # ── BET 1: Main accumulator ───────────────────────────────────
-        st.markdown("#### 🎰 BET 1 — Main Accumulator (60% budget)")
+        st.markdown("#### 🎰 BET 1 — Main Accumulator — Bankers Only (60% budget)")
         _b1_rows = []
         for _i, _s in enumerate(_stk["main_pool"]):
             _b1_rows.append({
