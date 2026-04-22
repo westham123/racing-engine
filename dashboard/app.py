@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.14** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.15** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -498,6 +498,134 @@ with col5:
 
 st.markdown("---")
 
+# ── Global Qualifying Pool ────────────────────────────────────
+# Built ONCE here at top level — shared by KPI metrics, Tab 1, Tab 2.
+# Applies: model exclusions → confidence threshold → 4/6 price cut-off → NR gate → one-per-race.
+# UI warnings (st.warning / st.info) for NR removals are deferred to Tab 1.
+
+def _assign_tier(dec):
+    if dec <= 2.50:  return "BANKER"
+    if dec <= 5.00:  return "MID"
+    if dec <= 10.00: return "VALUE"
+    return "LONGSHOT"
+
+_conf_threshold = st.session_state.get("conf_threshold", 0.55)
+_pool_df, _pool_is_live = load_live_selections()  # fresh call respects cache TTL + Refresh button
+_six_pool = []
+_nr_removed_names = []   # populated by NR gate; Tab 1 shows the warning
+_one_race_dropped = []   # populated by one-per-race; Tab 1 shows the info
+
+try:
+    from engine.odds_model import OddsModel as _PoolModel
+    _pool_model = _PoolModel()
+except Exception:
+    _pool_model = None
+
+try:
+    import zoneinfo as _zi_pool
+    _now_pool = __import__('datetime').datetime.now(
+        _zi_pool.ZoneInfo('Europe/London')).strftime('%H:%M')
+except Exception:
+    _now_pool = __import__('datetime').datetime.utcnow().strftime('%H:%M')
+
+if _pool_is_live and len(_pool_df) > 0:
+    for _, _prow in _pool_df.iterrows():
+        _ptime = str(_prow.get('Time', ''))
+        if _ptime < _now_pool:
+            continue  # skip past races
+
+        _prunner = {
+            'odds':         str(_prow.get('Odds', 'N/A')),
+            'current_odds': str(_prow.get('Current Odds', '')) or str(_prow.get('Odds', 'N/A')),
+            'form':         str(_prow.get('Form', '-')),
+            'going':        str(_prow.get('Going', '')),
+            'trainer':      str(_prow.get('Trainer', '')),
+            'jockey':       str(_prow.get('Jockey', '')),
+            'signal':       str(_prow.get('Signal', 'Stable')),
+            'tf_stars':     _prow.get('TF Stars'),
+            'bet_movements': [],
+            'field_size':   int(_prow.get('Field Size', 0) or 0),
+            'race_type':    str(_prow.get('Race Type', '')),
+            'race_class':   str(_prow.get('Race Class', '')),
+            'is_handicap':  bool(_prow.get('Is Handicap', False)),
+        }
+
+        if _pool_model:
+            try:
+                _pexcl = _pool_model.should_exclude(_prunner)
+                _pexclude = _pexcl[0] if isinstance(_pexcl, tuple) else bool(_pexcl)
+            except Exception:
+                _pexclude = False
+            if _pexclude:
+                continue
+
+        _peff_thresh = _conf_threshold
+        if _pool_model and _prunner.get('is_handicap'):
+            _peff_thresh = _pool_model.get_handicap_threshold(_prunner, _conf_threshold)
+
+        _pconf = _pool_model.calculate_confidence(_prunner) if _pool_model else float(_prow.get('Confidence', 0))
+        if _pconf < _peff_thresh:
+            continue
+
+        _pcurr = str(_prow.get('Current Odds', '')).strip()
+        _podds_filter = _pcurr if _pcurr and _pcurr not in ('', 'N/A', 'None', 'nan') \
+                        else str(_prow.get('Odds', 'Evs'))
+        _pdisp_odds = str(_prow.get('Odds', _podds_filter))
+        try:
+            if '/' in _podds_filter:
+                _pn, _pd = _podds_filter.split('/')
+                _pdec = float(_pn) / float(_pd) + 1
+            else:
+                _pdec = float(_podds_filter)
+        except Exception:
+            _pdec = 2.0
+        if _pdec <= 1.67:
+            continue
+
+        _six_pool.append({
+            'horse':      str(_prow.get('Horse', 'Unknown')),
+            'course':     str(_prow.get('Course', '')),
+            'time':       _ptime,
+            'odds_str':   _pdisp_odds,
+            'decimal':    round(_pdec, 3),
+            'confidence': round(_pconf, 3),
+            'ev':         round(_pconf * _pdec - 1, 3),
+            'tier':       _assign_tier(round(_pdec, 3)),
+        })
+
+    _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
+
+# NR gate — strip non-runners silently here; warning shown in Tab 1
+try:
+    from dashboard.live_data import get_non_runners as _get_nrs_pool
+    _nr_pool_list = _get_nrs_pool()
+    _nr_pool_names = {nr['Horse'].lower().strip() for nr in _nr_pool_list}
+    _nr_removed_names = [s['horse'] for s in _six_pool if s['horse'].lower().strip() in _nr_pool_names]
+    _six_pool = [s for s in _six_pool if s['horse'].lower().strip() not in _nr_pool_names]
+except Exception:
+    pass
+
+# One-per-race rule — keep highest confidence per race
+if _six_pool:
+    _pool_seen = {}
+    _pool_clean = []
+    for _ps2 in _six_pool:
+        _prk = f"{_ps2['time']}::{_ps2['course']}"
+        if _prk not in _pool_seen:
+            _pool_seen[_prk] = _ps2
+            _pool_clean.append(_ps2)
+        else:
+            if _ps2['confidence'] > _pool_seen[_prk]['confidence']:
+                _pool_clean = [x for x in _pool_clean
+                               if not (x['time'] == _ps2['time'] and x['course'] == _ps2['course'])]
+                _pool_clean.append(_ps2)
+                _pool_seen[_prk] = _ps2
+    _one_race_dropped = [s['horse'] for s in _six_pool if s not in _pool_clean]
+    _six_pool = sorted(_pool_clean, key=lambda x: x['time'])
+
+# Update top KPI from the real pool
+_top_sels = len(_six_pool)
+
 # ── Main Tabs ─────────────────────────────────────────────────
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8 = st.tabs([
     "💰 Today's Plan",
@@ -517,175 +645,18 @@ with tab1:
     if _t1col2.button("🔄 Refresh", help="Clear cache and reload live data"):
         st.cache_data.clear()
         st.rerun()
-    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 50)}** | Accum is main bet | L15 if 4+ qualify | Min conf: **{st.session_state.get('conf_threshold', 0.55):.0%}** (handicaps: +10%) | Large fields (12+) excluded | Need 2+ signals")
+    st.caption(f"Budget: **£{st.session_state.get('daily_budget', 100)}** | Accum is main bet | Min conf: **{st.session_state.get('conf_threshold', 0.55):.0%}** (handicaps: +10%) | Fields 16+ excluded | Need 2+ signals")
 
-    # ── Build pool from live data or sample ────────────────────────────────
-    _conf_threshold = st.session_state.get("conf_threshold", 0.55)
-    _six_pool = []  # All qualifying selections
+    # Show NR and one-per-race warnings here in Tab 1
+    if _nr_removed_names:
+        st.warning(f"⚠️ Non-runner(s) removed: {', '.join(_nr_removed_names)}")
+    if _one_race_dropped:
+        st.info(f"ℹ️ One selection per race rule applied — removed: {', '.join(_one_race_dropped)}. Only highest-confidence horse from each race included.")
 
-    def _assign_tier(dec):
-        if dec <= 2.50:  return "BANKER"
-        if dec <= 5.00:  return "MID"
-        if dec <= 10.00: return "VALUE"
-        return "LONGSHOT"
+    # Pool is already built above — _six_pool is ready
+    _t1_df, _t1_is_live = _pool_df, _pool_is_live  # alias for any legacy references below
 
-    # Always call load_live_selections() directly here — do NOT use the top-level
-    # _live_df which was bound before the Refresh button could clear the cache.
-    _t1_df, _t1_is_live = load_live_selections()
-
-    if _t1_is_live and len(_t1_df) > 0:
-        try:
-            from engine.odds_model import OddsModel as _OddsModel
-            _tab1_model = _OddsModel()
-        except Exception:
-            _tab1_model = None
-
-        try:
-            import zoneinfo as _zi2
-            _now_live = __import__('datetime').datetime.now(
-                _zi2.ZoneInfo('Europe/London')).strftime('%H:%M')
-        except Exception:
-            _now_live = __import__('datetime').datetime.utcnow().strftime('%H:%M')
-
-        for _, _row in _t1_df.iterrows():
-            _time = str(_row.get('Time', ''))
-            if _time < _now_live:
-                continue  # skip past races
-
-            # Build runner dict from dataframe row for rescoring
-            _runner_dict = {
-                'odds':         str(_row.get('Odds', 'N/A')),
-                'current_odds': str(_row.get('Current Odds', '')) or str(_row.get('Odds', 'N/A')),
-                'form':         str(_row.get('Form', '-')),
-                'going':        str(_row.get('Going', '')),
-                'trainer':      str(_row.get('Trainer', '')),
-                'jockey':       str(_row.get('Jockey', '')),
-                'signal':       str(_row.get('Signal', 'Stable')),
-                'tf_stars':     _row.get('TF Stars'),
-                'bet_movements': [],
-                # Filter layer fields
-                'field_size':   int(_row.get('Field Size', 0) or 0),
-                'race_type':    str(_row.get('Race Type', '')),
-                'race_class':   str(_row.get('Race Class', '')),
-                'is_handicap':  bool(_row.get('Is Handicap', False)),
-            }
-
-            # ── Filter layer: hard exclusions before scoring ──
-            if _tab1_model:
-                try:
-                    _excl_result = _tab1_model.should_exclude(_runner_dict)
-                    # Handle both old (bool) and new (tuple) return signatures
-                    if isinstance(_excl_result, tuple):
-                        _exclude, _excl_reason = _excl_result
-                    else:
-                        _exclude = bool(_excl_result)
-                        _excl_reason = ""
-                except Exception:
-                    _exclude = False
-                    _excl_reason = ""
-                if _exclude:
-                    continue  # excluded — large field, no signals, etc.
-
-            # ── Handicap threshold uplift ──
-            _effective_threshold = _conf_threshold
-            if _tab1_model and _runner_dict.get('is_handicap'):
-                _effective_threshold = _tab1_model.get_handicap_threshold(_runner_dict, _conf_threshold)
-
-            # Rescore with current model, or fall back to cached confidence
-            if _tab1_model:
-                _conf = _tab1_model.calculate_confidence(_runner_dict)
-            else:
-                _conf = float(_row.get('Confidence', 0))
-
-            if _conf < _effective_threshold:
-                continue
-
-            # Use Current Odds for cut-off; display best bk Odds
-            _curr_str = str(_row.get('Current Odds', '')).strip()
-            _odds_for_filter = _curr_str if _curr_str and _curr_str not in ('', 'N/A', 'None', 'nan') \
-                               else str(_row.get('Odds', 'Evs'))
-            _disp_odds = str(_row.get('Odds', _odds_for_filter))
-            try:
-                if '/' in _odds_for_filter:
-                    _n2, _d2 = _odds_for_filter.split('/')
-                    _dec = float(_n2) / float(_d2) + 1
-                else:
-                    _dec = float(_odds_for_filter)
-            except Exception:
-                _dec = 2.0
-            if _dec <= 1.67:
-                continue
-
-            _ev = round(_conf * _dec - 1, 3)
-            _course = str(_row.get('Course', ''))
-            _six_pool.append({
-                'horse':      str(_row.get('Horse', 'Unknown')),
-                'course':     _course,
-                'time':       _time,
-                'odds_str':   _disp_odds,
-                'decimal':    round(_dec, 3),
-                'confidence': round(_conf, 3),
-                'ev':         _ev,
-                'tier':       _assign_tier(round(_dec, 3)),
-            })
-
-        _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
-    else:
-        # Sample pool — today's qualifying selections (> 4/6, >= 0.60 conf, future races only)
-        try:
-            import zoneinfo as _zi
-            _now_str = __import__('datetime').datetime.now(_zi.ZoneInfo('Europe/London')).strftime("%H:%M")
-        except Exception:
-            _now_str = __import__('datetime').datetime.utcnow().strftime("%H:%M")
-        # No hardcoded fallback — if live feed is down, pool is empty
-        _six_pool = []
-
-    # ── HARD NR GATE — strip any non-runners from pool before display ────────
-    # This is the final safety net. Even if cached data contains a horse that
-    # has since been declared a non-runner, this removes it unconditionally.
-    # Runs a FRESH (uncached) non-runner check every time Tab 1 loads.
-    if _six_pool:
-        try:
-            from dashboard.live_data import get_non_runners as _get_nrs
-            _nr_list = _get_nrs()  # always fresh — not cached
-            _nr_names = {nr['Horse'].lower().strip() for nr in _nr_list}
-            _before_nr  = len(_six_pool)
-            _removed    = [s['horse'] for s in _six_pool
-                           if s['horse'].lower().strip() in _nr_names]
-            _six_pool   = [s for s in _six_pool
-                           if s['horse'].lower().strip() not in _nr_names]
-            if _removed:
-                st.warning(
-                    f"⚠️ Non-runner(s) removed from staking plan: "
-                    + ", ".join(_removed)
-                )
-        except Exception:
-            pass  # NR gate failed silently — do not block display
-
-    # ── ONE HORSE PER RACE RULE ──────────────────────────────────────────────
-    # Accumulator legs must be independent. Two horses in same race = correlated.
-    # Keep highest-confidence selection per race only.
-    if _six_pool:
-        _seen_races = {}
-        _clean_pool = []
-        for _s in _six_pool:
-            _rk = f"{_s['time']}::{_s['course']}"
-            if _rk not in _seen_races:
-                _seen_races[_rk] = _s
-                _clean_pool.append(_s)
-            else:
-                if _s["confidence"] > _seen_races[_rk]["confidence"]:
-                    _clean_pool = [x for x in _clean_pool
-                                   if not (x["time"]==_s["time"] and x["course"]==_s["course"])]
-                    _clean_pool.append(_s)
-                    _seen_races[_rk] = _s
-        if len(_clean_pool) < len(_six_pool):
-            _dropped_names = [s["horse"] for s in _six_pool if s not in _clean_pool]
-            st.info(
-                f"ℹ️ One selection per race rule applied — removed: {', '.join(_dropped_names)}. "
-                f"Only the highest-confidence horse from each race is included."
-            )
-        _six_pool = sorted(_clean_pool, key=lambda x: x["time"])
+    # _six_pool already built at top level (filter → NR gate → one-per-race)
 
     # ── Main display ────────────────────────────────────────────────────────
     if len(_six_pool) == 0:
@@ -936,27 +907,18 @@ with tab2:
         st.warning("🟡 Showing sample data — live feed unavailable")
     st.markdown("Runners ranked by engine confidence. Steam/Move = shortening in market. Form string shows last 6 runs.")
 
-    # Tab 2 must show only qualifying selections — NOT the raw 290-runner feed.
-    # Re-use _six_pool (built in Tab 1) if available, else filter live_df.
-    if _is_live and len(_live_df) > 0:
-        _t2_conf_thresh = st.session_state.get("conf_threshold", 0.55)
-        _t2_rows = []
-        for _, _t2r in _live_df.iterrows():
-            _t2_conf = float(_t2r.get('Confidence', 0))
-            _t2_odds = str(_t2r.get('Current Odds','') or _t2r.get('Odds','') or '')
-            if not _t2_odds or _t2_odds in ('nan','None','N/A',''):
-                _t2_odds = str(_t2r.get('Odds','') or '')
-            try:
-                if '/' in _t2_odds:
-                    _t2n, _t2d = _t2_odds.split('/')
-                    _t2_dec = float(_t2n) / float(_t2d) + 1
-                else:
-                    _t2_dec = float(_t2_odds)
-            except Exception:
-                _t2_dec = 2.0
-            if _t2_conf >= _t2_conf_thresh and _t2_dec > 1.67:
-                _t2_rows.append(_t2r)
-        df = pd.DataFrame(_t2_rows).reset_index(drop=True) if _t2_rows else get_sample_selections()
+    # Tab 2 reads directly from _six_pool — already filtered, NR-gated, one-per-race.
+    # This is the single source of truth. No re-filtering of _live_df here.
+    if _six_pool:
+        df = pd.DataFrame([{
+            'Time':        s['time'],
+            'Course':      s['course'],
+            'Horse':       s['horse'],
+            'Odds':        s['odds_str'],
+            'Confidence':  s['confidence'],
+            'Tier':        s['tier'],
+            'EV':          s['ev'],
+        } for s in _six_pool])
     else:
         df = get_sample_selections()
     # Ensure Confidence column exists and is numeric
