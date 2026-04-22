@@ -265,7 +265,7 @@ def get_race_runners(slug):
     race_summary = race.get("race_summary", {})
     going        = race_summary.get("going", "")
     # Extra race metadata for filter layer
-    field_size   = len([r for r in rides if r.get("ride_status","") != "NON_RUNNER"])
+    field_size   = len([r for r in rides if r.get("ride_status","").replace("_","") != "NONRUNNER"])
     race_type    = str(race_summary.get("race_type",  "")).lower()   # flat/hurdle/chase/bumper
     race_class   = str(race_summary.get("race_class", "")).lower()   # class 1-6, group 1-3 etc
     is_handicap  = any(x in str(race_summary.get("race_name","")).lower()
@@ -326,7 +326,7 @@ def get_race_runners(slug):
             "draw":           ride.get("draw_number", "-"),
             "tf_stars":       ride.get("timeform_stars", "-"),
             "rating":         ride.get("rating123", "-"),
-            "status":         ride.get("ride_status", "RUNNER"),
+            "status":         "NON_RUNNER" if ride.get("ride_status","").replace("_","") == "NONRUNNER" else "RUNNER",
             "finish_position":finish_pos,
             "bet_movements":  bm,
             # Filter layer fields
@@ -379,7 +379,7 @@ def get_todays_selections():
 
             for rn in runners:
                 if rn.get("status") == "NON_RUNNER":
-                    continue
+                    continue  # non-runner — skip from selections
 
                 odds_str    = rn.get("odds", "N/A")
                 current_dec = _to_decimal(odds_str)
@@ -511,7 +511,7 @@ def get_non_runners():
                 continue
             runners = get_race_runners(slug)
             for rn in runners:
-                if rn.get("status") == "NON_RUNNER":
+                if rn.get("status") == "NON_RUNNER":  # normalised in get_race_runners
                     nrs.append({
                         "Race":    f"{_utc_to_bst(race['time'])} {meeting['course']}",
                         "Horse":   rn["horse"],

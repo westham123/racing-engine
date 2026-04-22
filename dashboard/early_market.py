@@ -144,19 +144,32 @@ def get_next_day_card(target_date: str = None) -> list:
                 rdata       = _get_page_json(full_url)
                 race_detail = rdata.get("props", {}).get("pageProps", {}).get("race", {}) if rdata else {}
                 for ride in race_detail.get("rides", []):
-                    if ride.get("ride_status", "") == "NON_RUNNER":
-                        continue
+                    if ride.get("ride_status", "").replace("_", "") == "NONRUNNER":
+                        continue  # normalised: feed returns NONRUNNER (no underscore)
                     horse     = ride.get("horse", {}).get("name", "Unknown")
                     betting   = ride.get("betting", {})
                     curr_odds = betting.get("current_odds", "N/A")
+
+                    # Prefer bookmaker array over current_odds — current_odds can be stale
+                    # Mirror live_data.py: use best_bk_odds first, fall back to current_odds
+                    bk_odds      = ride.get("bookmakerOdds", [])
+                    best_bk_odds = None
+                    for bk in bk_odds:
+                        if "betfair" in bk.get("bookmakerName", "").lower():
+                            best_bk_odds = bk.get("fractionalOdds")
+                            break
+                    if not best_bk_odds and bk_odds:
+                        best_bk_odds = bk_odds[0].get("fractionalOdds")
+                    best_odds = best_bk_odds or curr_odds or "N/A"
+
                     tf_stars  = ride.get("timeform_stars", "-")
                     form      = ride.get("horse", {}).get("formsummary", {}).get("display_text", "-") or "-"
                     trainer   = ride.get("trainer", {}).get("name", "-")
                     jockey    = ride.get("jockey", {}).get("name", "-")
                     runners.append({
                         "horse":   horse,
-                        "odds":    curr_odds,
-                        "decimal": _to_decimal(curr_odds),
+                        "odds":    best_odds,
+                        "decimal": _to_decimal(best_odds),
                         "tf_stars": tf_stars,
                         "form":    form,
                         "trainer": trainer,
@@ -211,6 +224,7 @@ def take_show_snapshot(target_date: str = None) -> dict:
     Capture afternoon/evening show prices (16:00–19:00 BST, day before racing).
     These are the bookmakers' first published prices — often before smart money moves.
     Call this once in the afternoon/evening prior to race day.
+    NOTE: Always targets tomorrow's card (called the evening before racing).
     """
     if not target_date:
         target_date = _tomorrow_bst()
@@ -222,10 +236,10 @@ def take_opening_snapshot(target_date: str = None) -> dict:
     Capture firm morning prices at 08:00 BST on race day.
     By this time horses have left stables and the card is settled.
     This is the primary baseline for detecting intraday moves.
-    Call this once at ~08:00 BST.
+    FIXED: On race day itself, target today's card not tomorrow's.
     """
     if not target_date:
-        target_date = _tomorrow_bst()
+        target_date = _today_bst()   # Race day = today, not tomorrow
     return _build_snapshot(target_date, "OPENING", _SNAPSHOT_FILE)
 
 
@@ -238,14 +252,24 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.15,
     vs: "opening" (08:00 BST snapshot) or "show" (prior-day show prices).
     Returns horses that have moved >= min_move_pct (default 15%).
     Steamers (shortened) = STEAM, Drifters (lengthened) = DRIFT.
+
+    FIXED: target_date defaults to TODAY (race day), not tomorrow.
+    FIXED: Falls back to odds_snapshot if early_market snapshot is empty.
     """
     if not target_date:
-        target_date = _tomorrow_bst()
+        target_date = _today_bst()   # On race day we compare today's card
 
     snap_path = _SHOW_FILE if vs == "show" else _SNAPSHOT_FILE
     snap      = _load_json(snap_path)
 
-    if not snap or snap.get("date") != target_date:
+    # Primary snapshot empty or missing? Fall back to odds_snapshot (live_data.py snapshot)
+    _ODDS_SNAP_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "odds_snapshot.json")
+    odds_snap = _load_json(_ODDS_SNAP_FILE)  # dict: key -> decimal
+
+    primary_ok = snap and snap.get("date") == target_date and len(snap.get("horses", {})) > 0
+    odds_ok    = isinstance(odds_snap, dict) and len(odds_snap) > 0
+
+    if not primary_ok and not odds_ok:
         baseline_label = "show price" if vs == "show" else "opening"
         return [{"error": f"No {baseline_label} snapshot for {target_date} — take snapshot first."}]
 
@@ -253,34 +277,112 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.15,
     movers = []
 
     for race in races:
+        # ── Build NR-adjusted fair-value baseline for this race ──────────────────
+        # When a non-runner leaves the field, remaining prices naturally lengthen.
+        # We calculate the fair-value adjustment so genuine drifts/steamers are
+        # separated from mechanical price changes caused by NR withdrawal.
+        #
+        # Method: compare sum of implied probs with vs without NR horses.
+        # The ratio is the "NR stretch factor" — multiply each baseline by this
+        # to get the fair-value adjusted baseline price.
+        race_runners_in_snap = []
+        for rn2 in race["runners"]:
+            k2 = f"{target_date}::{race['time']}::{race['course']}::{rn2['horse'].lower().strip()}"
+            b2_dec = 0.0
+            if primary_ok:
+                b2 = snap["horses"].get(k2)
+                if b2:
+                    b2_dec = b2.get("decimal", 0)
+            if b2_dec <= 0 and odds_ok:
+                fb = odds_snap.get(k2)
+                if fb and isinstance(fb, (int, float)) and fb > 0:
+                    b2_dec = float(fb)
+            if b2_dec > 0:
+                race_runners_in_snap.append(b2_dec)
+
+        # Also pick up NR baseline prices from snapshot (horses no longer in current runners)
+        # by scanning snapshot keys for this race
+        nr_implied_sum = 0.0
+        if odds_ok:
+            race_prefix = f"{target_date}::{race['time']}::{race['course']}::"
+            current_names = {rn2['horse'].lower().strip() for rn2 in race["runners"]}
+            for snap_key, snap_val in odds_snap.items():
+                if snap_key.startswith(race_prefix):
+                    horse_name = snap_key[len(race_prefix):]
+                    if horse_name not in current_names and isinstance(snap_val, (int, float)) and snap_val > 0:
+                        nr_implied_sum += 1.0 / snap_val  # implied prob of the removed NR
+
+        # NR stretch factor: if NRs had X% implied prob, remaining prices stretch by 1/(1-X)
+        # Cap at 2.0x to avoid absurd adjustments on very short NRs
+        if nr_implied_sum > 0 and nr_implied_sum < 0.95:
+            nr_stretch = min(1.0 / (1.0 - nr_implied_sum), 2.0)
+        else:
+            nr_stretch = 1.0
+
         for rn in race["runners"]:
-            key      = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
-            baseline = snap["horses"].get(key)
-            if not baseline:
-                continue
-            open_dec = baseline.get("decimal", 0)
+            key = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
+
+            # -- Resolve baseline decimal: primary snapshot first, odds_snapshot fallback --
+            open_dec      = 0.0
+            baseline_odds = "?"
+            snap_label    = "?"
+            snap_time     = "?"
+            tf_stars      = rn.get("tf_stars", "-")
+            form          = rn.get("form", "-")
+
+            if primary_ok:
+                baseline = snap["horses"].get(key)
+                if baseline:
+                    open_dec      = baseline.get("decimal", 0)
+                    baseline_odds = baseline.get("odds", "?")
+                    snap_label    = snap.get("label", "?")
+                    snap_time     = snap.get("taken_at", "?")
+                    tf_stars      = baseline.get("tf_stars", tf_stars)
+                    form          = baseline.get("form", form)
+
+            if open_dec <= 0 and odds_ok:
+                # Fallback: odds_snapshot stores decimal directly (float value)
+                fallback = odds_snap.get(key)
+                if fallback and isinstance(fallback, (int, float)) and fallback > 0:
+                    open_dec      = float(fallback)
+                    baseline_odds = f"{open_dec:.2f}"
+                    snap_label    = "odds_snapshot"
+                    snap_time     = "morning"
+
             curr_dec = rn["decimal"]
             if open_dec <= 0 or curr_dec <= 0:
                 continue
 
-            move_pct  = (open_dec - curr_dec) / open_dec   # positive = shortened
+            # Apply NR stretch factor to get fair-value adjusted baseline
+            # e.g. if a 6/5 NR left: remaining prices should naturally be ~2.2x longer
+            # adjusted_baseline = original_baseline * nr_stretch
+            # Compare current price vs this adjusted baseline — not the raw morning price
+            adjusted_baseline = open_dec * nr_stretch
+            nr_adjusted       = nr_stretch > 1.01   # True if NR adjustment was applied
+
+            move_pct = (adjusted_baseline - curr_dec) / adjusted_baseline  # positive = shortened
             if abs(move_pct) >= min_move_pct:
                 direction = "STEAM" if move_pct > 0 else "DRIFT"
+                # For display show raw baseline so user understands context
+                nr_note = f" (NR adj {nr_stretch:.2f}x)" if nr_adjusted else ""
                 movers.append({
-                    "horse":          rn["horse"],
-                    "course":         race["course"],
-                    "time":           race["time"],
-                    "baseline_odds":  baseline["odds"],
-                    "baseline_dec":   open_dec,
-                    "current_odds":   rn["odds"],
-                    "current_dec":    curr_dec,
-                    "move_pct":       round(abs(move_pct) * 100, 1),
-                    "direction":      direction,
-                    "tf_stars":       baseline["tf_stars"],
-                    "form":           baseline["form"],
-                    "is_handicap":    race["is_handicap"],
-                    "snapshot_label": snap.get("label","?"),
-                    "snapshot_time":  snap.get("taken_at","?"),
+                    "horse":            rn["horse"],
+                    "course":           race["course"],
+                    "time":             race["time"],
+                    "baseline_odds":    baseline_odds + nr_note,
+                    "baseline_dec":     open_dec,
+                    "adjusted_baseline":round(adjusted_baseline, 2),
+                    "current_odds":     rn["odds"],
+                    "current_dec":      curr_dec,
+                    "move_pct":         round(abs(move_pct) * 100, 1),
+                    "direction":        direction,
+                    "nr_adjusted":      nr_adjusted,
+                    "nr_stretch":       round(nr_stretch, 3),
+                    "tf_stars":         tf_stars,
+                    "form":             form,
+                    "is_handicap":      race["is_handicap"],
+                    "snapshot_label":   snap_label,
+                    "snapshot_time":    snap_time,
                 })
 
     steamers = sorted([m for m in movers if m["direction"] == "STEAM"],

@@ -182,41 +182,56 @@ def _get_todays_results() -> list:
         return []
 
 
-def _calc_staking(selections: list, budget: float = 50.0) -> dict:
-    """Returns accumulator + Lucky 15 staking given the selection pool."""
-    from itertools import combinations as _combs
-
+def _calc_staking(selections: list, budget: float = 100.0) -> dict:
+    """
+    Adaptive staking plan wrapper.
+    Delegates to engine.staking.build_staking_plan() — returns a compatible dict
+    for _staking_block() HTML renderer.
+    Lucky 15 permanently removed — cover accumulators used instead at short prices.
+    """
     if not selections:
         return {}
-
-    l15_eligible = [s for s in selections if s["decimal"] > 1.67]
-    l15_available = len(l15_eligible) >= 4
-
-    if l15_available:
-        acc_stake = round(budget * 0.60, 2)
-        l15_stake = round(budget * 0.40, 2)
-        stake_per = round(l15_stake / 15, 2)
-    else:
-        acc_stake = budget
-        l15_stake = 0
-        stake_per = 0
-
-    combined_dec = 1.0
-    for s in selections:
-        combined_dec *= s["decimal"]
-    acc_return = round(acc_stake * combined_dec, 2)
-
-    return {
-        "budget":        budget,
-        "acc_stake":     acc_stake,
-        "acc_return":    acc_return,
-        "acc_legs":      len(selections),
-        "combined_dec":  round(combined_dec, 1),
-        "l15_available": l15_available,
-        "l15_stake":     l15_stake,
-        "l15_per_bet":   stake_per,
-        "l15_horses":    len(l15_eligible),
-    }
+    try:
+        from engine.staking import build_staking_plan
+        plan = build_staking_plan(selections, budget=budget)
+        # Expose flat fields expected by legacy callers + staking block
+        combined_dec = plan["main_dec"]
+        return {
+            "budget":         budget,
+            "acc_stake":      plan["main_stake"],
+            "acc_return":     plan["main_return"],
+            "acc_legs":       len(plan["main_pool"]),
+            "combined_dec":   combined_dec,
+            "l15_available":  False,   # Lucky 15 permanently removed
+            "l15_stake":      0,
+            "l15_per_bet":    0,
+            "l15_horses":     0,
+            # Extended adaptive fields
+            "plan_type":      plan["plan_type"],
+            "plan_label":     plan["plan_label"],
+            "plan_rationale": plan["plan_rationale"],
+            "covers":         plan["covers"],
+            "cover_total":    plan["cover_total"],
+            "speculative":    plan["speculative"],
+            "scenarios":      plan["scenarios"],
+            "main_pool":      plan["main_pool"],
+        }
+    except Exception as e:
+        # Fallback: simple full accumulator
+        combined_dec = 1.0
+        for s in selections:
+            combined_dec *= s["decimal"]
+        return {
+            "budget":        budget,
+            "acc_stake":     budget,
+            "acc_return":    round(budget * combined_dec, 2),
+            "acc_legs":      len(selections),
+            "combined_dec":  round(combined_dec, 1),
+            "l15_available": False,
+            "l15_stake":     0,
+            "l15_per_bet":   0,
+            "l15_horses":    0,
+        }
 
 
 # ── Shared Email Shell ─────────────────────────────────────────
@@ -331,26 +346,64 @@ def _sel_table(selections: list, movers: list = None) -> str:
 
 
 def _staking_block(staking: dict) -> str:
+    """Adaptive staking plan HTML block for morning brief email."""
     if not staking:
         return '<p style="color:#888;font-size:13px;margin:0;">No staking data.</p>'
 
-    l15_line = ""
-    if staking["l15_available"]:
-        l15_line = f"""
+    plan_type  = staking.get("plan_type", "FULL_ACC")
+    plan_label = staking.get("plan_label", "Full Accumulator")
+    rationale  = staking.get("plan_rationale", "")
+    covers     = staking.get("covers", [])
+    speculative = staking.get("speculative", [])
+
+    # Plan banner colour
+    if plan_type == "FULL_ACC":
+        banner_col = "#437A22"   # green — be brave
+        banner_txt = f"PLAN: {plan_label} — all selections are short-priced bankers. Full stake on the accumulator."
+    elif plan_type == "COVER_70":
+        banner_col = "#964219"   # amber — cover needed
+        banner_txt = f"PLAN: {plan_label} — longer-priced selection detected. 70% accumulator + 30% cover."
+    else:
+        banner_col = "#A13544"   # red — high risk
+        banner_txt = f"PLAN: {plan_label} — high-value selection detected. 50/50 split: accumulator + full cover."
+
+    # Cover rows
+    cover_rows = ""
+    if covers:
+        cover_rows = f"""
       <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Lucky 15</td>
-        <td style="padding:6px 0;font-size:13px;font-weight:bold;">
-          £{staking['l15_stake']:.2f} <span style="color:#888;font-weight:normal;">(£{staking['l15_per_bet']:.2f}/bet x 15)</span>
+        <td colspan="2" style="padding:8px 0 2px;color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
+          Cover Accumulators — £{staking['cover_total']:.2f} total
         </td>
       </tr>"""
-    else:
-        l15_line = f"""
+        for c in covers:
+            cover_rows += f"""
       <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Lucky 15</td>
-        <td style="padding:6px 0;font-size:13px;color:#888;">N/A — need 4+ horses (have {staking['l15_horses']})</td>
+        <td style="padding:3px 0;color:#888;font-size:12px;">{c['fold']}-fold (omit {c['omit']} @ {c['omit_odds']:.2f}x)</td>
+        <td style="padding:3px 0;font-size:12px;font-weight:bold;">£{c['stake']:.2f} → £{c['projected_return']:.2f} if wins</td>
       </tr>"""
 
-    return f"""<table style="width:100%;border-collapse:collapse;">
+    # Speculative flags
+    spec_rows = ""
+    if speculative:
+        spec_rows = f"""
+      <tr>
+        <td colspan="2" style="padding:8px 0 2px;color:#888;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;">
+          Flagged Side Bets (excluded from main acc)
+        </td>
+      </tr>"""
+        for s in speculative:
+            spec_rows += f"""
+      <tr>
+        <td style="padding:3px 0;color:#964219;font-size:12px;">{s['horse']} @ {s['decimal']:.2f}x</td>
+        <td style="padding:3px 0;font-size:12px;color:#888;">Consider small separate stake</td>
+      </tr>"""
+
+    return f"""
+    <div style="background:{banner_col};border-radius:4px;padding:8px 12px;margin-bottom:8px;">
+      <span style="color:#fff;font-size:13px;font-weight:bold;">{banner_txt}</span>
+    </div>
+    <table style="width:100%;border-collapse:collapse;">
       <tr>
         <td style="padding:6px 0;color:#888;font-size:13px;">Budget</td>
         <td style="padding:6px 0;font-size:13px;font-weight:bold;">£{staking['budget']:.2f}</td>
@@ -359,9 +412,12 @@ def _staking_block(staking: dict) -> str:
         <td style="padding:6px 0;color:#888;font-size:13px;">{staking['acc_legs']}-fold Accumulator</td>
         <td style="padding:6px 0;font-size:13px;font-weight:bold;">
           £{staking['acc_stake']:.2f}
-          <span style="color:#888;font-weight:normal;">→ returns £{staking['acc_return']:.2f} if all win</span>
+          <span style="color:#888;font-weight:normal;">→ returns £{staking['acc_return']:,.2f} if all win</span>
         </td>
-      </tr>{l15_line}
+      </tr>{cover_rows}{spec_rows}
+      <tr>
+        <td colspan="2" style="padding:6px 0 0;color:#888;font-size:11px;font-style:italic;">{rationale}</td>
+      </tr>
     </table>"""
 
 
@@ -445,7 +501,7 @@ def _moves_section_html(movers: list) -> str:
     return html
 
 
-def build_morning_brief(budget: float = 50.0) -> str:
+def build_morning_brief(budget: float = 100.0) -> str:
     selections = _get_official_selections()
     movers     = _get_overnight_moves()
     going      = _get_going()
@@ -549,7 +605,7 @@ def build_result_alert(horse: str, race: str, result: str,
 
 
 # ── Email Type 3: Evening Summary ──────────────────────────────
-def build_evening_summary(results: list, selections: list, budget: float = 50.0) -> str:
+def build_evening_summary(results: list, selections: list, budget: float = 100.0) -> str:
     """
     Full day P&L once all races have run.
     results: list of dicts with horse/result/sp keys (matched against selections).
@@ -722,14 +778,14 @@ def send_email(subject: str, html_content: str, recipient: str = RECIPIENT) -> b
 
 
 # ── Top-level convenience functions (used by crons) ───────────
-def send_morning_brief(budget: float = 50.0):
+def send_morning_brief(budget: float = 100.0):
     """Called directly by the 08:00 BST cron."""
     html    = build_morning_brief(budget)
     subject = f"Racing Engine — Morning Brief | {_date_bst()}"
     return send_email(subject, html)
 
 
-def send_evening_summary(budget: float = 50.0):
+def send_evening_summary(budget: float = 100.0):
     """Called directly by the 19:00 BST cron. Fetches live results internally."""
     selections = _get_official_selections()
     results    = _get_todays_results()
@@ -741,7 +797,7 @@ def send_evening_summary(budget: float = 50.0):
 # ── Dispatcher ─────────────────────────────────────────────────
 class DailyBrief:
 
-    def send_morning_brief(self, budget: float = 50.0):
+    def send_morning_brief(self, budget: float = 100.0):
         html    = build_morning_brief(budget)
         subject = f"Racing Engine — Morning Brief | {_date_bst()}"
         send_email(subject, html)
@@ -754,7 +810,7 @@ class DailyBrief:
         subject = f"Racing Engine — {horse} {result} | {_now_bst()} BST"
         send_email(subject, html)
 
-    def send_evening_summary(self, results: list, selections: list, budget: float = 50.0):
+    def send_evening_summary(self, results: list, selections: list, budget: float = 100.0):
         html    = build_evening_summary(results, selections, budget)
         subject = f"Racing Engine — Evening Summary | {_date_bst()}"
         send_email(subject, html)
