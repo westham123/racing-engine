@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.12** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.13** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -449,7 +449,27 @@ _live_meetings_data, _meetings_live = load_live_meetings()
 # ── Top KPI Metrics ───────────────────────────────────────────
 # Race count: use live meetings if available, else count today's known card (6 races, 4 meetings)
 _races_today = sum(len(m.get('races', [])) for m in _live_meetings_data) if _meetings_live else 6
-_top_sels = len(_live_df[_live_df['Confidence'] >= 0.65]) if _is_live and len(_live_df) > 0 else 6
+# _top_sels: count of horses that clear BOTH confidence threshold (65%) AND 4/6 price cut-off
+# Do NOT use raw _live_df count — that includes all 290 runners before any filtering
+_top_sels = 0
+if _is_live and len(_live_df) > 0:
+    for _, _ks_row in _live_df.iterrows():
+        _ks_conf = float(_ks_row.get('Confidence', 0))
+        _ks_odds = str(_ks_row.get('Current Odds','') or _ks_row.get('Odds','') or '')
+        if not _ks_odds or _ks_odds in ('nan','None','N/A',''):
+            _ks_odds = str(_ks_row.get('Odds','') or '')
+        try:
+            if '/' in _ks_odds:
+                _ks_n, _ks_d = _ks_odds.split('/')
+                _ks_dec = float(_ks_n) / float(_ks_d) + 1
+            else:
+                _ks_dec = float(_ks_odds)
+        except Exception:
+            _ks_dec = 2.0
+        if _ks_conf >= 0.65 and _ks_dec > 1.67:
+            _top_sels += 1
+else:
+    _top_sels = 6
 _signal_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
 _steam_alerts = len(_signal_df[_signal_df['Signal'].str.contains('Steam|Move', na=False)])
 
@@ -869,7 +889,7 @@ with tab1:
                 return ""
 
         st.dataframe(
-            _scen_df.style.applymap(_colour_pnl, subset=["Net P&L"]),
+            _scen_df.style.map(_colour_pnl, subset=["Net P&L"]),
             use_container_width=True, hide_index=True
         )
 

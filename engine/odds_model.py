@@ -332,8 +332,9 @@ class OddsModel:
         runs       = form_det.get("runs", 0)
 
         # ── Filter 1: Large field ─────────────────────────────
-        # 12+ runners = highly unpredictable, exclude entirely
-        if field_size >= 12:
+        # 16+ runners = highly unpredictable, exclude entirely
+        # (12 was too tight — manageable 12-15 runner fields were being excluded)
+        if field_size >= 16:
             return (True, f"Large field ({field_size} runners)")
 
         # ── Filter 2: Complete unknown ────────────────────────
