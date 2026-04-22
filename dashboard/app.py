@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.7** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.8** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -552,7 +552,17 @@ with tab1:
 
             # ── Filter layer: hard exclusions before scoring ──
             if _tab1_model:
-                _exclude, _excl_reason = _tab1_model.should_exclude(_runner_dict)
+                try:
+                    _excl_result = _tab1_model.should_exclude(_runner_dict)
+                    # Handle both old (bool) and new (tuple) return signatures
+                    if isinstance(_excl_result, tuple):
+                        _exclude, _excl_reason = _excl_result
+                    else:
+                        _exclude = bool(_excl_result)
+                        _excl_reason = ""
+                except Exception:
+                    _exclude = False
+                    _excl_reason = ""
                 if _exclude:
                     continue  # excluded — large field, no signals, etc.
 
