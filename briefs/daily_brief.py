@@ -147,6 +147,33 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
 
+        # ── ONE HORSE PER RACE RULE ───────────────────────────────────────────
+        # An accumulator requires independent legs. Two horses in the same race
+        # are correlated — only one can win. Take the highest-confidence selection
+        # per race. Flag the second horse so the user knows it was considered.
+        seen_races = {}
+        filtered_out = []
+        one_per_race = []
+        for s in out:
+            race_key = f"{s['time']}::{s['course']}"
+            if race_key not in seen_races:
+                seen_races[race_key] = s
+                one_per_race.append(s)
+            else:
+                # Already have a horse for this race — keep only the higher confidence
+                existing = seen_races[race_key]
+                if s["confidence"] > existing["confidence"]:
+                    # Replace existing with this one
+                    one_per_race = [x for x in one_per_race if not (x["time"]==existing["time"] and x["course"]==existing["course"])]
+                    one_per_race.append(s)
+                    seen_races[race_key] = s
+                    filtered_out.append(existing)
+                else:
+                    filtered_out.append(s)
+                print(f"[Brief] One-per-race: dropped {filtered_out[-1]['horse']} from {race_key} (kept higher conf)")
+        out = one_per_race
+        out.sort(key=lambda x: x["time"])
+
         # ── HARD NR GATE — final check before any selection reaches the email ──
         # Even if the dataframe is cached, this strips NRs unconditionally.
         try:

@@ -353,43 +353,63 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.15,
             if open_dec <= 0 or curr_dec <= 0:
                 continue
 
+            # ── Intelligence filter: ignore outsiders above 20x baseline ──────
+            # 200/1 shots shortening to 100/1 is market settling noise, not signal.
+            if open_dec > 20.0:
+                continue
+
             # Apply NR stretch factor to get fair-value adjusted baseline
-            # e.g. if a 6/5 NR left: remaining prices should naturally be ~2.2x longer
-            # adjusted_baseline = original_baseline * nr_stretch
-            # Compare current price vs this adjusted baseline — not the raw morning price
             adjusted_baseline = open_dec * nr_stretch
-            nr_adjusted       = nr_stretch > 1.01   # True if NR adjustment was applied
+            nr_adjusted       = nr_stretch > 1.01
 
-            move_pct = (adjusted_baseline - curr_dec) / adjusted_baseline  # positive = shortened
-            if abs(move_pct) >= min_move_pct:
-                direction = "STEAM" if move_pct > 0 else "DRIFT"
-                # For display show raw baseline so user understands context
-                nr_note = f" (NR adj {nr_stretch:.2f}x)" if nr_adjusted else ""
-                movers.append({
-                    "horse":            rn["horse"],
-                    "course":           race["course"],
-                    "time":             race["time"],
-                    "baseline_odds":    baseline_odds + nr_note,
-                    "baseline_dec":     open_dec,
-                    "adjusted_baseline":round(adjusted_baseline, 2),
-                    "current_odds":     rn["odds"],
-                    "current_dec":      curr_dec,
-                    "move_pct":         round(abs(move_pct) * 100, 1),
-                    "direction":        direction,
-                    "nr_adjusted":      nr_adjusted,
-                    "nr_stretch":       round(nr_stretch, 3),
-                    "tf_stars":         tf_stars,
-                    "form":             form,
-                    "is_handicap":      race["is_handicap"],
-                    "snapshot_label":   snap_label,
-                    "snapshot_time":    snap_time,
-                })
+            # ── Require ACTUAL price movement, not just NR-adjustment phantom ──
+            # If baseline == current (price held flat), the horse is NOT a mover —
+            # it simply resisted the natural drift caused by an NR withdrawal.
+            # That context is captured in the nr_adjusted flag and noted separately.
+            actual_move_pct = (open_dec - curr_dec) / open_dec  # raw price change
+            price_actually_moved = abs(actual_move_pct) >= 0.05  # >5% raw move
 
-    steamers = sorted([m for m in movers if m["direction"] == "STEAM"],
-                      key=lambda x: x["move_pct"], reverse=True)
-    drifters = sorted([m for m in movers if m["direction"] == "DRIFT"],
-                      key=lambda x: x["move_pct"], reverse=True)
-    return steamers + drifters
+            # Compare current price vs NR-adjusted baseline for the direction/size
+            adj_move_pct = (adjusted_baseline - curr_dec) / adjusted_baseline
+            if abs(adj_move_pct) < min_move_pct:
+                continue
+
+            direction = "STEAM" if adj_move_pct > 0 else "DRIFT"
+
+            # If price held flat after NR, flag as NR_HOLD not STEAM — context only
+            if nr_adjusted and not price_actually_moved:
+                direction = "NR_HOLD"  # price held vs expected drift — notable but not a bet signal
+
+            nr_note = f" (NR adj ×{nr_stretch:.2f})" if nr_adjusted else ""
+            movers.append({
+                "horse":            rn["horse"],
+                "course":           race["course"],
+                "time":             race["time"],
+                "baseline_odds":    baseline_odds + nr_note,
+                "baseline_dec":     open_dec,
+                "adjusted_baseline":round(adjusted_baseline, 2),
+                "current_odds":     rn["odds"],
+                "current_dec":      curr_dec,
+                "move_pct":         round(abs(adj_move_pct) * 100, 1),
+                "actual_move_pct":  round(abs(actual_move_pct) * 100, 1),
+                "direction":        direction,
+                "nr_adjusted":      nr_adjusted,
+                "nr_stretch":       round(nr_stretch, 3),
+                "tf_stars":         tf_stars,
+                "form":             form,
+                "is_handicap":      race["is_handicap"],
+                "snapshot_label":   snap_label,
+                "snapshot_time":    snap_time,
+            })
+
+    steamers  = sorted([m for m in movers if m["direction"] == "STEAM"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    drifters  = sorted([m for m in movers if m["direction"] == "DRIFT"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    nr_holds  = sorted([m for m in movers if m["direction"] == "NR_HOLD"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    # STEAM and DRIFT first (actionable), NR_HOLD last (context only)
+    return steamers + drifters + nr_holds
 
 
 def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.10) -> list:
@@ -440,11 +460,14 @@ def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.1
                                 else "Drifted overnight — market cooling",
             })
 
-    steamers = sorted([m for m in movers if m["direction"] == "STEAM"],
-                      key=lambda x: x["move_pct"], reverse=True)
-    drifters = sorted([m for m in movers if m["direction"] == "DRIFT"],
-                      key=lambda x: x["move_pct"], reverse=True)
-    return steamers + drifters
+    steamers  = sorted([m for m in movers if m["direction"] == "STEAM"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    drifters  = sorted([m for m in movers if m["direction"] == "DRIFT"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    nr_holds  = sorted([m for m in movers if m["direction"] == "NR_HOLD"],
+                       key=lambda x: x["move_pct"], reverse=True)
+    # STEAM and DRIFT first (actionable), NR_HOLD last (context only)
+    return steamers + drifters + nr_holds
 
 
 # ── Console Reports ───────────────────────────────────────────────────────────

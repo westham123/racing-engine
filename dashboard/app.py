@@ -427,7 +427,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.11** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.12** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -641,6 +641,31 @@ with tab1:
                 )
         except Exception:
             pass  # NR gate failed silently — do not block display
+
+    # ── ONE HORSE PER RACE RULE ──────────────────────────────────────────────
+    # Accumulator legs must be independent. Two horses in same race = correlated.
+    # Keep highest-confidence selection per race only.
+    if _six_pool:
+        _seen_races = {}
+        _clean_pool = []
+        for _s in _six_pool:
+            _rk = f"{_s['time']}::{_s['course']}"
+            if _rk not in _seen_races:
+                _seen_races[_rk] = _s
+                _clean_pool.append(_s)
+            else:
+                if _s["confidence"] > _seen_races[_rk]["confidence"]:
+                    _clean_pool = [x for x in _clean_pool
+                                   if not (x["time"]==_s["time"] and x["course"]==_s["course"])]
+                    _clean_pool.append(_s)
+                    _seen_races[_rk] = _s
+        if len(_clean_pool) < len(_six_pool):
+            _dropped_names = [s["horse"] for s in _six_pool if s not in _clean_pool]
+            st.info(
+                f"ℹ️ One selection per race rule applied — removed: {', '.join(_dropped_names)}. "
+                f"Only the highest-confidence horse from each race is included."
+            )
+        _six_pool = sorted(_clean_pool, key=lambda x: x["time"])
 
     # ── Main display ────────────────────────────────────────────────────────
     if len(_six_pool) == 0:
