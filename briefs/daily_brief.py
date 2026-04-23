@@ -95,6 +95,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         # Excludes selections running against a dominant market leader (>35% gap).
         _FAV_GAP_PCT = 0.35
         _race_fav_price_brief = {}
+        _race_fav_name_brief  = {}
         for _, _fr in df.iterrows():
             _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
             _frodds = str(_fr.get('Current Odds','') or _fr.get('Odds','N/A')).strip()
@@ -105,6 +106,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
             if _frdec > 1.0:
                 if _frkey not in _race_fav_price_brief or _frdec < _race_fav_price_brief[_frkey]:
                     _race_fav_price_brief[_frkey] = _frdec
+                    _race_fav_name_brief[_frkey]  = str(_fr.get('Horse', ''))
 
         for _, row in df.iterrows():
             t = str(row.get("Time", ""))
@@ -157,6 +159,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
 
             is_fav     = dec <= _bfav_dec + 1e-9
             fav_price  = round(float(_bfav_dec), 2)
+            fav_name   = _race_fav_name_brief.get(_bracekey, "")
             out.append({
                 "time":        t,
                 "course":      str(row.get("Course", "")),
@@ -167,9 +170,17 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "confidence":  round(conf, 3),
                 "signal":      str(row.get("Signal", "Stable")),
                 "going":       str(row.get("Going", "")),
+                "race_name":   str(row.get("Race Name", row.get("Race", "")) or ""),
+                "runners":     int(row.get("Field Size", row.get("Runners", 0)) or 0),
+                "form":        str(row.get("Form", "-")),
+                "trainer":     str(row.get("Trainer", "")),
+                "jockey":      str(row.get("Jockey", "")),
+                "tf_stars":    row.get("TF Stars"),
                 "is_handicap": bool(row.get("Is Handicap", False)),
                 "is_fav":      is_fav,
                 "fav_price":   fav_price,
+                "fav_name":    fav_name,
+                "role":        ("BANKER" if (conf >= 0.61 and dec <= 4.00) else "VALUE"),
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
                                 "VALUE"  if dec <= 10.0 else "LONGSHOT"),
@@ -683,6 +694,219 @@ def _moves_section_html(movers: list) -> str:
     return html
 
 
+def _load_show_price_snapshot() -> dict:
+    """Load show-price snapshot for drift/steam detection. Returns {} if missing."""
+    import json as _json
+    _paths = [
+        os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json"),
+        "/home/user/workspace/racing-engine/learning/show_price_snapshot.json",
+    ]
+    for _p in _paths:
+        try:
+            if os.path.exists(_p):
+                with open(_p) as _f:
+                    data = _json.load(_f)
+                out = {}
+                for h in data.get("horses", []):
+                    k = (f"{str(h.get('horse','')).lower().strip()}|"
+                         f"{str(h.get('course','')).lower().strip()}|"
+                         f"{str(h.get('time','')).strip()}")
+                    try:
+                        out[k] = float(h.get("odds", 0) or 0)
+                    except Exception:
+                        continue
+                return out
+        except Exception:
+            continue
+    return {}
+
+
+def _signal_breakdown_for(sel: dict) -> dict:
+    """Call OddsModel.get_signal_breakdown for a selection. Returns {} on failure."""
+    try:
+        from engine.odds_model import OddsModel
+        model = OddsModel()
+        runner = {
+            "form":          sel.get("form", "-"),
+            "tf_stars":      sel.get("tf_stars"),
+            "odds":          sel.get("odds", "N/A"),
+            "signal":        sel.get("signal", "Stable"),
+            "bet_movements": [],
+            "trainer":       sel.get("trainer", ""),
+            "jockey":        sel.get("jockey", ""),
+            "going":         sel.get("going", ""),
+            "field_size":    int(sel.get("runners", 0) or 0),
+            "is_handicap":   bool(sel.get("is_handicap", False)),
+        }
+        return model.get_signal_breakdown(runner)
+    except Exception as e:
+        print(f"[Brief] signal breakdown failed for {sel.get('horse','')}: {e}")
+        return {}
+
+
+def _morning_html(selections: list) -> str:
+    """
+    Race-by-race intelligence layout grouped by racecourse.
+    Each race card: engine pick, market fav comparison, drift/steam flag, why block.
+    """
+    if not selections:
+        return '<p style="color:#888;font-size:13px;margin:0;">No qualifying selections at this time.</p>'
+
+    snapshot  = _load_show_price_snapshot()
+    label_map = {
+        "horse_form":   "Recent form",
+        "trainer_form": "Trainer form",
+        "jockey_form":  "Jockey form",
+        "track_form":   "Track record",
+        "going":        "Going",
+        "race_pace":    "Pace angle",
+        "market_moves": "Market move",
+        "tf_stars":     "Timeform rating",
+        "bsp_signal":   "Exchange signal",
+        "market_odds":  "Market price",
+        "adjustment":   "Adjustments",
+    }
+
+    by_course = {}
+    for s in selections:
+        by_course.setdefault(s["course"], []).append(s)
+
+    html = ""
+    for course in sorted(by_course.keys()):
+        races = sorted(by_course[course], key=lambda r: r["time"])
+
+        html += (
+            f'<div style="background:#1a472a;color:#ffffff;font-weight:bold;'
+            f'padding:10px 14px;border-radius:6px;margin:14px 0 8px;'
+            f'letter-spacing:0.5px;text-transform:uppercase;font-size:13px;">'
+            f'{course} — {len(races)} selection{"s" if len(races)!=1 else ""}'
+            f'</div>'
+        )
+
+        for s in races:
+            horse       = s.get("horse", "")
+            t_time      = s.get("time", "")
+            race_name   = s.get("race_name", "") or ""
+            runners     = int(s.get("runners", 0) or 0)
+            going       = s.get("going", "") or ""
+            dec         = float(s.get("decimal", 0) or 0)
+            conf_pct    = int(float(s.get("confidence", 0) or 0) * 100)
+            role        = s.get("role", "VALUE")
+            is_fav      = bool(s.get("is_fav", False))
+            fav_price   = float(s.get("fav_price", 0) or 0)
+            fav_name    = (s.get("fav_name", "") or "").strip()
+
+            role_col = "#0b5394" if role == "BANKER" else "#6a1b9a"
+
+            header_bits = [t_time]
+            if race_name: header_bits.append(race_name)
+            if runners:   header_bits.append(f"{runners} runners")
+            if going:     header_bits.append(going)
+            header_txt  = " &nbsp;|&nbsp; ".join(header_bits)
+
+            race_card = (
+                '<div style="background:#ffffff;color:#1a1a1a;border:1px solid #e0e0e0;'
+                'border-radius:8px;padding:12px 14px;margin-bottom:12px;max-width:600px;'
+                'font-family:Arial,sans-serif;">'
+                f'<div style="font-size:12px;color:#555;margin-bottom:8px;">{header_txt}</div>'
+            )
+
+            race_card += (
+                '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;">'
+                '<span style="font-size:10px;color:#888;letter-spacing:0.5px;'
+                'text-transform:uppercase;">Engine pick</span><br>'
+                f'<span style="font-size:15px;font-weight:bold;color:#1a1a1a;">{horse}</span>'
+                f' &nbsp;<span style="font-size:13px;color:#1a1a1a;">@ {dec:.2f}x</span>'
+                f' &nbsp;<span style="font-size:12px;color:#444;">Conf {conf_pct}%</span>'
+                f' &nbsp;<span style="display:inline-block;background:{role_col};color:#ffffff;'
+                f'font-size:10px;font-weight:bold;padding:2px 8px;border-radius:10px;'
+                f'letter-spacing:0.5px;">{role}</span>'
+                '</div>'
+            )
+
+            if is_fav:
+                race_card += (
+                    '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;">'
+                    '<span style="font-size:10px;color:#888;letter-spacing:0.5px;'
+                    'text-transform:uppercase;">Market fav</span><br>'
+                    '<span style="font-size:13px;font-weight:bold;color:#2e7d32;">'
+                    '&#9989; IS MARKET FAVOURITE</span>'
+                    '</div>'
+                )
+            else:
+                fav_display = fav_name if fav_name else "another horse"
+                race_card += (
+                    '<div style="padding:6px 0;border-bottom:1px solid #f0f0f0;">'
+                    '<span style="font-size:10px;color:#888;letter-spacing:0.5px;'
+                    'text-transform:uppercase;">Market fav</span><br>'
+                    f'<span style="font-size:13px;color:#e65100;">{fav_display}'
+                    f' @ {fav_price:.2f}x</span>'
+                    '</div>'
+                    '<div style="background:#fff3cd;border:1px solid #ffe08a;color:#7a5c00;'
+                    'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;">'
+                    f'&#9888; NOT FAV — market prefers {fav_display} @ {fav_price:.2f}x'
+                    '</div>'
+                )
+
+            snap_key  = (f"{horse.lower().strip()}|"
+                         f"{s.get('course','').lower().strip()}|"
+                         f"{t_time.strip()}")
+            snap_odds = snapshot.get(snap_key, 0.0)
+            if snap_odds and dec and snap_odds > 0:
+                delta_pct = ((dec - snap_odds) / snap_odds) * 100.0
+                if delta_pct > 15.0:
+                    race_card += (
+                        '<div style="background:#fff3cd;border:1px solid #ffe08a;color:#7a5c00;'
+                        'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;">'
+                        f'&#9888; DRIFTING — opened {snap_odds:.2f}x &rarr; now {dec:.2f}x '
+                        f'(+{delta_pct:.0f}%) — MONITOR'
+                        '</div>'
+                    )
+                elif delta_pct < -15.0:
+                    race_card += (
+                        '<div style="background:#d4edda;border:1px solid #b8e0c2;color:#1e5631;'
+                        'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;">'
+                        f'&#9989; STEAMING — opened {snap_odds:.2f}x &rarr; now {dec:.2f}x '
+                        f'({delta_pct:.0f}%) — confidence building'
+                        '</div>'
+                    )
+
+            breakdown = _signal_breakdown_for(s)
+            numeric = []
+            for k, v in breakdown.items():
+                if k not in label_map:
+                    continue
+                try:
+                    fv = float(v)
+                    numeric.append((k, fv))
+                except (TypeError, ValueError):
+                    continue
+            numeric.sort(key=lambda kv: abs(kv[1]), reverse=True)
+            top3 = numeric[:3]
+            if top3:
+                parts = []
+                for k, v in top3:
+                    if v > 0:
+                        icon = "&#9989;"
+                    elif v < 0:
+                        icon = "&#10060;"
+                    else:
+                        icon = "&#9888;"
+                    parts.append(f'{icon} {label_map.get(k, k)}')
+                why_txt = " &nbsp;|&nbsp; ".join(parts)
+                race_card += (
+                    '<div style="font-size:11px;color:#555;margin-top:8px;">'
+                    f'<span style="color:#888;text-transform:uppercase;letter-spacing:0.5px;">Why:</span> '
+                    f'{why_txt}'
+                    '</div>'
+                )
+
+            race_card += '</div>'
+            html += race_card
+
+    return html
+
+
 def build_morning_brief(budget: float = 100.0) -> str:
     selections = _get_official_selections()
     movers     = _get_overnight_moves()
@@ -706,10 +930,10 @@ def build_morning_brief(budget: float = 100.0) -> str:
         "#437A22" if any(m["direction"] == "STEAM" for m in movers) else "#2a2a2a"
     )
 
-    # 3. Official selections with overnight move tags inline
+    # 3. Race-by-race intelligence layout
     body += _section(
         f"Today's Official Selections ({len(selections)})",
-        _sel_table(selections, movers),
+        _morning_html(selections),
         "#01696F"
     )
 
@@ -1113,15 +1337,25 @@ def send_operator_brief():
 
     # ── Version ──────────────────────────────────────────────────
     try:
-        app_path = os.path.join(os.path.dirname(__file__), "..", "dashboard", "app.py")
-        version  = "unknown"
-        with open(app_path) as f:
-            for line in f:
-                if line.strip().startswith("VERSION"):
-                    version = line.split('"')[1] if '"' in line else line.split("'")[1]
-                    break
+        import subprocess
+        version = subprocess.check_output(
+            ["git", "describe", "--tags", "--always"],
+            cwd="/home/user/workspace/racing-engine",
+            stderr=subprocess.DEVNULL
+        ).decode().strip()
+        if not version:
+            raise RuntimeError("empty git describe")
     except Exception:
-        version = "unknown"
+        try:
+            app_path = os.path.join(os.path.dirname(__file__), "..", "dashboard", "app.py")
+            version  = "v2.5.29"
+            with open(app_path) as f:
+                for line in f:
+                    if line.strip().startswith("VERSION"):
+                        version = line.split('"')[1] if '"' in line else line.split("'")[1]
+                        break
+        except Exception:
+            version = "v2.5.29"
 
     # ── ML learning status ───────────────────────────────────────
     try:
@@ -1172,7 +1406,7 @@ No other setup needed.
    Click: hamburger menu (top right) → Settings → Reboot app
    Auto-redeploy is UNRELIABLE — always reboot manually.
 
-2. Check morning brief arrived at 07:00 BST
+2. Check morning brief arrived at 10:00 BST
    If missing → data feed may be down, check dashboard
 
 3. Check evening summary arrived at 21:00 BST
@@ -1241,7 +1475,7 @@ Additional exclusion rules:
 
 SCHEDULED CRONS (all times BST = UTC+1)
 ────────────────────────────────────────
-[4eac6ab1] 07:00 daily — Morning racing brief → richardking123@outlook.com
+[4eac6ab1] 10:00 daily — Morning racing brief → richardking123@outlook.com
 [operator] 08:00 daily — THIS EMAIL → richardking123@outlook.com
 [c58b4236] 15:30 daily — Show price snapshot (tomorrow's card baseline)
 [de70bd36] Hourly 15:09–06:09 — Market movers (silent if nothing ≥15%)
@@ -1275,10 +1509,11 @@ MACHINE LEARNING STATUS
 Recommendations logged : {recs_count}
 Results fed back       : {results_count}
 Pending outcome records: {pending_str}
-Learned weights        : manual defaults (not yet self-adjusting)
-Learning loop status   : *** NOT YET CLOSED — TOP PRIORITY BUILD ***
-What's needed          : evening summary must call record_outcome()
-                         for each result so weights begin self-adjusting
+Learned weights        : self-adjusting (evening loop recalibrates)
+Learning loop status   : CLOSED — wired in v2.5.26
+What's wired           : morning brief calls auto_record_day();
+                         evening summary calls auto_settle(),
+                         adjust_weightings() and diagnose_loss()
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -1303,21 +1538,16 @@ Betfair    : richardking123@outlook.com / Pa55word2018!
 
 KNOWN BUGS & NEXT BUILDS (in priority order)
 ──────────────────────────────────────────────
-1. *** ML LOOP NOT CLOSED (CRITICAL) ***
-   Evening summary must call record_outcome() after results settle.
-   65 recommendations logged, weights still at manual defaults.
-   Build time: ~1 session.
-
-2. DRIFT AUTO-DROP
+1. DRIFT AUTO-DROP
    Horses drifting >20% from morning price should be auto-excluded.
    Currently flagged in Tab 2 only — not acted on.
    Build time: ~30 mins.
 
-3. FAVOURITE CHECK THRESHOLD REVIEW
+2. FAVOURITE CHECK THRESHOLD REVIEW
    35% gap exclusion is live. Review after 1 week of data.
    Scheduled review: Friday 24 April 2026.
 
-4. SCENARIO TABLE — Double Return column
+3. SCENARIO TABLE — Double Return column
    Verify "Double Return" column displays correctly after 3-bet rebuild.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
