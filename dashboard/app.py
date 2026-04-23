@@ -569,13 +569,31 @@ if _pool_is_live and len(_pool_df) > 0:
         # Protects against selecting against a dominant market leader.
         _pracekey = f"{_ptime}::{str(_prow.get('Course',''))}"
         _pfav_dec = _race_fav_price.get(_pracekey, _pdec)
+        _is_fav_pool = _pdec <= _pfav_dec + 1e-9
         if _pfav_dec < _pdec:  # we are not the favourite
             _pgap = (_pdec - _pfav_dec) / _pfav_dec
             if _pgap > _FAV_GAP_PCT:
                 continue  # favourite is >35% shorter — market disagrees with us
 
+        _prunners = int(_prow.get('Field Size', _prow.get('Runners', 0)) or 0)
+        _phorse_name = str(_prow.get('Horse', 'Unknown'))
+
+        # Small-field non-fav exclusion: ≤6 runners and not the fav.
+        if _prunners and _prunners <= 6 and not _is_fav_pool:
+            print(f"[Brief] Small-field non-fav excluded: {_phorse_name} "
+                  f"({_prunners} runners, not fav)")
+            continue
+
+        # Large-field weak non-fav exclusion: ≥11 runners, not fav, <60% conf.
+        if _prunners >= 11 and not _is_fav_pool and _pconf < 0.60:
+            print(f"[Brief] Large-field weak non-fav excluded: {_phorse_name} "
+                  f"({_prunners} runners, {_pconf:.0%} conf, not fav)")
+            continue
+
+        _plow_value_acca = (_prunners > 0 and _prunners <= 4)
+
         _six_pool.append({
-            'horse':      str(_prow.get('Horse', 'Unknown')),
+            'horse':      _phorse_name,
             'course':     str(_prow.get('Course', '')),
             'time':       _ptime,
             'odds_str':   _pdisp_odds,
@@ -583,6 +601,10 @@ if _pool_is_live and len(_pool_df) > 0:
             'confidence': round(_pconf, 3),
             'ev':         round(_pconf * _pdec - 1, 3),
             'tier':       _assign_tier(round(_pdec, 3)),
+            'is_fav':     _is_fav_pool,
+            'fav_price':  round(float(_pfav_dec), 2),
+            'runners':    _prunners,
+            'low_value_acca': _plow_value_acca,
         })
 
     _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
@@ -820,6 +842,9 @@ with tab1:
         st.markdown("#### 🎰 BET 1 — Main Accumulator — Bankers Only (60% budget)")
         _b1_rows = []
         for _i, _s in enumerate(_stk["main_pool"]):
+            _tier_lbl = _s.get("tier", "BANKER")
+            if _s.get("low_value_acca", False):
+                _tier_lbl = f"{_tier_lbl} ⚠ THIN FIELD"
             _b1_rows.append({
                 "#":          _i + 1,
                 "Time":       _s["time"],
@@ -828,7 +853,7 @@ with tab1:
                 "Odds":       _s.get("odds_str", f"{_s['decimal']:.2f}x"),
                 "Decimal":    f"{_s['decimal']:.2f}x",
                 "Confidence": f"{_s['confidence']:.1%}",
-                "Tier":       _s.get("tier", "BANKER"),
+                "Tier":       _tier_lbl,
             })
         if _b1_rows:
             st.dataframe(pd.DataFrame(_b1_rows), use_container_width=True, hide_index=True)
@@ -934,7 +959,7 @@ with tab1:
 **{_stk['plan_label']}** — {_stk['plan_rationale']}
 
 **3-Bet structure:**
-- **BET 1 — Main Accumulator (60%):** Bankers only (conf ≡61%, price ≤4x). Profit engine.
+- **BET 1 — Main Accumulator (60%):** Bankers only (conf ≥63%, price ≤4x). Profit engine.
 - **BET 2 — Cover Accumulator (25%):** All bankers minus riskiest leg. Safety net.
 - **BET 3 — Value Double (15%):** Top 2 value horses (≥4x, ≥55% conf). Independent high-reward bet.
 

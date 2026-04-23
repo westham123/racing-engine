@@ -53,6 +53,11 @@ from engine.going_matcher import score_going_preference, score_going_from_form_s
 from engine.form_scorer import score_trainer_form, score_jockey_form
 from engine.race_times_stride import score_race_pace, RaceTimesStore
 
+TOP_TRAVELLERS = [
+    "henderson", "mullins", "o'brien", "elliott", "nicholls", "o'neill"
+]
+
+
 _times_store = None
 def _get_times_store():
     global _times_store
@@ -389,6 +394,19 @@ class OddsModel:
             return round(base_threshold + 0.10, 2)
         return base_threshold
 
+    def _trainer_travel_signal(self, trainer_name: str) -> float:
+        """Returns 0.05 uplift if a top-travelling trainer name is detected."""
+        try:
+            if not trainer_name:
+                return 0.0
+            tn = str(trainer_name).lower()
+            for t in TOP_TRAVELLERS:
+                if t in tn:
+                    return 0.05
+            return 0.0
+        except Exception:
+            return 0.0
+
     # ── Main Confidence Calculator ────────────────────────────
     def calculate_confidence(self, runner_data: dict) -> float:
         """
@@ -427,12 +445,49 @@ class OddsModel:
         # Apply penalty/bonus
         form_detail = self._get_form_detail(form_str)
         adjustment  = self._calculate_adjustments(runner_data, form_detail)
-        final       = round(min(max(raw + adjustment, 0.05), 0.97), 4)
+        travel      = self._trainer_travel_signal(trainer)
+        final       = round(min(max(raw + adjustment + travel, 0.05), 1.0), 4)
 
         return final
 
-    def get_signal_breakdown(self, runner_data: dict) -> dict:
-        """Returns individual signal scores for dashboard transparency."""
+    def get_signal_breakdown(self, runner_data=None, course=None, time=None) -> dict:
+        """
+        Returns individual signal scores for dashboard transparency.
+
+        Accepts either:
+          - get_signal_breakdown(runner_dict)                  — preferred
+          - get_signal_breakdown(horse_name, course, time)     — lookup-style;
+            looks up the runner in today's live selections feed.
+        """
+        if not isinstance(runner_data, dict):
+            _horse_name = str(runner_data or "")
+            runner_data = {}
+            try:
+                from dashboard.live_data import get_todays_selections as _gts
+                _df = _gts()
+                if _df is not None and len(_df) > 0:
+                    for _, _r in _df.iterrows():
+                        if str(_r.get("Horse", "")).lower().strip() != _horse_name.lower().strip():
+                            continue
+                        if course and str(_r.get("Course", "")).lower().strip() != str(course).lower().strip():
+                            continue
+                        if time and str(_r.get("Time", "")).strip() != str(time).strip():
+                            continue
+                        runner_data = {
+                            "form":         str(_r.get("Form", "-")),
+                            "tf_stars":     _r.get("TF Stars"),
+                            "signal":       str(_r.get("Signal", "Stable")),
+                            "bet_movements": [],
+                            "trainer":      str(_r.get("Trainer", "")),
+                            "jockey":       str(_r.get("Jockey", "")),
+                            "odds":         str(_r.get("Odds", "N/A")),
+                            "current_odds": str(_r.get("Current Odds", "")),
+                            "is_handicap":  bool(_r.get("Is Handicap", False)),
+                        }
+                        break
+            except Exception:
+                runner_data = {}
+
         form_str  = runner_data.get("form", "-")
         tf_stars  = runner_data.get("tf_stars")
         signal    = runner_data.get("signal", "Stable")
@@ -448,6 +503,7 @@ class OddsModel:
             "market_moves": round(self._score_market_moves(signal, bet_moves), 3),
             "trainer_form": round(self._score_trainer_form(trainer, tf_stars), 3),
             "jockey_form":  round(self._score_jockey_form(jockey, tf_stars), 3),
+            "trainer_travel": round(self._trainer_travel_signal(trainer), 3),
             "adjustment":   round(self._calculate_adjustments(runner_data, form_det), 3),
             # Placeholder signals — shown as N/A until data available
             "track_form":   "N/A (needs Racing API)",

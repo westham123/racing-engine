@@ -160,6 +160,25 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
             is_fav     = dec <= _bfav_dec + 1e-9
             fav_price  = round(float(_bfav_dec), 2)
             fav_name   = _race_fav_name_brief.get(_bracekey, "")
+
+            _runners = int(row.get("Field Size", row.get("Runners", 0)) or 0)
+
+            # Small-field non-fav exclusion: ≤6 runners and we're not the fav.
+            # Market is better informed in small fields; edge is too thin.
+            if _runners and _runners <= 6 and not is_fav:
+                print(f"[Brief] Small-field non-fav excluded: {row.get('Horse','')} "
+                      f"({_runners} runners, not fav)")
+                continue
+
+            # Large-field weak non-fav exclusion: ≥11 runners, not fav, <60% conf.
+            # Competitive field without market support or strong conviction.
+            if _runners >= 11 and not is_fav and conf < 0.60:
+                print(f"[Brief] Large-field weak non-fav excluded: {row.get('Horse','')} "
+                      f"({_runners} runners, {conf:.0%} conf, not fav)")
+                continue
+
+            _low_value_acca = (_runners > 0 and _runners <= 4)
+
             out.append({
                 "time":        t,
                 "course":      str(row.get("Course", "")),
@@ -171,7 +190,8 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "signal":      str(row.get("Signal", "Stable")),
                 "going":       str(row.get("Going", "")),
                 "race_name":   str(row.get("Race Name", row.get("Race", "")) or ""),
-                "runners":     int(row.get("Field Size", row.get("Runners", 0)) or 0),
+                "runners":     _runners,
+                "low_value_acca": _low_value_acca,
                 "form":        str(row.get("Form", "-")),
                 "trainer":     str(row.get("Trainer", "")),
                 "jockey":      str(row.get("Jockey", "")),
@@ -180,7 +200,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "is_fav":      is_fav,
                 "fav_price":   fav_price,
                 "fav_name":    fav_name,
-                "role":        ("BANKER" if (conf >= 0.61 and dec <= 4.00) else "VALUE"),
+                "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
                                 "VALUE"  if dec <= 10.0 else "LONGSHOT"),
@@ -848,6 +868,15 @@ def _morning_html(selections: list) -> str:
                     '</div>'
                 )
 
+            if bool(s.get("low_value_acca", False)) and runners:
+                race_card += (
+                    '<div style="background:#fff3cd;border:1px solid #ffe08a;color:#7a5c00;'
+                    'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;">'
+                    f'&#9888; Thin field ({runners} runners) &mdash; low acca value, '
+                    f'consider omitting from accumulator'
+                    '</div>'
+                )
+
             snap_key  = (f"{horse.lower().strip()}|"
                          f"{s.get('course','').lower().strip()}|"
                          f"{t_time.strip()}")
@@ -1454,7 +1483,7 @@ One horse per race  : highest confidence only
 
 3-BET STRUCTURE (approved {date_str}):
   BET 1 — Main Accumulator (£60) — BANKERS ONLY
-           Bankers = conf ≥ 61% AND price ≤ 4.0x
+           Bankers = conf ≥ 63% AND price ≤ 4.0x
            VALUE horses (4x+) are NEVER in BET 1
   BET 2 — Cover Accumulator (£25) — all bankers MINUS riskiest leg
            Riskiest = highest-priced banker in BET 1

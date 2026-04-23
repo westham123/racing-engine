@@ -7,7 +7,7 @@
 #
 # STRUCTURE:
 #   BET 1 — Main Accumulator (60% of budget)
-#     BANKERS ONLY (conf >= 61%, price <= 4.0x). No value horses.
+#     BANKERS ONLY (conf >= 63%, price <= 4.0x). No value horses.
 #     Lesson: outlier prices (4x+) destroy acca probability.
 #     This is the profit engine. Targets £2,000+ return.
 #
@@ -22,9 +22,9 @@
 #     If fewer than 2 value horses exist, stake rolls into main acc.
 #
 # CLASSIFICATION:
-#   BANKER  : conf >= 61% AND price <= 4.0x  — core accumulator legs
+#   BANKER  : conf >= 63% AND price <= 4.0x  — core accumulator legs
 #   VALUE   : price >= 4.0x AND conf >= 55%  — high EV, goes in main + double
-#   WEAK    : conf < 61% AND price < 4.0x    — excluded from all bets
+#   WEAK    : conf < 63% AND price < 4.0x    — excluded from all bets
 #
 # ONE-HORSE-PER-RACE: enforced upstream. Engine assumes pool is pre-filtered.
 # NR GATE: enforced upstream. Engine assumes pool contains no non-runners.
@@ -33,7 +33,7 @@ from itertools import combinations as _combs
 
 
 # ── Thresholds ────────────────────────────────────────────────────────────────
-BANKER_CONF      = 0.61    # minimum confidence to be a banker leg
+BANKER_CONF      = 0.63    # minimum confidence to be a banker leg
 BANKER_MAX_PRICE = 4.00    # maximum price to be a banker leg
 VALUE_MIN_PRICE  = 4.00    # minimum price to be a value leg
 VALUE_MIN_CONF   = 0.55    # minimum confidence to be a value leg
@@ -70,7 +70,10 @@ def recommend_bet_type(selections: list) -> dict:
             "default_ok":     False,
         }
 
-    classified  = classify_selections(selections)
+    # Exclude low_value_acca selections (thin fields ≤4 runners) from
+    # accumulator leg count — they rarely add meaningful value to a perm.
+    _acca_eligible = [s for s in selections if not s.get("low_value_acca", False)]
+    classified  = classify_selections(_acca_eligible)
     bankers     = classified["bankers"]
     value       = classified["value"]
     n_bankers   = len(bankers)
@@ -201,7 +204,7 @@ def classify_selections(selections: list) -> dict:
     """
     Classify selections into BANKER, VALUE, and WEAK tiers.
 
-    BANKER : conf >= 61% AND price <= 4.0x
+    BANKER : conf >= 63% AND price <= 4.0x
     VALUE  : price >= 4.0x AND conf >= 55%
     WEAK   : everything else (excluded from all bets)
 
@@ -354,7 +357,7 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     if plan_type == "THREE_BET":
         plan_label = "3-Bet Plan: Main Acc + Cover + Value Double"
         rationale  = (
-            f"{len(bankers)} banker leg(s) (≥61% conf, ≤4x price) form the core. "
+            f"{len(bankers)} banker leg(s) (≥63% conf, ≤4x price) form the core. "
             f"{len(value)} value horse(s) (≥4x price) targeted in main acc and value double. "
             f"Main acc targets £{main_return:,.0f} return. "
             f"Cover protects if value leg fails. "
