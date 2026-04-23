@@ -709,7 +709,7 @@ def build_morning_brief(budget: float = 100.0) -> str:
         'Confidence: <strong style="color:#e0e0e0;">55%</strong> &nbsp;|&nbsp; '
         'Handicap: <strong style="color:#e0e0e0;">65%</strong> &nbsp;|&nbsp; '
         'Price cut-off: <strong style="color:#e0e0e0;">4/6</strong> &nbsp;|&nbsp; '
-        'Large fields: <strong style="color:#e0e0e0;">&ge;12 excluded</strong> &nbsp;|&nbsp; '
+        'Large fields: <strong style="color:#e0e0e0;">&ge;16 excluded</strong> &nbsp;|&nbsp; '
         'Dual signal required'
         '</p>',
         "#2a2a2a"
@@ -751,7 +751,7 @@ def build_result_alert(horse: str, race: str, result: str,
     elif won and not remaining:
         acc_note = '<p style="font-size:13px;color:#437A22;margin:8px 0 0;font-weight:bold;">All legs complete — accumulator WON.</p>'
     elif not won:
-        acc_note = '<p style="font-size:13px;color:#A13544;margin:8px 0 0;">Accumulator leg lost. Lucky 15 still paying on other winners.</p>'
+        acc_note = '<p style="font-size:13px;color:#A13544;margin:8px 0 0;">Accumulator leg lost. Check BET 2 cover accumulator — may still pay out.</p>'
 
     result_block = f"""
     <div style="text-align:center;padding:16px 0;">
@@ -810,7 +810,7 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
             dec *= w["decimal"]
         acc_return = round(acc_stake * dec, 2)
 
-    # Lucky 15 return (4 or more winners)
+    # Cover accumulator and value double returns
     l15_return = 0.0
     if len(winners) >= 1 and l15_stake > 0:
         w_decs = [w["decimal"] for w in winners]
@@ -946,19 +946,112 @@ def send_email(subject: str, html_content: str, recipient: str = RECIPIENT) -> b
 
 # ── Top-level convenience functions (used by crons) ───────────
 def send_morning_brief(budget: float = 100.0):
-    """Called directly by the 08:00 BST cron."""
+    """Called directly by the 10:00 BST cron. Checks feed is live before sending."""
+    # Guard: check feed has today's selections before building brief
+    try:
+        _test_sels = _get_official_selections()
+    except Exception:
+        _test_sels = []
+
+    if not _test_sels:
+        # Feed not ready — send a minimal holding email rather than stale data
+        import smtplib
+        from email.mime.text import MIMEText
+        SENDER_EMAIL = "racingengine.sender@gmail.com"
+        SENDER_PASS  = "aase pwst fcbf smfs"
+        RECIPIENT    = "richardking123@outlook.com"
+        msg = MIMEText(
+            f"Racing Engine — Morning Brief\n"
+            f"{_date_bst()} | {_now_bst()} BST\n\n"
+            "Feed not yet available — no qualifying selections at this time.\n"
+            "Markets typically go live 10:00–10:30 BST.\n"
+            f"Check dashboard: https://racing-engine-dash.streamlit.app (PIN: 1012)",
+            "plain"
+        )
+        msg["Subject"] = f"Racing Engine — Brief Pending | {_date_bst()}"
+        msg["From"]    = SENDER_EMAIL
+        msg["To"]      = RECIPIENT
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as srv:
+                srv.login(SENDER_EMAIL, SENDER_PASS)
+                srv.sendmail(SENDER_EMAIL, RECIPIENT, msg.as_string())
+            print("[Brief] Feed not ready — holding email sent")
+        except Exception as e:
+            print(f"[Brief] Holding email failed: {e}")
+        return False
+
+    # ── ML: log today's selections as recommendations ────────────
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        from learning.loop import LearningLoop
+        loop = LearningLoop()
+        rec_count = loop.auto_record_day()
+        print(f"[ML] Logged {rec_count} recommendations for today")
+    except Exception as _ml_err:
+        print(f"[ML] auto_record_day skipped: {_ml_err}")
+
     html    = build_morning_brief(budget)
     subject = f"Racing Engine — Morning Brief | {_date_bst()}"
     return send_email(subject, html)
 
 
 def send_evening_summary(budget: float = 100.0):
-    """Called directly by the 19:00 BST cron. Fetches live results internally."""
+    """Called directly by the 21:00 BST cron. Fetches live results + runs ML settlement."""
     selections = _get_official_selections()
     results    = _get_todays_results()
     html       = build_evening_summary(results, selections, budget)
     subject    = f"Racing Engine — Evening Summary | {_date_bst()}"
-    return send_email(subject, html)
+    ok         = send_email(subject, html)
+
+    # ── ML Learning loop ──────────────────────────────────────
+    # 1. Settle today's races (match winners to recommendations)
+    # 2. Adjust signal weights based on today's outcomes
+    # 3. Log outcomes for loss analysis
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        from learning.loop import LearningLoop
+        from learning.loss_analyser import LossAnalyser
+
+        loop = LearningLoop()
+
+        # Step 1: Settle — pull results from feed, match to recs
+        settled_count = loop.auto_settle()
+        print(f"[ML] Settled {settled_count} races")
+
+        # Step 2: Adjust weights — requires >=20 settled races
+        new_weights = loop.adjust_weightings()
+        print(f"[ML] Weights updated: {new_weights}")
+
+        # Step 3: Loss analysis — diagnose losing selections
+        try:
+            from learning.loss_analyser import diagnose_loss
+            recs = loop.recommendations.get("records", [])
+            today_str = datetime.now(_LONDON).strftime("%Y-%m-%d")
+            today_losses = [
+                r for r in recs
+                if r.get("date") == today_str and r.get("won") is False
+            ]
+            for loss_rec in today_losses:
+                diagnose_loss({
+                    "horse":       loss_rec.get("runner", ""),
+                    "course":      loss_rec.get("course", ""),
+                    "race_type":   loss_rec.get("race_type", ""),
+                    "confidence":  loss_rec.get("confidence", 0),
+                    "odds":        loss_rec.get("odds", "N/A"),
+                    "signals":     loss_rec.get("signals", {}),
+                    "field_size":  loss_rec.get("field_size", 0),
+                    "is_handicap": loss_rec.get("is_handicap", False),
+                })
+            print(f"[ML] Diagnosed {len(today_losses)} losses")
+        except Exception as _la_err:
+            print(f"[ML] Loss analyser skipped: {_la_err}")
+
+    except Exception as _ml_err:
+        print(f"[ML] Learning loop error (non-fatal): {_ml_err}")
+
+    return ok
 
 
 # ── Dispatcher ─────────────────────────────────────────────────
