@@ -155,6 +155,8 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
             if conf < effective_threshold:
                 continue
 
+            is_fav     = dec <= _bfav_dec + 1e-9
+            fav_price  = round(float(_bfav_dec), 2)
             out.append({
                 "time":        t,
                 "course":      str(row.get("Course", "")),
@@ -166,6 +168,8 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "signal":      str(row.get("Signal", "Stable")),
                 "going":       str(row.get("Going", "")),
                 "is_handicap": bool(row.get("Is Handicap", False)),
+                "is_fav":      is_fav,
+                "fav_price":   fav_price,
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
                                 "VALUE"  if dec <= 10.0 else "LONGSHOT"),
@@ -404,9 +408,20 @@ def _sel_table(selections: list, movers: list = None) -> str:
         else:
             mv_tag = ""
 
+        # Favourite warning
+        is_fav  = s.get("is_fav", True)
+        fav_prc = s.get("fav_price", None)
+        if not is_fav and fav_prc:
+            fav_tag = (
+                f'<br><span style="color:#e65c00;font-weight:bold;font-size:11px;">'
+                f'⚠ NOT FAV — market fav @ {fav_prc:.2f}x</span>'
+            )
+        else:
+            fav_tag = ""
+
         rows += f"""<tr>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s['time']}<br><span style="font-size:11px;">{s['course']}</span></td>
-          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}</td>
+          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}{fav_tag}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s['curr_odds']}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{conf_col};">{conf_pct}%</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:12px;color:{sig_col};">{s['signal']}</td>
