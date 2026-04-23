@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.26** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.27** — Filter layer: field size, dual signal, handicap uplift")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -631,21 +631,24 @@ col1, col2, col3, col4, col5 = st.columns(5)
 with col1:
     st.metric("Races Today", str(_races_today), "UK + IRE" + (" 🟢 LIVE" if _meetings_live else " (sample)"))
 with col2:
-    st.metric("Top Selections", str(_top_sels), "Above 65% confidence")
+    st.metric("Top Selections", str(_top_sels), f"Min conf: {int(_conf_threshold*100)}% | 4/6 cut-off")
 with col3:
     st.metric("Acca Permutations", "Auto", "From live runners")
 with col4:
-    # Pull real hit rate from settlement engine
+    # Pull real hit rate from learning loop
     try:
-        import sys as _s3
-        _s3.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
-        from settlement.settle import SettlementEngine as _SE
-        _kpi_stats = _SE().get_summary_stats()
-        _hit_rate_kpi = f"{_kpi_stats['hit_rate']:.1f}%" if _kpi_stats.get("total",0) > 0 else "—"
-        _hit_delta = f"{_kpi_stats['total']} races settled"
+        import sys as _s3, os as _os3
+        _s3.path.insert(0, _os3.path.join(_os3.path.dirname(__file__), ".."))
+        from learning.loop import LearningLoop as _LL
+        _ll     = _LL()
+        _recs   = _ll.recommendations.get("records", [])
+        _settled = [r for r in _recs if r.get("won") is not None]
+        _wins    = [r for r in _settled if r.get("won")]
+        _hit_rate_kpi = f"{len(_wins)/len(_settled)*100:.1f}%" if _settled else "—"
+        _hit_delta    = f"{len(_settled)} races settled"
     except Exception:
         _hit_rate_kpi = "—"
-        _hit_delta = "Building..."
+        _hit_delta    = "0 races settled"
     st.metric("Hit Rate", _hit_rate_kpi, _hit_delta)
 with col5:
     st.metric("Steam Moves", str(_steam_alerts), "Runners shortening")
@@ -897,14 +900,12 @@ with tab1:
             st.markdown(f"""
 **{_stk['plan_label']}** — {_stk['plan_rationale']}
 
-**Thresholds used:**
-- Below 2.5x → Banker: short price, high confidence. Full accumulator is optimal.
-- 2.5x–4.0x → Value: worth a cover accumulator omitting this horse.
-- 4.0x–8.0x → High value: 50/50 split, serious cover protection.
-- Above 8.0x → Speculative: flagged separately, excluded from main plan.
+**3-Bet structure:**
+- **BET 1 — Main Accumulator (60%):** Bankers only (conf ≡61%, price ≤4x). Profit engine.
+- **BET 2 — Cover Accumulator (25%):** All bankers minus riskiest leg. Safety net.
+- **BET 3 — Value Double (15%):** Top 2 value horses (≥4x, ≥55% conf). Independent high-reward bet.
 
-**Lucky 15 removed** — at short prices (below 2.5x), L15 singles return almost nothing.
-Cover accumulators deploy the same stake more efficiently with better downside protection.
+**Exclusion rules:** 4/6 cut-off | Favourite gap >35% | Fields 16+ | Singles/Lucky 15 permanently removed.
             """)
 
         st.markdown("---")
@@ -983,41 +984,54 @@ with tab2:
     st.markdown("---")
     st.markdown("### Signal Breakdown")
     # Show live signal breakdown for top selection when model is active
-    if MODEL_AVAILABLE and _ODDS_MODEL is not None and _is_live and len(_live_df) > 0:
-        top_runner = _live_df.iloc[0]
-        breakdown = _ODDS_MODEL.get_signal_breakdown({
-            "odds":    top_runner.get("Odds", "N/A"),
-            "form":    top_runner.get("Form", "-"),
-            "going":   top_runner.get("Going", ""),
-            "trainer": top_runner.get("Trainer", ""),
-            "jockey":  top_runner.get("Jockey", ""),
-            "signal":  top_runner.get("Signal", "Stable"),
-        })
-        label = top_runner.get("Horse", "Top Selection")
-        signals = pd.DataFrame({
-            "Signal":       ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
-            "Weight":       [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
-            f"Score ({label})": [
-                breakdown["market_odds"],
-                breakdown["horse_form"],
-                breakdown["track_form"],
-                breakdown["going"],
-                breakdown["trainer_form"],
-                breakdown["jockey_form"],
-                breakdown["market_moves"],
-                breakdown["jump_index"],
+    if MODEL_AVAILABLE and _ODDS_MODEL is not None and _is_live and _six_pool:
+        top_sel    = _six_pool[0]
+        top_runner_input = {
+            "odds":    top_sel.get("odds_str", "N/A"),
+            "form":    "-",
+            "going":   top_sel.get("going", ""),
+            "trainer": "",
+            "jockey":  "",
+            "signal":  top_sel.get("signal", "Stable"),
+            "tf_stars": None,
+            "bet_movements": [],
+        }
+        try:
+            breakdown = _ODDS_MODEL.get_signal_breakdown(top_runner_input)
+            label     = top_sel.get("horse", "Top Selection")
+
+            # Map breakdown keys safely — use .get() with N/A fallback
+            _sig_rows = [
+                ("Market Odds",  0.25, breakdown.get("market_odds",  "—")),
+                ("Horse Form",   0.20, breakdown.get("horse_form",   "—")),
+                ("Track Form",   0.15, breakdown.get("track_form",   "—")),
+                ("Going",        0.10, breakdown.get("going",        "—")),
+                ("Trainer Form", 0.10, breakdown.get("trainer_form", "—")),
+                ("Jockey Form",  0.10, breakdown.get("jockey_form",  "—")),
+                ("Market Moves", 0.07, breakdown.get("market_moves", "—")),
+                ("Jump Index",   0.03, breakdown.get("jump_index",   "—")),
             ]
-        })
-        st.caption(f"Live signal breakdown for top-ranked selection: **{label}**")
+            signals = pd.DataFrame(_sig_rows, columns=["Signal", "Weight", f"Score ({label})"])
+            st.caption(f"Live signal breakdown for: **{label}** | Confidence: {top_sel['confidence']:.1%}")
+        except Exception as _bd_err:
+            st.caption(f"Signal breakdown unavailable: {_bd_err}")
+            signals = pd.DataFrame()
     else:
         signals = pd.DataFrame({
-            "Signal": ["Market Odds", "Horse Form", "Track Form", "Going", "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
+            "Signal": ["Market Odds", "Horse Form", "Track Form", "Going",
+                       "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
             "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
-            "Score (sample)": [0.92, 0.95, 0.33, 0.30, 0.33, 0.33, 0.75, 0.50]
+            "Score":  ["—"] * 8
         })
-    col_name = [c for c in signals.columns if c.startswith("Score")][0]
-    st.dataframe(signals.style.format({"Weight": "{:.0%}", col_name: "{:.0%}"}),
-                 width="stretch", hide_index=True)
+
+    if not signals.empty:
+        col_name = [c for c in signals.columns if c not in ("Signal", "Weight")][0]
+        # Only format numeric rows — skip N/A strings
+        _num_mask = pd.to_numeric(signals[col_name], errors="coerce").notna()
+        try:
+            st.dataframe(signals, use_container_width=True, hide_index=True)
+        except Exception:
+            st.dataframe(signals, hide_index=True)
 
 # ── Tab 3: Accumulator Permutations ───────────────────────────
 with tab3:
@@ -1051,13 +1065,12 @@ with tab3:
 |---|---|---|
 | Double | 2 | 1 |
 | Treble | 3 | 1 |
-| Trixie | 3 | 4 |
-| Lucky 15 | 4 | 15 |
-| Lucky 31 | 5 | 31 |
-| Lucky 63 | 6 | 63 |
+| 4-fold Acca | 4 | 1 |
+| 5-fold Acca | 5 | 1 |
+| 6-fold Acca | 6 | 1 |
         """)
     with col2:
-        st.info("Only horses above 65% confidence are included in accumulator builds. The learning engine adjusts this threshold automatically as it tracks hit rates over time.")
+        st.info("Accumulator permutations are built from today's qualifying selections. The 3-bet plan on Tab 1 is the recommended staking structure. The learning engine will adjust confidence thresholds automatically as results are recorded.")
 
 
 # ── Tab 4: Accumulator Efficiency ────────────────────────────
@@ -1392,11 +1405,31 @@ with tab8:
     @st.cache_data(ttl=120)
     def _load_settlement_data():
         try:
-            import sys as _s2
-            _s2.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
-            from settlement.settle import SettlementEngine
-            se = SettlementEngine()
-            return se.get_results_for_dashboard(days=14), se.get_summary_stats()
+            import sys as _s2, os as _os2
+            _s2.path.insert(0, _os2.path.join(_os2.path.dirname(__file__), ".."))
+            from learning.loop import LearningLoop as _LL2
+            ll2   = _LL2()
+            recs2 = ll2.recommendations.get("records", [])
+            settled2 = [r for r in recs2 if r.get("won") is not None]
+            wins2    = [r for r in settled2 if r.get("won")]
+            stats2   = {
+                "total":    len(settled2),
+                "hits":     len(wins2),
+                "hit_rate": round(len(wins2)/len(settled2)*100, 1) if settled2 else 0.0,
+                "hit_rate_7d": 0.0,
+                "exceptions": 0,
+                "last_winner": wins2[-1].get("runner") if wins2 else None,
+            }
+            # Format records for dashboard display
+            rows2 = [{
+                "Date":   r.get("date", ""),
+                "Course": r.get("course", ""),
+                "Horse":  r.get("runner", ""),
+                "Odds":   r.get("odds", ""),
+                "Result": "✅ WIN" if r.get("won") else "❌ LOSS",
+                "Conf":   f"{r.get('confidence',0):.1%}",
+            } for r in sorted(settled2, key=lambda x: x.get("date",""), reverse=True)[:28]]
+            return rows2, stats2
         except Exception:
             return [], {}
 
@@ -1427,41 +1460,29 @@ with tab8:
         if _exc_s > 0:
             st.warning(f"⚠️ {_exc_s} races flagged for review (dead heats / DQs)")
 
-        # Build display dataframe
-        _rows = []
-        for r in _settled_races:
-            _rows.append({
-                "Date":       r.get("date",""),
-                "Time":       r.get("time",""),
-                "Course":     r.get("course",""),
-                "Going":      r.get("going",""),
-                "Winner":     r.get("winner",""),
-                "SP Odds":    r.get("winner_odds","N/A"),
-                "2nd":        r.get("second","-"),
-                "3rd":        r.get("third","-"),
-                "Engine Tip": "✅ HIT" if r.get("engine_tipped") else "❌ MISS",
-                "Confidence": f"{r['engine_confidence']:.0%}" if r.get("engine_confidence") else "—",
-                "⚠️ Flag":    ", ".join(r.get("exceptions",[])) or "Clean",
-            })
-        _res_df = pd.DataFrame(_rows)
+        # Build display dataframe from learning loop records
+        _res_df = pd.DataFrame(_settled_races) if _settled_races else pd.DataFrame()
 
         def _colour_tip(val):
-            if "HIT" in str(val):
+            if "WIN" in str(val) or "HIT" in str(val):
                 return "background-color: #003300; color: #00ff88; font-weight: bold"
-            if "MISS" in str(val):
+            if "LOSS" in str(val) or "MISS" in str(val):
                 return "background-color: #330000; color: #ff6666"
             return ""
         def _colour_flag(val):
-            if val != "Clean":
+            if val not in ("Clean", ""):
                 return "background-color: #332200; color: #ffaa00"
             return ""
 
-        st.dataframe(
-            _res_df.style
-                .map(_colour_tip,  subset=["Engine Tip"])
-                .map(_colour_flag, subset=["⚠️ Flag"]),
-            use_container_width=True, hide_index=True
-        )
+        if not _res_df.empty:
+            _style_cols = []
+            if "Result" in _res_df.columns:  _style_cols.append(("Result", _colour_tip))
+            _styled_res = _res_df.style
+            for _col, _fn in _style_cols:
+                _styled_res = _styled_res.map(_fn, subset=[_col])
+            st.dataframe(_styled_res, use_container_width=True, hide_index=True)
+        else:
+            st.info("No settled results yet.")
     else:
         st.info("🟡 No settled races yet — results populate automatically as each race finishes today.")
         if _is_live and len(_live_df) > 0:
