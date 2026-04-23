@@ -43,6 +43,160 @@ COVER_PCT  = 0.25          # 25% of budget on cover accumulator
 DOUBLE_PCT = 0.15          # 15% of budget on value double
 
 
+def recommend_bet_type(selections: list) -> dict:
+    """
+    Evaluate today's card and recommend the optimal bet structure.
+
+    The 3-bet plan remains the DEFAULT — this function layers an additional
+    recommendation on top so the user can choose between the structured plan
+    and alternative shapes (Lucky 15 / Lucky 31 / Lucky 63 / straight accas
+    with cover) when the card composition favours them.
+
+    Returns dict:
+        recommendation : short label (e.g. "Lucky 15")
+        rationale      : one-line explanation of why
+        structure      : list of sub-bet dicts for the recommended alternative
+        bankers        : count of banker-tier selections
+        value          : count of value-tier selections
+        default_ok     : True if the default 3-bet plan is optimal as-is
+    """
+    if not selections:
+        return {
+            "recommendation": "No recommendation",
+            "rationale":      "No qualifying selections.",
+            "structure":      [],
+            "bankers":        0,
+            "value":          0,
+            "default_ok":     False,
+        }
+
+    classified  = classify_selections(selections)
+    bankers     = classified["bankers"]
+    value       = classified["value"]
+    n_bankers   = len(bankers)
+    n_value     = len(value)
+
+    if n_bankers >= 6:
+        pool = bankers[:6]
+        return {
+            "recommendation": "Lucky 63 (6 bankers)",
+            "rationale": (
+                f"{n_bankers} bankers available — Lucky 63 covers 63 combinations "
+                f"(6 singles, 15 doubles, 20 trebles, 15 4-folds, 6 5-folds, 1 6-fold). "
+                f"Any 2+ winners returns something."
+            ),
+            "structure": [
+                {"bet": "Lucky 63", "legs": 6, "combinations": 63,
+                 "horses": [s["horse"] for s in pool],
+                 "stake_per_line": "£0.63 (£40 / 63)",
+                 "total_stake": 40.0},
+                {"bet": "Straight 6-fold acca", "legs": 6, "combinations": 1,
+                 "horses": [s["horse"] for s in pool],
+                 "stake_per_line": "£60 retained",
+                 "total_stake": 60.0},
+            ],
+            "bankers": n_bankers,
+            "value":   n_value,
+            "default_ok": False,
+        }
+
+    if n_bankers == 5:
+        pool = bankers[:5]
+        return {
+            "recommendation": "5-fold Accumulator + Cover Treble",
+            "rationale": (
+                f"{n_bankers} bankers available — 5-fold acca for the main stake "
+                f"with a cover treble on the top 3 bankers for insurance."
+            ),
+            "structure": [
+                {"bet": "5-fold Accumulator", "legs": 5, "combinations": 1,
+                 "horses": [s["horse"] for s in pool],
+                 "stake_per_line": "£70 on 5-fold",
+                 "total_stake": 70.0},
+                {"bet": "Cover Treble (top 3)", "legs": 3, "combinations": 1,
+                 "horses": [s["horse"] for s in pool[:3]],
+                 "stake_per_line": "£30 on treble",
+                 "total_stake": 30.0},
+            ],
+            "bankers": n_bankers,
+            "value":   n_value,
+            "default_ok": False,
+        }
+
+    if n_bankers >= 4:
+        pool = bankers[:4]
+        return {
+            "recommendation": "Lucky 15 (4 bankers)",
+            "rationale": (
+                f"{n_bankers} bankers available today — Lucky 15 gives insurance "
+                f"on 15 combinations (4 singles, 6 doubles, 4 trebles, 1 4-fold). "
+                f"Any single winner returns stake; 2+ winners returns profit."
+            ),
+            "structure": [
+                {"bet": "Lucky 15", "legs": 4, "combinations": 15,
+                 "horses": [s["horse"] for s in pool],
+                 "stake_per_line": "£2.67 per line (£40 / 15)",
+                 "total_stake": 40.0},
+                {"bet": "Straight 4-fold acca", "legs": 4, "combinations": 1,
+                 "horses": [s["horse"] for s in pool],
+                 "stake_per_line": "£60 retained",
+                 "total_stake": 60.0},
+            ],
+            "bankers": n_bankers,
+            "value":   n_value,
+            "default_ok": False,
+        }
+
+    if n_bankers == 3:
+        return {
+            "recommendation": "3-Bet Plan (default optimal)",
+            "rationale": (
+                f"3 bankers is the sweet spot for the default 3-bet structure "
+                f"(Main Acc 60% + Cover Acc 25% + Value Double 15%). "
+                f"Lucky permutations would dilute the profit engine."
+            ),
+            "structure": [],
+            "bankers": n_bankers,
+            "value":   n_value,
+            "default_ok": True,
+        }
+
+    if n_bankers == 2:
+        return {
+            "recommendation": "Straight Double + Value Double",
+            "rationale": (
+                f"Only 2 bankers — insufficient for a cover accumulator. "
+                f"Back a straight banker double plus a value double on the "
+                f"top 2 value horses (if available)."
+            ),
+            "structure": [
+                {"bet": "Banker Double", "legs": 2, "combinations": 1,
+                 "horses": [s["horse"] for s in bankers[:2]],
+                 "stake_per_line": "£70 on double",
+                 "total_stake": 70.0},
+                {"bet": "Value Double", "legs": 2, "combinations": 1,
+                 "horses": [s["horse"] for s in value[:2]] if n_value >= 2 else [],
+                 "stake_per_line": "£30 on value double" if n_value >= 2 else "n/a",
+                 "total_stake": 30.0 if n_value >= 2 else 0.0},
+            ],
+            "bankers": n_bankers,
+            "value":   n_value,
+            "default_ok": False,
+        }
+
+    return {
+        "recommendation": "Hold or Reduce Stakes",
+        "rationale": (
+            f"Only {n_bankers} banker(s) available — weak card. "
+            f"Consider holding the budget or backing single-race value only."
+        ),
+        "structure": [],
+        "bankers": n_bankers,
+        "value":   n_value,
+        "default_ok": False,
+    }
+
+
 def classify_selections(selections: list) -> dict:
     """
     Classify selections into BANKER, VALUE, and WEAK tiers.

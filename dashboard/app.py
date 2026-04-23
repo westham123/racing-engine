@@ -739,11 +739,44 @@ with tab1:
         # BET 3: Value double (15%) — top 2 highest-EV horses (≥4x)
         # Target: £2,000+ profit, uncapped
         # ══════════════════════════════════════════════════════════════
-        from engine.staking import build_staking_plan as _build_staking_plan
+        from engine.staking import build_staking_plan as _build_staking_plan, recommend_bet_type as _recommend_bet_type
 
         _budget = float(st.session_state.get("daily_budget", 100))
         _stk    = _build_staking_plan(_six_pool, budget=_budget)
 
+        # ── Flexible Bet-Type Recommendation ─────────────────────────
+        _rec = _recommend_bet_type(_six_pool)
+        st.markdown("#### 🎯 Recommended Bet Structure")
+        if _rec.get("default_ok"):
+            st.success(
+                f"**{_rec['recommendation']}** — {_rec['rationale']}"
+            )
+        elif _rec["recommendation"] == "Hold or Reduce Stakes":
+            st.warning(
+                f"**{_rec['recommendation']}** — {_rec['rationale']}"
+            )
+        else:
+            st.info(
+                f"**{_rec['recommendation']}** — {_rec['rationale']}"
+            )
+        if _rec.get("structure"):
+            _rec_rows = []
+            for _rbt in _rec["structure"]:
+                _rec_rows.append({
+                    "Bet":          _rbt["bet"],
+                    "Legs":         _rbt["legs"],
+                    "Combinations": _rbt["combinations"],
+                    "Horses":       ", ".join(_rbt["horses"]) if _rbt["horses"] else "—",
+                    "Stake":        f"£{_rbt['total_stake']:.2f}",
+                    "Per line":     _rbt["stake_per_line"],
+                })
+            st.dataframe(pd.DataFrame(_rec_rows), use_container_width=True, hide_index=True)
+        st.caption(
+            f"Bankers: **{_rec['bankers']}** | Value horses: **{_rec['value']}** | "
+            f"The structured 3-bet plan below remains shown — final call is yours."
+        )
+
+        st.markdown("---")
         st.markdown("#### 💳 Today's Staking Plan")
 
         # ── Plan banner ───────────────────────────────────────────────
@@ -1008,8 +1041,7 @@ with tab2:
                 ("Going",        0.10, breakdown.get("going",        "—")),
                 ("Trainer Form", 0.10, breakdown.get("trainer_form", "—")),
                 ("Jockey Form",  0.10, breakdown.get("jockey_form",  "—")),
-                ("Market Moves", 0.07, breakdown.get("market_moves", "—")),
-                ("Jump Index",   0.03, breakdown.get("jump_index",   "—")),
+                ("Market Moves", 0.10, breakdown.get("market_moves", "—")),
             ]
             signals = pd.DataFrame(_sig_rows, columns=["Signal", "Weight", f"Score ({label})"])
             st.caption(f"Live signal breakdown for: **{label}** | Confidence: {top_sel['confidence']:.1%}")
@@ -1019,9 +1051,9 @@ with tab2:
     else:
         signals = pd.DataFrame({
             "Signal": ["Market Odds", "Horse Form", "Track Form", "Going",
-                       "Trainer Form", "Jockey Form", "Market Moves", "Jump Index"],
-            "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.07, 0.03],
-            "Score":  ["—"] * 8
+                       "Trainer Form", "Jockey Form", "Market Moves"],
+            "Weight": [0.25, 0.20, 0.15, 0.10, 0.10, 0.10, 0.10],
+            "Score":  ["—"] * 7
         })
 
     if not signals.empty:
@@ -1075,420 +1107,374 @@ with tab3:
 
 # ── Tab 4: Accumulator Efficiency ────────────────────────────
 with tab4:
-    st.markdown("### Accumulator Efficiency Engine")
-    st.markdown("Analyses every selection for true probability, expected value, and coverage options.")
+    st.markdown("### 📈 Acca Efficiency")
+    st.caption("Expected-value analysis per qualifying selection. EV = (confidence × decimal odds) − (1 − confidence).")
 
-    # Build from live data only — no hardcoded races
-    sample_races = []
-    if _is_live and len(_live_df) > 0:
-        for _ae_course in _live_df['Course'].unique():
-            _ae_cdf = _live_df[_live_df['Course'] == _ae_course]
-            for _ae_time in _ae_cdf['Time'].unique():
-                _ae_rdf = _ae_cdf[_ae_cdf['Time'] == _ae_time]
-                _ae_runners = []
-                for _, _ae_row in _ae_rdf.iterrows():
-                    _ae_runners.append({
-                        'horse': str(_ae_row.get('Horse','')),
-                        'odds': str(_ae_row.get('Odds','2/1')),
-                        'confidence': float(_ae_row.get('Confidence', 0.5))
-                    })
-                if _ae_runners:
-                    sample_races.append({'race': f"{_ae_time} {_ae_course}", 'runners': _ae_runners})
-    if not sample_races:
-        st.info('Live feed unavailable — accumulator efficiency analysis will appear once today\'s markets load.')
-        st.stop()
+    if not _six_pool:
+        st.info("No qualifying selections — check back once today's markets are live.")
+    else:
+        _ev_rows = []
+        for _s in _six_pool:
+            _c    = float(_s["confidence"])
+            _dec  = float(_s["decimal"])
+            _evv  = (_c * _dec) - (1 - _c)
+            _role = "BANKER" if _s["tier"] == "BANKER" else "VALUE" if _s["tier"] == "VALUE" else _s["tier"]
+            _ev_rows.append({
+                "Horse":      _s["horse"],
+                "Course":     _s["course"],
+                "Time":       _s["time"],
+                "Odds":       _s["odds_str"],
+                "Confidence": f"{_c:.1%}",
+                "EV":         round(_evv, 3),
+                "Role":       _role,
+            })
+        _ev_rows.sort(key=lambda r: r["EV"], reverse=True)
+        _ev_df = pd.DataFrame(_ev_rows)
 
-    engine = AccaEfficiencyEngine()
-    analysis = engine.full_day_analysis(sample_races)
-
-    # ── Summary Bar ───────────────────────────────────────────
-    st.markdown("---")
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Selections Analysed", analysis["summary"]["total_selections"])
-    with col2:
-        st.metric("Value Permutations", analysis["summary"]["value_perms"])
-    with col3:
-        st.metric("Avg Engine Edge", f"{analysis['summary']['avg_edge']}%")
-    with col4:
-        st.markdown(f"**Day Rating**")
-        st.markdown(f"### {analysis['summary']['overall_rating']}")
-
-    st.markdown("---")
-
-    # ── Selection Value Analysis ──────────────────────────────
-    st.markdown("#### Selection Value Analysis")
-    st.markdown("Compares the engine's confidence score against the bookmaker's implied probability to find true value.")
-
-    sel_df = pd.DataFrame(analysis["selections"])
-    display_cols = ["race", "horse", "odds", "bookie_prob", "engine_prob", "edge", "expected_value", "ev_rating"]
-    sel_df = sel_df[display_cols]
-    sel_df.columns = ["Race", "Horse", "Odds", "Bookie Prob %", "Engine Prob %", "Edge %", "Exp. Value", "Rating"]
-
-    def colour_ev(val):
-        if "Value" in str(val):
-            return "color: #00ff88; font-weight: bold"
-        elif "Marginal" in str(val):
-            return "color: #ffaa00"
-        return "color: #ff4444"
-
-    def colour_edge(val):
-        if isinstance(val, float):
-            if val > 5:
+        def _colour_role(val):
+            if val == "BANKER":
                 return "color: #00ff88; font-weight: bold"
-            elif val > 0:
-                return "color: #ffaa00"
-            return "color: #ff4444"
-        return ""
+            if val == "VALUE":
+                return "color: #ffaa00; font-weight: bold"
+            return "color: #aaaaaa"
 
-    st.dataframe(
-        sel_df.style.map(colour_ev, subset=["Rating"]).map(colour_edge, subset=["Edge %"]),
-        width="stretch", hide_index=True
-    )
+        def _colour_ev_val(val):
+            try:
+                v = float(val)
+                if v > 0.3: return "color: #00ff88; font-weight: bold"
+                if v > 0:   return "color: #ffaa00"
+                return "color: #ff6666"
+            except Exception:
+                return ""
 
-    st.markdown("---")
+        st.dataframe(
+            _ev_df.style.map(_colour_role, subset=["Role"]).map(_colour_ev_val, subset=["EV"]),
+            use_container_width=True, hide_index=True
+        )
 
-    # ── Top Permutations by Value ─────────────────────────────
-    st.markdown("#### Top Accumulator Permutations by Expected Value")
-    st.markdown("Ranked by expected value — how much profit the engine predicts per £1 staked over time.")
+        st.markdown("---")
+        st.markdown("#### EV by Horse")
+        _chart_df = _ev_df.set_index("Horse")[["EV"]]
+        st.bar_chart(_chart_df)
 
-    perm_df = pd.DataFrame(analysis["permutations"][:10])
-    display_perm = ["type", "selections", "combined_engine_prob", "combined_bookie_prob", "combined_odds", "expected_value", "ev_rating"]
-    perm_df = perm_df[display_perm]
-    perm_df.columns = ["Type", "Selections", "Engine Prob %", "Bookie Prob %", "Combined Odds", "Exp. Value", "Rating"]
-
-    st.dataframe(
-        perm_df.style.map(colour_ev, subset=["Rating"]),
-        width="stretch", hide_index=True
-    )
-
-    st.markdown("---")
-
-    # ── Coverage Options ──────────────────────────────────────
-    st.markdown("#### Coverage Options by Race")
-    st.markdown("Choose how many runners to cover per race. Covering more increases your probability of landing that leg but multiplies your stake.")
-
-    for race in sample_races:
-        with st.expander(f"🏇 {race['race']} — Coverage Options"):
-            options = engine.coverage_options(race, top_n=3)
-            opt_df = pd.DataFrame(options)
-            opt_df = opt_df[["label", "horses", "odds", "coverage_prob", "stake_multiplier", "recommendation"]]
-            opt_df.columns = ["Option", "Horses", "Odds", "Coverage Prob %", "Stake x", "Recommendation"]
-
-            def colour_rec(val):
-                if "Recommended" in str(val):
-                    return "color: #00ff88; font-weight: bold"
-                elif "Consider" in str(val):
-                    return "color: #ffaa00"
-                return "color: #888888"
-
-            st.dataframe(
-                opt_df.style.map(colour_rec, subset=["Recommendation"]),
-                width="stretch", hide_index=True
+        st.markdown("---")
+        st.markdown("#### Coverage Analysis")
+        try:
+            from engine.staking import classify_selections as _classify
+            _cls = _classify(_six_pool)
+            _b = _cls["bankers"]
+        except Exception:
+            _b = [s for s in _six_pool if s["tier"] == "BANKER"]
+        if len(_b) >= 2:
+            _riskiest = max(_b, key=lambda x: x["decimal"])
+            st.info(
+                f"**If BET 1 fails at the riskiest leg, BET 2 covers.** "
+                f"BET 1 includes all {len(_b)} bankers; BET 2 drops "
+                f"**{_riskiest['horse']}** ({_riskiest['odds_str']}, "
+                f"{_riskiest['confidence']:.1%}) — the highest-priced leg — so it "
+                f"lands when that horse loses but the other {len(_b)-1} bankers win."
             )
-
-    st.markdown("---")
-    st.info("Coverage options update automatically when non-runners are declared or significant market moves detected. The engine will suggest expanding coverage if your top selection drifts significantly or is at risk.")
+        else:
+            st.caption("Coverage analysis requires at least 2 bankers in today's pool.")
 
 
 # ── Tab 5: Live Alerts ────────────────────────────────────────
 with tab5:
-    st.markdown("### Live Alerts")
-    # Generate alerts from live market move signals
-    _alerts_shown = 0
-    # Always build alerts from sample df (today's known card) — live df used when feed connects
-    _alert_df = _live_df if (_is_live and len(_live_df) > 0) else get_sample_selections()
-    _steam = _alert_df[_alert_df["Signal"].str.contains("Steam", na=False)]
-    _drift = _alert_df[_alert_df["Signal"].str.contains("Drift", na=False)]
-    _moves = _alert_df[_alert_df["Signal"].str.contains("Move", na=False)]
-    now_str = __import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('Europe/London')).strftime('%H:%M')
-    _live_label = "🟢 LIVE" if _is_live else "🟡 TODAY'S CARD"
+    st.markdown("### 🚨 Live Alerts")
+    st.caption("Data refreshes every 5 minutes. Steam/drift thresholds set at >10% price move vs the 15:30 BST show-price snapshot.")
 
-    if len(_steam) > 0 or len(_drift) > 0 or len(_moves) > 0:
-        if not _is_live:
-            st.info("🟡 Showing today's pre-scored signals. Live market feed will update these in real time.")
-        for _, row in _steam.iterrows():
-            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
-            st.markdown(
-                f'<div class="alert-high">🔴 <strong>{now_str} BST</strong> [{_live_label}] — ⬆ STEAM: '
-                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]} — Conf: {row["Confidence"]:.0%}</div>',
-                unsafe_allow_html=True
-            )
-            _alerts_shown += 1
-        for _, row in _drift.iterrows():
-            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
-            st.markdown(
-                f'<div class="alert-medium">🟠 <strong>{now_str} BST</strong> [{_live_label}] — ⬇ DRIFT: '
-                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]} — Conf: {row["Confidence"]:.0%}</div>',
-                unsafe_allow_html=True
-            )
-            _alerts_shown += 1
-        for _, row in _moves.iterrows():
-            _race_label = f"{row.get('Time','')} {row.get('Course','')}" if 'Time' in row else row.get('Race','')
-            st.markdown(
-                f'<div class="alert-low">🟢 <strong>{now_str} BST</strong> [{_live_label}] — ⬆ MOVE: '
-                f'<strong>{row["Horse"]}</strong> ({_race_label}) — Odds: {row["Odds"]}</div>',
-                unsafe_allow_html=True
-            )
-            _alerts_shown += 1
-    else:
-        st.info("🟢 No market move signals in today's card. Check back closer to race times.")
+    # ── Load show price snapshot ──
+    import json as _alert_json
+    _snap_path = os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json")
+    _snapshot = None
+    try:
+        if os.path.exists(_snap_path):
+            with open(_snap_path) as _sf:
+                _snapshot = _alert_json.load(_sf)
+    except Exception:
+        _snapshot = None
 
-    st.markdown("---")
-    st.markdown("### Going Reports")
-    if _going_live and _live_going_df is not None and len(_live_going_df) > 0:
-        st.success(f"🟢 Live going data — {len(_live_going_df)} UK + Irish courses — updated {__import__('datetime').datetime.now(__import__('zoneinfo').ZoneInfo('Europe/London')).strftime('%H:%M')} BST")
-        st.dataframe(_live_going_df, use_container_width=True, hide_index=True)
-    else:
-        st.warning("🟡 Sample going data shown")
-        st.dataframe(pd.DataFrame([
-            {"Course": "Pontefract",    "Going": "Good (8.0)",         "Updated": "08:00", "Source": "BHA"},
-            {"Course": "Yarmouth",      "Going": "Good to Firm (5.7)", "Updated": "08:00", "Source": "BHA"},
-            {"Course": "Wolverhampton", "Going": "Tapeta: Standard",   "Updated": "08:00", "Source": "BHA"},
-            {"Course": "Ffos Las",      "Going": "Good to Soft (5.0)", "Updated": "08:00", "Source": "BHA"},
-        ]), use_container_width=True, hide_index=True)
+    _snap_horses = {}
+    if _snapshot and isinstance(_snapshot.get("horses"), dict):
+        _snap_horses = {str(k).lower().strip(): v for k, v in _snapshot["horses"].items()}
 
-# ── Tab 6: Learning Engine ────────────────────────────────────
-with tab6:
-    st.markdown("### Learning Engine Performance")
-
-    # Load live stats from learning loop
-    @st.cache_data(ttl=120)
-    def _get_learning_stats():
+    def _to_dec_alert(odds_str):
         try:
-            import sys as _sys
-            _sys.path.insert(0, __import__("os").path.dirname(__file__) + "/..")
-            from learning.loop import LearningLoop
-            return LearningLoop().get_performance_stats()
+            s = str(odds_str).strip()
+            if "/" in s:
+                n, d = s.split("/")
+                return float(n) / float(d) + 1
+            return float(s)
         except Exception:
             return None
 
-    _stats = _get_learning_stats()
-    _default_weights = {
-        "market_odds": 0.25, "horse_form": 0.20, "track_form": 0.15,
-        "going": 0.10, "trainer_form": 0.10, "jockey_form": 0.10,
-        "market_moves": 0.07, "jump_index": 0.03,
+    # ── Non-runners ──
+    _nr_rows = []
+    try:
+        from dashboard.live_data import get_non_runners as _get_nrs_tab5
+        _nrs = _get_nrs_tab5() or []
+        _nr_names = {str(nr.get("Horse","")).lower().strip() for nr in _nrs}
+        for _s in _six_pool:
+            if _s["horse"].lower().strip() in _nr_names:
+                _nr_rows.append({
+                    "Horse":  _s["horse"],
+                    "Course": _s["course"],
+                    "Time":   _s["time"],
+                    "Status": "🔴 NON-RUNNER",
+                })
+    except Exception:
+        pass
+
+    # ── Steam + drift from snapshot ──
+    _steam_rows = []
+    _drift_rows = []
+    if _snap_horses and _six_pool:
+        for _s in _six_pool:
+            _key = _s["horse"].lower().strip()
+            _snap = _snap_horses.get(_key)
+            if not _snap:
+                continue
+            _was = _to_dec_alert(_snap.get("odds") if isinstance(_snap, dict) else _snap)
+            _now = _s["decimal"]
+            if not _was or not _now or _was <= 1.0:
+                continue
+            _pct = (_was - _now) / _was * 100  # + shortening, - drifting
+            if _pct > 10:
+                _steam_rows.append({
+                    "Horse":  _s["horse"],
+                    "Course": _s["course"],
+                    "Time":   _s["time"],
+                    "Was":    f"{_was:.2f}x",
+                    "Now":    f"{_now:.2f}x",
+                    "% Move": f"⬆ {_pct:.1f}%",
+                    "Direction": "STEAM",
+                })
+            elif _pct < -10:
+                _drift_rows.append({
+                    "Horse":  _s["horse"],
+                    "Course": _s["course"],
+                    "Time":   _s["time"],
+                    "Was":    f"{_was:.2f}x",
+                    "Now":    f"{_now:.2f}x",
+                    "% Move": f"⬇ {abs(_pct):.1f}%",
+                    "Badge":  "🔴 MONITOR",
+                })
+
+    # ── Display ──
+    _has_snapshot = bool(_snap_horses)
+    _anything = _steam_rows or _drift_rows or _nr_rows
+
+    if _nr_rows:
+        st.error(f"🔴 Non-runner alert — {len(_nr_rows)} previously selected horse(s) now NR")
+        st.dataframe(pd.DataFrame(_nr_rows), use_container_width=True, hide_index=True)
+        st.markdown("---")
+
+    if _steam_rows:
+        st.success(f"⬆ Steam moves — {len(_steam_rows)} horse(s) shortened >10% since 15:30 snapshot")
+        st.dataframe(pd.DataFrame(_steam_rows), use_container_width=True, hide_index=True)
+        st.markdown("---")
+
+    if _drift_rows:
+        st.warning(f"⬇ Drift alerts — {len(_drift_rows)} horse(s) drifted >10% since 15:30 snapshot")
+        st.dataframe(pd.DataFrame(_drift_rows), use_container_width=True, hide_index=True)
+        st.markdown("---")
+
+    if not _anything:
+        if not _has_snapshot:
+            st.info("Show price snapshot captured at 15:30 daily — alerts will populate from 15:30 onwards.")
+        else:
+            st.success("No significant moves detected — all selections stable.")
+
+    st.markdown("---")
+    st.caption("Data refreshes every 5 minutes.")
+
+# ── Tab 6: Learning Engine ────────────────────────────────────
+with tab6:
+    st.markdown("### 🧠 Learning Engine")
+    st.caption("Weights last manually calibrated — 21 April 2026. Self-adjustment begins at 20 settled races.")
+
+    import json as _learn_json
+    _weights_path = os.path.join(os.path.dirname(__file__), "..", "learning", "learned_weights.json")
+    _recs_path    = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+    _settled_path = os.path.join(os.path.dirname(__file__), "..", "learning", "settled_races.json")
+
+    _current_weights = {
+        "market_odds":  0.25, "horse_form":   0.20, "track_form":   0.15,
+        "going":        0.10, "trainer_form": 0.10, "jockey_form":  0.10,
+        "market_moves": 0.10,
+    }
+    try:
+        if os.path.exists(_weights_path):
+            with open(_weights_path) as _wf:
+                _current_weights = _learn_json.load(_wf)
+    except Exception:
+        pass
+
+    _n_recs    = 0
+    _n_settled = 0
+    try:
+        if os.path.exists(_recs_path):
+            with open(_recs_path) as _rf:
+                _r = _learn_json.load(_rf)
+            _n_recs = len(_r.get("records", [])) if isinstance(_r, dict) else 0
+    except Exception:
+        pass
+    try:
+        if os.path.exists(_settled_path):
+            with open(_settled_path) as _sf:
+                _sd = _learn_json.load(_sf)
+            _n_settled = len(_sd.get("races", [])) if isinstance(_sd, dict) else 0
+    except Exception:
+        pass
+
+    _signal_descriptions = {
+        "market_odds":  "Bookmaker implied probability (sanity-check signal)",
+        "horse_form":   "Form string parsed with recency weighting",
+        "track_form":   "Course-specific record (needs Racing API)",
+        "going":        "Going preference from historical runs",
+        "trainer_form": "Trainer strike rate and recent-runs score",
+        "jockey_form":  "Jockey strike rate and recent-runs score",
+        "market_moves": "Steam / drift vs show-price snapshot",
     }
 
-    if _stats:
-        _settled = _stats.get("settled_races", 0)
-        _hit     = _stats.get("hit_rate_pct", 0.0)
-        _7d_hit  = _stats.get("hit_rate_7d_pct", 0.0)
-        _total   = _stats.get("total_recommendations", 0)
-        _winners = _stats.get("winners", 0)
-        _days_left = _stats.get("days_until_first_adjust", 20)
-        _adj     = _stats.get("weight_adjustments", 0)
-        _cw      = _stats.get("current_weights", _default_weights)
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Recommendations Logged", str(_n_recs))
+    col2.metric("Results Settled",        str(_n_settled))
+    col3.metric("Weight Adjustments",     "0", f"{max(0, 20 - _n_settled)} races to first" if _n_settled < 20 else "Active")
 
-        if _settled == 0:
-            st.info(f"🟡 Learning loop active — tracking starts today. Needs 20 settled races before first weight adjustment. ({_total} runners recorded so far)")
-        else:
-            st.success(f"🟢 Live — {_settled} settled races tracked across {_stats.get('note','')}")
+    st.markdown("---")
 
-        col1, col2, col3, col4 = st.columns(4)
-        with col1:
-            st.metric("Hit Rate (All)", f"{_hit:.1f}%" if _settled > 0 else "—", "Top selections only")
-        with col2:
-            st.metric("Hit Rate (7-day)", f"{_7d_hit:.1f}%" if _settled > 0 else "—", "Rolling window")
-        with col3:
-            st.metric("Recommendations", str(_total), "Logged today")
-        with col4:
-            st.metric("Weight Adjustments", str(_adj), f"{_days_left} races to first" if _adj == 0 else "Active")
-
-        st.markdown("---")
-        st.markdown("#### Current Signal Weightings")
-        st.caption("Initial weights shown alongside current. As data accumulates, the learning loop nudges these automatically.")
-
-        weight_rows = []
-        for sig, init_w in _default_weights.items():
-            curr_w = _cw.get(sig, init_w)
-            change = curr_w - init_w
-            arrow  = "↑" if change > 0.001 else "↓" if change < -0.001 else "—"
-            label  = sig.replace("_", " ").title()
-            weight_rows.append({
-                "Signal":         label,
-                "Initial Weight": f"{init_w*100:.0f}%",
-                "Current Weight": f"{curr_w*100:.1f}%",
-                "Change":         f"{arrow} {abs(change)*100:.1f}%" if change != 0 else "—",
-                "Status":         "🟢 Adjusted" if abs(change) > 0.005 else "🟡 Default",
-            })
-        st.dataframe(pd.DataFrame(weight_rows), use_container_width=True, hide_index=True)
-
-        if _stats.get("recent_winners"):
-            st.markdown("---")
-            st.markdown("#### Recent Winners Tracked")
-            rw_df = pd.DataFrame(_stats["recent_winners"])
-            if "winner" in rw_df.columns:
-                st.dataframe(rw_df[["date","winner","course","odds"]].rename(columns={
-                    "date":"Date","winner":"Winner","course":"Course","odds":"Odds"
-                }), use_container_width=True, hide_index=True)
-
-        if _settled >= 5:
-            st.markdown("---")
-            st.markdown("#### Confidence vs Outcome")
-            st.caption(f"Avg confidence on winners: {_stats['avg_confidence_winners']:.0%} | "
-                      f"Avg confidence on losers: {_stats['avg_confidence_losers']:.0%}")
-            _gap = _stats["avg_confidence_winners"] - _stats["avg_confidence_losers"]
-            if _gap > 0:
-                st.success(f"✅ Model is predictive — confidence scores {_gap:.0%} higher on winners than losers")
-            else:
-                st.warning("⚠️ Not yet enough data to assess model predictiveness")
+    if _n_settled < 20:
+        st.info(
+            f"Collecting data — weights will self-adjust after 20 settled races "
+            f"({_n_settled} of 20 recorded)."
+        )
     else:
-        st.info("🟡 Learning loop initialising — data will appear here as races complete today.")
-        st.markdown("#### Default Signal Weightings (pre-learning)")
-        st.dataframe(pd.DataFrame([
-            {"Signal": s.replace("_"," ").title(), "Weight": f"{w*100:.0f}%"}
-            for s, w in _default_weights.items()
-        ]), use_container_width=True, hide_index=True)
+        st.success(f"🟢 Learning loop active — {_n_settled} settled races analysed.")
 
-# ── Tab 7: Odds Comparison ────────────────────────────────────
+    st.markdown("#### Current Signal Weights")
+    _weight_rows = []
+    for _sig, _desc in _signal_descriptions.items():
+        _w = _current_weights.get(_sig, 0.0)
+        _weight_rows.append({
+            "Signal":      _sig.replace("_", " ").title(),
+            "Weight":      f"{_w*100:.1f}%",
+            "Description": _desc,
+        })
+    st.dataframe(pd.DataFrame(_weight_rows), use_container_width=True, hide_index=True)
+
+    _total_w = sum(_current_weights.get(k, 0) for k in _signal_descriptions.keys())
+    st.caption(f"Total weight: **{_total_w*100:.0f}%** (must sum to 100%).")
+
+    st.markdown("---")
+    st.caption("Weights last manually calibrated — 21 April 2026. Self-adjustment begins at 20 settled races.")
+
+# ── Tab 7: Results History ────────────────────────────────────
 with tab7:
-    st.markdown("## Odds Comparison — All Bookmakers")
-    st.caption("Live odds from Betfair Exchange, The Racing API, and Oddschecker across all UK and Irish bookmakers")
+    st.markdown("### 📊 Results History")
+    st.caption("Every logged recommendation. Results feed back automatically each evening after 18:30 BST.")
 
-    col_course, col_time = st.columns(2)
-    with col_course:
-        oc_course = st.text_input("Course", value="Pontefract", key="oc_course")
-    with col_time:
-        oc_time = st.text_input("Race Time (HH:MM)", value="14:00", key="oc_time")
-
-    if st.button("Fetch Odds", key="fetch_odds_btn"):
-        if MONITOR_AVAILABLE and _MULTI_MONITOR is not None:
-            with st.spinner("Fetching odds from all bookmakers..."):
-                try:
-                    summary = _MULTI_MONITOR.get_current_odds_summary(oc_course, oc_time)
-                    if summary:
-                        oc_df = pd.DataFrame(summary)
-                        display_cols = ["horse", "best_price", "best_bookie",
-                                        "betfair_back", "betfair_lay", "betfair_vol",
-                                        "bet365", "william_hill", "ladbrokes",
-                                        "paddy_power", "coral", "sky_bet"]
-                        available_cols = [c for c in display_cols if c in oc_df.columns]
-                        st.dataframe(oc_df[available_cols].rename(columns={
-                            "horse": "Horse", "best_price": "Best Price",
-                            "best_bookie": "Best Bookie", "betfair_back": "Betfair Back",
-                            "betfair_lay": "Betfair Lay", "betfair_vol": "Betfair Vol",
-                            "bet365": "Bet365", "william_hill": "William Hill",
-                            "ladbrokes": "Ladbrokes", "paddy_power": "Paddy Power",
-                            "coral": "Coral", "sky_bet": "Sky Bet",
-                        }), width=None, hide_index=True)
-                    else:
-                        st.info("No odds data found for this race. Check course name and time.")
-                except Exception as _e:
-                    st.error(f"Could not fetch odds: {_e}")
-        else:
-            st.warning("Odds monitor not available — check configuration.")
-
-    st.markdown("---")
-    st.markdown("### Recent Market Move Alerts")
+    import json as _res_json
+    _r7_path = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+    _records = []
     try:
-        import json as _json
-        _state_path = _os.path.join(_os.path.dirname(__file__), "..", "learning", "market_state.json")
-        if _os.path.exists(_state_path):
-            with open(_state_path) as _sf:
-                _mstate = _json.load(_sf)
-            _fired = _mstate.get("alerts_fired", [])
-            if _fired:
-                st.caption(f"{len(_fired)} total alerts fired today")
-            else:
-                st.info("No market move alerts fired yet today.")
-        else:
-            st.info("Monitor state not yet initialised — will populate once scheduler starts.")
+        if os.path.exists(_r7_path):
+            with open(_r7_path) as _rf:
+                _rd = _res_json.load(_rf)
+            _records = _rd.get("records", []) if isinstance(_rd, dict) else []
     except Exception:
-        st.info("Alert history unavailable.")
+        _records = []
 
-# ── Tab 8: Results History ────────────────────────────────────
-with tab8:
-    st.markdown("### Results History")
-    st.caption("Every settled race — engine tip cross-checked against the actual winner automatically.")
+    _total_recs    = len(_records)
+    _settled_recs  = [r for r in _records if r.get("won") is not None]
+    _pending_recs  = [r for r in _records if r.get("won") is None]
+    _wins_recs     = [r for r in _settled_recs if r.get("won")]
 
-    @st.cache_data(ttl=120)
-    def _load_settlement_data():
-        try:
-            import sys as _s2, os as _os2
-            _s2.path.insert(0, _os2.path.join(_os2.path.dirname(__file__), ".."))
-            from learning.loop import LearningLoop as _LL2
-            ll2   = _LL2()
-            recs2 = ll2.recommendations.get("records", [])
-            settled2 = [r for r in recs2 if r.get("won") is not None]
-            wins2    = [r for r in settled2 if r.get("won")]
-            stats2   = {
-                "total":    len(settled2),
-                "hits":     len(wins2),
-                "hit_rate": round(len(wins2)/len(settled2)*100, 1) if settled2 else 0.0,
-                "hit_rate_7d": 0.0,
-                "exceptions": 0,
-                "last_winner": wins2[-1].get("runner") if wins2 else None,
-            }
-            # Format records for dashboard display
-            rows2 = [{
-                "Date":   r.get("date", ""),
-                "Course": r.get("course", ""),
-                "Horse":  r.get("runner", ""),
-                "Odds":   r.get("odds", ""),
-                "Result": "✅ WIN" if r.get("won") else "❌ LOSS",
-                "Conf":   f"{r.get('confidence',0):.1%}",
-            } for r in sorted(settled2, key=lambda x: x.get("date",""), reverse=True)[:28]]
-            return rows2, stats2
-        except Exception:
-            return [], {}
-
-    _settled_races, _settle_stats = _load_settlement_data()
-
-    # KPI row
-    _total_s  = _settle_stats.get("total", 0)
-    _hits_s   = _settle_stats.get("hits", 0)
-    _rate_s   = _settle_stats.get("hit_rate", 0.0)
-    _rate_7d  = _settle_stats.get("hit_rate_7d", 0.0)
-    _exc_s    = _settle_stats.get("exceptions", 0)
-    _last_win = _settle_stats.get("last_winner")
-
-    col1, col2, col3, col4 = st.columns(4)
-    with col1:
-        st.metric("Races Settled", str(_total_s), "All-time")
-    with col2:
-        st.metric("Engine Hit Rate", f"{_rate_s:.1f}%" if _total_s > 0 else "—", "Top selection wins")
-    with col3:
-        st.metric("Hit Rate (7-day)", f"{_rate_7d:.1f}%" if _total_s > 0 else "—", "Rolling window")
-    with col4:
-        st.metric("Last Winner", _last_win or "—", "Engine-tipped")
+    _k1, _k2, _k3 = st.columns(3)
+    _k1.metric("Recommendations Logged", str(_total_recs))
+    _k2.metric("Settled",                str(len(_settled_recs)))
+    _k3.metric("Pending",                str(len(_pending_recs)))
 
     st.markdown("---")
 
-    if _settled_races:
-        st.success(f"🟢 {_total_s} races settled — {_hits_s} engine hits")
-        if _exc_s > 0:
-            st.warning(f"⚠️ {_exc_s} races flagged for review (dead heats / DQs)")
-
-        # Build display dataframe from learning loop records
-        _res_df = pd.DataFrame(_settled_races) if _settled_races else pd.DataFrame()
-
-        def _colour_tip(val):
-            if "WIN" in str(val) or "HIT" in str(val):
-                return "background-color: #003300; color: #00ff88; font-weight: bold"
-            if "LOSS" in str(val) or "MISS" in str(val):
-                return "background-color: #330000; color: #ff6666"
-            return ""
-        def _colour_flag(val):
-            if val not in ("Clean", ""):
-                return "background-color: #332200; color: #ffaa00"
-            return ""
-
-        if not _res_df.empty:
-            _style_cols = []
-            if "Result" in _res_df.columns:  _style_cols.append(("Result", _colour_tip))
-            _styled_res = _res_df.style
-            for _col, _fn in _style_cols:
-                _styled_res = _styled_res.map(_fn, subset=[_col])
-            st.dataframe(_styled_res, use_container_width=True, hide_index=True)
-        else:
-            st.info("No settled results yet.")
+    if not _records:
+        st.info("No results recorded yet — results feed back automatically each evening after 18:30 BST.")
     else:
-        st.info("🟡 No settled races yet — results populate automatically as each race finishes today.")
-        if _is_live and len(_live_df) > 0:
-            _pending_rows = [{
-                "Time": str(r.get('Time','')), "Course": str(r.get('Course','')),
-                "Horse": str(r.get('Horse','')), "Odds": str(r.get('Odds','')), "Status": "Pending"
-            } for _, r in _live_df.iterrows()]
-            st.dataframe(pd.DataFrame(_pending_rows), use_container_width=True, hide_index=True)
-        st.caption("Results populate automatically as each race finishes. Refresh to update.")
+        _row_sorted = sorted(_records, key=lambda r: (r.get("date",""), r.get("time","")), reverse=True)
+        _res_rows = []
+        for _r in _row_sorted:
+            _won = _r.get("won")
+            if _won is True:
+                _result = "✅ WON"
+            elif _won is False:
+                _result = "❌ LOST"
+            else:
+                _result = "⏳ Pending"
+            _conf_v = _r.get("confidence")
+            try:
+                _conf_disp = f"{float(_conf_v):.1%}" if _conf_v is not None else "—"
+            except Exception:
+                _conf_disp = "—"
+            _res_rows.append({
+                "Date":   _r.get("date", ""),
+                "Horse":  _r.get("runner", ""),
+                "Course": _r.get("course", ""),
+                "Time":   _r.get("time", ""),
+                "Odds":   str(_r.get("odds", "")),
+                "Conf":   _conf_disp,
+                "Result": _result,
+            })
+        _res_df7 = pd.DataFrame(_res_rows)
+
+        def _colour_result(val):
+            s = str(val)
+            if "WON" in s:      return "background-color: #003300; color: #00ff88; font-weight: bold"
+            if "LOST" in s:     return "background-color: #330000; color: #ff6666"
+            if "Pending" in s:  return "color: #ffaa00"
+            return ""
+
+        st.dataframe(
+            _res_df7.style.map(_colour_result, subset=["Result"]),
+            use_container_width=True, hide_index=True
+        )
+
+        if _wins_recs:
+            _hit_rate = len(_wins_recs) / len(_settled_recs) * 100
+            st.caption(f"Hit rate: **{_hit_rate:.1f}%** across {len(_settled_recs)} settled recommendations.")
+
+    st.markdown("---")
+    st.caption(
+        f"{_total_recs} recommendations logged, {len(_settled_recs)} settled, {len(_pending_recs)} pending."
+    )
+
+
+# ── Tab 8: Odds Comparison ────────────────────────────────────
+with tab8:
+    st.markdown("### 📉 Odds Comparison")
+    st.caption("Current prices for today's qualifying selections from the Sporting Life live feed.")
+
+    if not _six_pool:
+        st.info("No qualifying selections — check back once today's markets are live.")
+    else:
+        _oc_rows = []
+        for _s in _six_pool:
+            _c    = float(_s["confidence"])
+            _dec  = float(_s["decimal"])
+            _evv  = (_c * _dec) - (1 - _c)
+            _oc_rows.append({
+                "Horse":         _s["horse"],
+                "Course":        _s["course"],
+                "Time":          _s["time"],
+                "Current Price": _s["odds_str"],
+                "Decimal":       f"{_dec:.2f}x",
+                "Role":          _s["tier"],
+                "EV":            round(_evv, 3),
+            })
+        _oc_rows.sort(key=lambda r: (r["Time"], r["Course"]))
+        st.dataframe(pd.DataFrame(_oc_rows), use_container_width=True, hide_index=True)
+
+    st.markdown("---")
+    st.info(
+        "Odds sourced from Sporting Life live feed. Best odds comparison requires "
+        "additional bookmaker feeds — planned for Phase 2."
+    )

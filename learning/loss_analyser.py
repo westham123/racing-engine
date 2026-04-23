@@ -79,7 +79,7 @@ def _load_weights() -> Dict[str, float]:
     _defaults = {
         "market_odds": 0.25, "horse_form": 0.20, "track_form": 0.15,
         "going": 0.10, "trainer_form": 0.10, "jockey_form": 0.10,
-        "market_moves": 0.07, "jump_index": 0.03,
+        "market_moves": 0.10,
     }
     try:
         if os.path.exists(WEIGHTS_PATH):

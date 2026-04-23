@@ -216,10 +216,6 @@ class OddsModel:
         except Exception:
             return 0.50
 
-    def _score_jump_index(self, runner_data: dict) -> float:
-        """Jumping ability — absorbed into tf_stars. Returns 0.50 neutral."""
-        return 0.50
-
     # ── Penalty / Bonus System ────────────────────────────────
     def _calculate_adjustments(self, runner_data: dict, form_detail: dict) -> float:
         """

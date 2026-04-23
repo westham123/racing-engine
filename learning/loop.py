@@ -43,8 +43,7 @@ DEFAULT_WEIGHTS = {
     "going":        0.10,
     "trainer_form": 0.10,
     "jockey_form":  0.10,
-    "market_moves": 0.07,
-    "jump_index":   0.03,
+    "market_moves": 0.10,
 }
 
 
