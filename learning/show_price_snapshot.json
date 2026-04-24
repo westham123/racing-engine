@@ -1,6 +1,5427 @@
 {
-  "date": "2026-04-22",
+  "date": "2026-04-24",
   "label": "SHOW",
-  "taken_at": "08:08",
-  "horses": {}
+  "taken_at": "07:53",
+  "horses": {
+    "2026-04-24::13:20::Sandown::underwriter": {
+      "horse": "Underwriter",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "10189-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::calico blue": {
+      "horse": "Calico Blue",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 4,
+      "form": "311-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::sir alfie": {
+      "horse": "Sir Alfie",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "43100-8",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::atticum": {
+      "horse": "Atticum",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 4,
+      "form": "921-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::black star boy": {
+      "horse": "Black Star Boy",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "618-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::old is gold": {
+      "horse": "Old Is Gold",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 3,
+      "form": "31830-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::hypnotised": {
+      "horse": "Hypnotised",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 5,
+      "form": "441-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::ambishio": {
+      "horse": "Ambishio",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "2060-12",
+      "is_handicap": true
+    },
+    "2026-04-24::13:20::Sandown::one and gone": {
+      "horse": "One And Gone",
+      "course": "Sandown",
+      "time": "13:20",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "134-347",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::goodwood galaxy": {
+      "horse": "Goodwood Galaxy",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "1474-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::look to the stars": {
+      "horse": "Look To The Stars",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "22116-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::organise": {
+      "horse": "Organise",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "5/6",
+      "decimal": 1.833,
+      "tf_stars": 5,
+      "form": "1-1",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::suspended sentence": {
+      "horse": "Suspended Sentence",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "64114-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::laureate crown": {
+      "horse": "Laureate Crown",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 4,
+      "form": "1856-1",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::capall rasa": {
+      "horse": "Capall Rasa",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "3811-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:50::Sandown::nobody knows": {
+      "horse": "Nobody Knows",
+      "course": "Sandown",
+      "time": "13:50",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 4,
+      "form": "1-1",
+      "is_handicap": true
+    },
+    "2026-04-24::14:25::Sandown::almeric": {
+      "horse": "Almeric",
+      "course": "Sandown",
+      "time": "14:25",
+      "odds": "6/4",
+      "decimal": 2.5,
+      "tf_stars": 5,
+      "form": "41/119-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:25::Sandown::devil's advocate": {
+      "horse": "Devil's Advocate",
+      "course": "Sandown",
+      "time": "14:25",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "40417-2",
+      "is_handicap": false
+    },
+    "2026-04-24::14:25::Sandown::king of cities": {
+      "horse": "King Of Cities",
+      "course": "Sandown",
+      "time": "14:25",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 3,
+      "form": "293315-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:25::Sandown::saddadd": {
+      "horse": "Saddadd",
+      "course": "Sandown",
+      "time": "14:25",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "1/32113-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:25::Sandown::muddy mooy": {
+      "horse": "Muddy Mooy",
+      "course": "Sandown",
+      "time": "14:25",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "14742-3",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::cicero's gift": {
+      "horse": "Cicero's Gift",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "362211-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::opera ballo": {
+      "horse": "Opera Ballo",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "61121-1",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::zeus olympios": {
+      "horse": "Zeus Olympios",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "11/4",
+      "decimal": 3.75,
+      "tf_stars": 4,
+      "form": "1111-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::dancing gemini": {
+      "horse": "Dancing Gemini",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "128390-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::field of gold": {
+      "horse": "Field Of Gold",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "10/11",
+      "decimal": 1.909,
+      "tf_stars": 5,
+      "form": "121145-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:00::Sandown::never so brave": {
+      "horse": "Never So Brave",
+      "course": "Sandown",
+      "time": "15:00",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 4,
+      "form": "0/21117-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::action": {
+      "horse": "Action",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "11/8",
+      "decimal": 2.375,
+      "tf_stars": 5,
+      "form": "3132-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::al zanati": {
+      "horse": "Al Zanati",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "121-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::oceans four": {
+      "horse": "Oceans Four",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "9131-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::raaheeb": {
+      "horse": "Raaheeb",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 4,
+      "form": "1-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::spyce": {
+      "horse": "Spyce",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 3,
+      "form": "214-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::winding stream": {
+      "horse": "Winding Stream",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "1-2",
+      "is_handicap": false
+    },
+    "2026-04-24::15:35::Sandown::wise prince": {
+      "horse": "Wise Prince",
+      "course": "Sandown",
+      "time": "15:35",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 4,
+      "form": "1-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::felicitas": {
+      "horse": "Felicitas",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "1-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::ribbon of sea": {
+      "horse": "Ribbon Of Sea",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 5,
+      "form": "5-1",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::alma latina": {
+      "horse": "Alma Latina",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::bintsaleh": {
+      "horse": "Bintsaleh",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "5-3",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::corallience": {
+      "horse": "Corallience",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "90/1",
+      "decimal": 91.0,
+      "tf_stars": 2,
+      "form": "6-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::ladykirk": {
+      "horse": "Ladykirk",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "2-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::palomezcal": {
+      "horse": "Palomezcal",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "110/1",
+      "decimal": 111.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::ruby wedding": {
+      "horse": "Ruby Wedding",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "35-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::sullom voe": {
+      "horse": "Sullom Voe",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "200/1",
+      "decimal": 201.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:10::Sandown::sunshine star": {
+      "horse": "Sunshine Star",
+      "course": "Sandown",
+      "time": "16:10",
+      "odds": "10/11",
+      "decimal": 1.909,
+      "tf_stars": 4,
+      "form": "2-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:45::Sandown::colourband": {
+      "horse": "Colourband",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 5,
+      "form": "732-1",
+      "is_handicap": true
+    },
+    "2026-04-24::16:45::Sandown::lost boys": {
+      "horse": "Lost Boys",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "13/8",
+      "decimal": 2.625,
+      "tf_stars": 3,
+      "form": "331-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:45::Sandown::into the light": {
+      "horse": "Into The Light",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "15/4",
+      "decimal": 4.75,
+      "tf_stars": 4,
+      "form": "12",
+      "is_handicap": true
+    },
+    "2026-04-24::16:45::Sandown::magic trip": {
+      "horse": "Magic Trip",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "18-3",
+      "is_handicap": true
+    },
+    "2026-04-24::16:45::Sandown::the joker": {
+      "horse": "The Joker",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "3429-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:45::Sandown::bnaider": {
+      "horse": "Bnaider",
+      "course": "Sandown",
+      "time": "16:45",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 2,
+      "form": "443-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::canaria queen": {
+      "horse": "Canaria Queen",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "12524-6",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::golden prosperity": {
+      "horse": "Golden Prosperity",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "23-6610",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::opal storm": {
+      "horse": "Opal Storm",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "8507-91",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::beerwah": {
+      "horse": "Beerwah",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "356146-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::trust sergei": {
+      "horse": "Trust Sergei",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 3,
+      "form": "495-746",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::auntie jo": {
+      "horse": "Auntie Jo",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "556174",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::thank the lord": {
+      "horse": "Thank The Lord",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 2,
+      "form": "32-8609",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::masterclass": {
+      "horse": "Masterclass",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "20638-4",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::newyorkstateofmind": {
+      "horse": "Newyorkstateofmind",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 3,
+      "form": "525570-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::doralee": {
+      "horse": "Doralee",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 4,
+      "form": "0030-53",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::vault of heaven": {
+      "horse": "Vault Of Heaven",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "675050-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::isla bella": {
+      "horse": "Isla Bella",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "487295",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::anglesey lad": {
+      "horse": "Anglesey Lad",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 4,
+      "form": "33427-5",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::no gain": {
+      "horse": "No Gain",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 5,
+      "form": "54651-4",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::ziva's star": {
+      "horse": "Ziva's Star",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 1,
+      "form": "039030-",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::lil wade": {
+      "horse": "Lil Wade",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 1,
+      "form": "89885-9",
+      "is_handicap": true
+    },
+    "2026-04-24::13:40::Doncaster::tilsworth ony ta": {
+      "horse": "Tilsworth Ony Ta",
+      "course": "Doncaster",
+      "time": "13:40",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 1,
+      "form": "78-8790",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::born a rebel": {
+      "horse": "Born A Rebel",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "17164-7",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::yafaarr": {
+      "horse": "Yafaarr",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "23123-7",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::pianoforte": {
+      "horse": "Pianoforte",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "74-7956",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::wrydcroft": {
+      "horse": "Wrydcroft",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "15/4",
+      "decimal": 4.75,
+      "tf_stars": 4,
+      "form": "70118-1",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::the new bay pearl": {
+      "horse": "The New Bay Pearl",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "273056-",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::sir david": {
+      "horse": "Sir David",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 3,
+      "form": "76149-0",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::ziggy's angel": {
+      "horse": "Ziggy's Angel",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "51538-5",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::singoura": {
+      "horse": "Singoura",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "0456-08",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::mecca's symphony": {
+      "horse": "Mecca's Symphony",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "5035/37-",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::finn ironside": {
+      "horse": "Finn Ironside",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 2,
+      "form": "100-904",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::pearly squirrel": {
+      "horse": "Pearly Squirrel",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "8-05133",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::giant": {
+      "horse": "Giant",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "0680-63",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::reginald charles": {
+      "horse": "Reginald Charles",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 3,
+      "form": "3421-63",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::yehudi": {
+      "horse": "Yehudi",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 3,
+      "form": "2-45254",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::ey up he's a star": {
+      "horse": "Ey Up He's A Star",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 5,
+      "form": "5313-73",
+      "is_handicap": true
+    },
+    "2026-04-24::14:15::Doncaster::onemorenomore": {
+      "horse": "Onemorenomore",
+      "course": "Doncaster",
+      "time": "14:15",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "77174-5",
+      "is_handicap": true
+    },
+    "2026-04-24::14:50::Doncaster::balmoral boy": {
+      "horse": "Balmoral Boy",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "36",
+      "is_handicap": false
+    },
+    "2026-04-24::14:50::Doncaster::bunyola bay": {
+      "horse": "Bunyola Bay",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 4,
+      "form": "3-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:50::Doncaster::celtic chariot": {
+      "horse": "Celtic Chariot",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:50::Doncaster::deported": {
+      "horse": "Deported",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "423-4",
+      "is_handicap": false
+    },
+    "2026-04-24::14:50::Doncaster::glen nevis": {
+      "horse": "Glen Nevis",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:50::Doncaster::moreedd": {
+      "horse": "Moreedd",
+      "course": "Doncaster",
+      "time": "14:50",
+      "odds": "11/10",
+      "decimal": 2.1,
+      "tf_stars": 5,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::15:25::Doncaster::silver state": {
+      "horse": "Silver State",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "11/4",
+      "decimal": 3.75,
+      "tf_stars": 5,
+      "form": "811331",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::toastmaster": {
+      "horse": "Toastmaster",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 3,
+      "form": "4542-23",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::saxophonist": {
+      "horse": "Saxophonist",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "383-",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::booziebrunch": {
+      "horse": "Booziebrunch",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "53120-2",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::welbury": {
+      "horse": "Welbury",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "15/8",
+      "decimal": 2.875,
+      "tf_stars": 4,
+      "form": "35-1",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::tarmonbarry kid": {
+      "horse": "Tarmonbarry Kid",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "535-",
+      "is_handicap": true
+    },
+    "2026-04-24::15:25::Doncaster::attention seeker": {
+      "horse": "Attention Seeker",
+      "course": "Doncaster",
+      "time": "15:25",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 2,
+      "form": "246-770",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::percy's daydream": {
+      "horse": "Percy's Daydream",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "132125-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::little miss india": {
+      "horse": "Little Miss India",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "721418",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::saliko": {
+      "horse": "Saliko",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "611460-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::ablon": {
+      "horse": "Ablon",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 5,
+      "form": "55-21",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::nanny park": {
+      "horse": "Nanny Park",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "453333-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::finally escaped": {
+      "horse": "Finally Escaped",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "26566",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::myrrh": {
+      "horse": "Myrrh",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "313-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::alkumatic jo jo": {
+      "horse": "Alkumatic Jo Jo",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "3432-5",
+      "is_handicap": true
+    },
+    "2026-04-24::16:00::Doncaster::oh yes you do": {
+      "horse": "Oh Yes You Do",
+      "course": "Doncaster",
+      "time": "16:00",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 4,
+      "form": "41-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:35::Doncaster::bucklow hill": {
+      "horse": "Bucklow Hill",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "1",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::flight control": {
+      "horse": "Flight Control",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "70/1",
+      "decimal": 71.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::king's road dandy": {
+      "horse": "King's Road Dandy",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "3-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::kodi k": {
+      "horse": "Kodi K",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 1,
+      "form": "75-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::masaban": {
+      "horse": "Masaban",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "58-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::rousham": {
+      "horse": "Rousham",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 1,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::roy lane": {
+      "horse": "Roy Lane",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "6-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::space party": {
+      "horse": "Space Party",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "30/1",
+      "decimal": 31.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::stoneacre joe": {
+      "horse": "Stoneacre Joe",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 1,
+      "form": "9-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::that's random": {
+      "horse": "That's Random",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 2,
+      "form": "6-8",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::the jackal": {
+      "horse": "The Jackal",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "7/4",
+      "decimal": 2.75,
+      "tf_stars": 5,
+      "form": "2",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::wintercast": {
+      "horse": "Wintercast",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::azure point": {
+      "horse": "Azure Point",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::dontwaryboutathing": {
+      "horse": "Dontwaryboutathing",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "90/1",
+      "decimal": 91.0,
+      "tf_stars": 1,
+      "form": "6-0",
+      "is_handicap": false
+    },
+    "2026-04-24::16:35::Doncaster::wayward queen": {
+      "horse": "Wayward Queen",
+      "course": "Doncaster",
+      "time": "16:35",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:10::Doncaster::cotton bud": {
+      "horse": "Cotton Bud",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "5442-",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::rumbustious": {
+      "horse": "Rumbustious",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "68-3",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::brave leader": {
+      "horse": "Brave Leader",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "2/1",
+      "decimal": 3.0,
+      "tf_stars": 3,
+      "form": "645-",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::kiss for an angel": {
+      "horse": "Kiss For An Angel",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "2552-",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::tommo's ginjaninja": {
+      "horse": "Tommo's Ginjaninja",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "2352",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::berkshire schmokin": {
+      "horse": "Berkshire Schmokin",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "07-4145",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::madjid": {
+      "horse": "Madjid",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 5,
+      "form": "90-4",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::frustration": {
+      "horse": "Frustration",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "87-86",
+      "is_handicap": true
+    },
+    "2026-04-24::17:10::Doncaster::risk averse rebel": {
+      "horse": "Risk Averse Rebel",
+      "course": "Doncaster",
+      "time": "17:10",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "796-334",
+      "is_handicap": true
+    },
+    "2026-04-24::13:30::Perth::c'mon so": {
+      "horse": "C'mon So",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 1,
+      "form": "P2-6469",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::eustace grenier": {
+      "horse": "Eustace Grenier",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "434",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::jack dempsey": {
+      "horse": "Jack Dempsey",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 2,
+      "form": "205-UU9",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::mr maximillian": {
+      "horse": "Mr Maximillian",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "6",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::misterdoc": {
+      "horse": "Misterdoc",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "4/11",
+      "decimal": 1.364,
+      "tf_stars": 5,
+      "form": "241",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::brewdog": {
+      "horse": "Brewdog",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "200/1",
+      "decimal": 201.0,
+      "tf_stars": 1,
+      "form": "8",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::palavar": {
+      "horse": "Palavar",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 1,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::13:30::Perth::sears crossing": {
+      "horse": "Sears Crossing",
+      "course": "Perth",
+      "time": "13:30",
+      "odds": "16/5",
+      "decimal": 4.2,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::14:05::Perth::noble birth": {
+      "horse": "Noble Birth",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 1,
+      "form": "6P4045",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::fortunedefortunata": {
+      "horse": "Fortunedefortunata",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "P0UPF3",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::el granjero": {
+      "horse": "El Granjero",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 4,
+      "form": "24-4252",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::brandt": {
+      "horse": "Brandt",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "1PP-066",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::busty boy": {
+      "horse": "Busty Boy",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "22-2333",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::fever dream": {
+      "horse": "Fever Dream",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 5,
+      "form": "355421",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::stratagem": {
+      "horse": "Stratagem",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "P-46P31",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::express surprise": {
+      "horse": "Express Surprise",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "3-31141",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::breeze of wind": {
+      "horse": "Breeze Of Wind",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 3,
+      "form": "14-52P3",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::president scottie": {
+      "horse": "President Scottie",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 2,
+      "form": "P-48665",
+      "is_handicap": true
+    },
+    "2026-04-24::14:05::Perth::upfordebate": {
+      "horse": "Upfordebate",
+      "course": "Perth",
+      "time": "14:05",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "P11553",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::roaring conquest": {
+      "horse": "Roaring Conquest",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 5,
+      "form": "39-13P6",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::jupiter des mottes": {
+      "horse": "Jupiter Des Mottes",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "126-9P1",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::go to war": {
+      "horse": "Go To War",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "3P-5P17",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::whistle stop tour": {
+      "horse": "Whistle Stop Tour",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 3,
+      "form": "52535P",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::musique de fee": {
+      "horse": "Musique De Fee",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "312P0P",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::sleedagh": {
+      "horse": "Sleedagh",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "2-22233",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::inferno sacree": {
+      "horse": "Inferno Sacree",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "222112",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::la zoubida": {
+      "horse": "La Zoubida",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "0-11823",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::highland fashion": {
+      "horse": "Highland Fashion",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "24-6127",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::gwennie may star": {
+      "horse": "Gwennie May Star",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "5141P3",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::wa wa": {
+      "horse": "Wa Wa",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "223347",
+      "is_handicap": true
+    },
+    "2026-04-24::14:40::Perth::jukebox fury": {
+      "horse": "Jukebox Fury",
+      "course": "Perth",
+      "time": "14:40",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "0/5011-4",
+      "is_handicap": true
+    },
+    "2026-04-24::15:12::Perth::he knows better": {
+      "horse": "He Knows Better",
+      "course": "Perth",
+      "time": "15:12",
+      "odds": "2/1",
+      "decimal": 3.0,
+      "tf_stars": 5,
+      "form": "1-F2213",
+      "is_handicap": true
+    },
+    "2026-04-24::15:12::Perth::solly attwell": {
+      "horse": "Solly Attwell",
+      "course": "Perth",
+      "time": "15:12",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 2,
+      "form": "656P67",
+      "is_handicap": true
+    },
+    "2026-04-24::15:12::Perth::celestial fashion": {
+      "horse": "Celestial Fashion",
+      "course": "Perth",
+      "time": "15:12",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "2-14113",
+      "is_handicap": true
+    },
+    "2026-04-24::15:12::Perth::all inn hand": {
+      "horse": "All Inn Hand",
+      "course": "Perth",
+      "time": "15:12",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 3,
+      "form": "4923-11",
+      "is_handicap": true
+    },
+    "2026-04-24::15:12::Perth::dixie mafia": {
+      "horse": "Dixie Mafia",
+      "course": "Perth",
+      "time": "15:12",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 3,
+      "form": "4-85255",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::skyjack hijack": {
+      "horse": "Skyjack Hijack",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "11115-P",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::go dante": {
+      "horse": "Go Dante",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 2,
+      "form": "1-610P7",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::jack hyde": {
+      "horse": "Jack Hyde",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 4,
+      "form": "552291",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::serious operator": {
+      "horse": "Serious Operator",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "6-43120",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::nells son": {
+      "horse": "Nells Son",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 2,
+      "form": "P-545P8",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::flying fortune": {
+      "horse": "Flying Fortune",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "111-494",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::the dog thief": {
+      "horse": "The Dog Thief",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 5,
+      "form": "121",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::bold light": {
+      "horse": "Bold Light",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "484U43",
+      "is_handicap": true
+    },
+    "2026-04-24::15:47::Perth::letterston lily": {
+      "horse": "Letterston Lily",
+      "course": "Perth",
+      "time": "15:47",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 2,
+      "form": "13U40-1",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::zephlyn": {
+      "horse": "Zephlyn",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "6428-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::mr jukebox": {
+      "horse": "Mr Jukebox",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "4/6",
+      "decimal": 1.667,
+      "tf_stars": 5,
+      "form": "3-65381",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::berkenshtaaap": {
+      "horse": "Berkenshtaaap",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "538-404",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::walk on son": {
+      "horse": "Walk On Son",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "9-734P9",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::pepite de saphir": {
+      "horse": "Pepite De Saphir",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "8/462-",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::the coffey boy": {
+      "horse": "The Coffey Boy",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "670215",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::valette": {
+      "horse": "Valette",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 2,
+      "form": "4P5",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::velvet vulcan": {
+      "horse": "Velvet Vulcan",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "642246",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::king kodiak": {
+      "horse": "King Kodiak",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 4,
+      "form": "0P0353",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::seeyainthesuninn": {
+      "horse": "Seeyainthesuninn",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "655-P87",
+      "is_handicap": true
+    },
+    "2026-04-24::16:25::Perth::nae bother at a'": {
+      "horse": "Nae Bother At A'",
+      "course": "Perth",
+      "time": "16:25",
+      "odds": "70/1",
+      "decimal": 71.0,
+      "tf_stars": 2,
+      "form": "8/P68-86",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::humble jumble": {
+      "horse": "Humble Jumble",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "19-0373",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::karma de cotte": {
+      "horse": "Karma De Cotte",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "243449",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::poet's gale": {
+      "horse": "Poet's Gale",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 2,
+      "form": "8076F0",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::gorvennec": {
+      "horse": "Gorvennec",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "1538-7P",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::kap de triomphe": {
+      "horse": "Kap De Triomphe",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 3,
+      "form": "75-8514",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::star vantage": {
+      "horse": "Star Vantage",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 5,
+      "form": "465444",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::dublinofficecallin": {
+      "horse": "Dublinofficecallin",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 4,
+      "form": "646607",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::knockeranna rose": {
+      "horse": "Knockeranna Rose",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "668483",
+      "is_handicap": true
+    },
+    "2026-04-24::17:00::Perth::roi du roume": {
+      "horse": "Roi Du Roume",
+      "course": "Perth",
+      "time": "17:00",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 3,
+      "form": "147073",
+      "is_handicap": true
+    },
+    "2026-04-24::17:35::Perth::ar ais aris": {
+      "horse": "Ar Ais Aris",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "2",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::cockle bay wharf": {
+      "horse": "Cockle Bay Wharf",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "30/1",
+      "decimal": 31.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::fiskardo": {
+      "horse": "Fiskardo",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "32-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::kill vanhowe": {
+      "horse": "Kill Vanhowe",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 5,
+      "form": "212",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::ksar d'oudairies": {
+      "horse": "Ksar D'oudairies",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 3,
+      "form": "1-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::rock on ronnie": {
+      "horse": "Rock On Ronnie",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "7",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::dolly dior": {
+      "horse": "Dolly Dior",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 2,
+      "form": "5",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::effortless": {
+      "horse": "Effortless",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "3",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::hackley bay": {
+      "horse": "Hackley Bay",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::shane's spirit": {
+      "horse": "Shane's Spirit",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:35::Perth::betterthanadream": {
+      "horse": "Betterthanadream",
+      "course": "Perth",
+      "time": "17:35",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 1,
+      "form": "9",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::strong run": {
+      "horse": "Strong Run",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "5/6",
+      "decimal": 1.833,
+      "tf_stars": 4,
+      "form": "16-3126",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::grey gamble": {
+      "horse": "Grey Gamble",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "58",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::lisnamurrican": {
+      "horse": "Lisnamurrican",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "5/4",
+      "decimal": 2.25,
+      "tf_stars": 5,
+      "form": "4/1-25",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::madmoiselle moss": {
+      "horse": "Madmoiselle Moss",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "150/1",
+      "decimal": 151.0,
+      "tf_stars": 1,
+      "form": "98",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::pink perjury": {
+      "horse": "Pink Perjury",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 1,
+      "form": "89",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::precious jean": {
+      "horse": "Precious Jean",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "150/1",
+      "decimal": 151.0,
+      "tf_stars": 1,
+      "form": "079P-PP",
+      "is_handicap": false
+    },
+    "2026-04-24::17:15::Fontwell::that is blue": {
+      "horse": "That Is Blue",
+      "course": "Fontwell",
+      "time": "17:15",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "33",
+      "is_handicap": false
+    },
+    "2026-04-24::17:45::Fontwell::ballynaheer": {
+      "horse": "Ballynaheer",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "221141",
+      "is_handicap": true
+    },
+    "2026-04-24::17:45::Fontwell::gold clermont": {
+      "horse": "Gold Clermont",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "5-249P3",
+      "is_handicap": true
+    },
+    "2026-04-24::17:45::Fontwell::le galli bier": {
+      "horse": "Le Galli Bier",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 3,
+      "form": "522U35",
+      "is_handicap": true
+    },
+    "2026-04-24::17:45::Fontwell::carrigmoorna rowan": {
+      "horse": "Carrigmoorna Rowan",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "244455",
+      "is_handicap": true
+    },
+    "2026-04-24::17:45::Fontwell::edgewell": {
+      "horse": "Edgewell",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 3,
+      "form": "352811",
+      "is_handicap": true
+    },
+    "2026-04-24::17:45::Fontwell::sweet nightingale": {
+      "horse": "Sweet Nightingale",
+      "course": "Fontwell",
+      "time": "17:45",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 5,
+      "form": "33P313",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::yellow star": {
+      "horse": "Yellow Star",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "F-7100F",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::precious metal": {
+      "horse": "Precious Metal",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 3,
+      "form": "7-2213P",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::he's a latchico": {
+      "horse": "He's A Latchico",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "71572U",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::valadon": {
+      "horse": "Valadon",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "7/4",
+      "decimal": 2.75,
+      "tf_stars": 4,
+      "form": "41-P413",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::calvino": {
+      "horse": "Calvino",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 4,
+      "form": "61-2P13",
+      "is_handicap": true
+    },
+    "2026-04-24::18:20::Fontwell::jackomy": {
+      "horse": "Jackomy",
+      "course": "Fontwell",
+      "time": "18:20",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 5,
+      "form": "608311",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::has troke": {
+      "horse": "Has Troke",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "PP1-357",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::west orchard": {
+      "horse": "West Orchard",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "2/1",
+      "decimal": 3.0,
+      "tf_stars": 5,
+      "form": "31-2523",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::fravanco": {
+      "horse": "Fravanco",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "69/6-575",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::approaching storm": {
+      "horse": "Approaching Storm",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "90045",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::amalfi skyline": {
+      "horse": "Amalfi Skyline",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "53P/2-F5",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::counteract": {
+      "horse": "Counteract",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "463P7P/",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::shesupincourt": {
+      "horse": "Shesupincourt",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "483P57",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::miss jaffa cake": {
+      "horse": "Miss Jaffa Cake",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "9U5P6P",
+      "is_handicap": true
+    },
+    "2026-04-24::18:50::Fontwell::simon the seagull": {
+      "horse": "Simon The Seagull",
+      "course": "Fontwell",
+      "time": "18:50",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 2,
+      "form": "33P-4P6",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::jaffa cake": {
+      "horse": "Jaffa Cake",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "0-704PP",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::kitsilano": {
+      "horse": "Kitsilano",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "343134",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::it's a breeze": {
+      "horse": "It's A Breeze",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 4,
+      "form": "388526",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::fourtwofour": {
+      "horse": "Fourtwofour",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "4-003P",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::majestic moment": {
+      "horse": "Majestic Moment",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "458141",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::king of the story": {
+      "horse": "King Of The Story",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "11P1PP",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::a little something": {
+      "horse": "A Little Something",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 5,
+      "form": "672-3P2",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::hatos": {
+      "horse": "Hatos",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "15/4",
+      "decimal": 4.75,
+      "tf_stars": 4,
+      "form": "4P5223",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::gorcombe moonshine": {
+      "horse": "Gorcombe Moonshine",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 4,
+      "form": "0-33622",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::ballybay": {
+      "horse": "Ballybay",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "60P/PP5",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::millies mite": {
+      "horse": "Millies Mite",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "1-P5PPU",
+      "is_handicap": true
+    },
+    "2026-04-24::19:20::Fontwell::greenways": {
+      "horse": "Greenways",
+      "course": "Fontwell",
+      "time": "19:20",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "P5PP63",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::blue universe": {
+      "horse": "Blue Universe",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "5-32352",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::calshot spit": {
+      "horse": "Calshot Spit",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "38P-1P4",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::spanish dancer": {
+      "horse": "Spanish Dancer",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "47-555",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::jefe triunfo": {
+      "horse": "Jefe Triunfo",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "334U80",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::superstylin": {
+      "horse": "Superstylin",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 4,
+      "form": "321212",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::easter icon": {
+      "horse": "Easter Icon",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "3U-0054",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::bushstreet bowman": {
+      "horse": "Bushstreet Bowman",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "8F07P0",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::bread and butter": {
+      "horse": "Bread And Butter",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "838P48",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::nelson gate": {
+      "horse": "Nelson Gate",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 5,
+      "form": "293",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::dontaskchris": {
+      "horse": "Dontaskchris",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "P7R/5-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::my lovely horse": {
+      "horse": "My Lovely Horse",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "6P6P3P",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::hiero sport": {
+      "horse": "Hiero Sport",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "4185-83",
+      "is_handicap": true
+    },
+    "2026-04-24::19:50::Fontwell::chosen bae": {
+      "horse": "Chosen Bae",
+      "course": "Fontwell",
+      "time": "19:50",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "868346",
+      "is_handicap": true
+    },
+    "2026-04-24::16:20::Chepstow::quay item": {
+      "horse": "Quay Item",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "9/5",
+      "decimal": 2.8,
+      "tf_stars": 3,
+      "form": "32-312",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::beau quali": {
+      "horse": "Beau Quali",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "85/40",
+      "decimal": 3.125,
+      "tf_stars": 5,
+      "form": "525822",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::drumlee orders": {
+      "horse": "Drumlee Orders",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 1,
+      "form": "3-9",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::piping rock": {
+      "horse": "Piping Rock",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 3,
+      "form": "3-2333",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::shuil rocco": {
+      "horse": "Shuil Rocco",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "110/1",
+      "decimal": 111.0,
+      "tf_stars": 1,
+      "form": "P370",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::yellow warning": {
+      "horse": "Yellow Warning",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 1,
+      "form": "U1U6",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::treasure planet": {
+      "horse": "Treasure Planet",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "41523",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::the last promise": {
+      "horse": "The Last Promise",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "7",
+      "is_handicap": false
+    },
+    "2026-04-24::16:20::Chepstow::equity release": {
+      "horse": "Equity Release",
+      "course": "Chepstow",
+      "time": "16:20",
+      "odds": "110/1",
+      "decimal": 111.0,
+      "tf_stars": 1,
+      "form": "566",
+      "is_handicap": false
+    },
+    "2026-04-24::16:55::Chepstow::manothepeople": {
+      "horse": "Manothepeople",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "1-65074",
+      "is_handicap": true
+    },
+    "2026-04-24::16:55::Chepstow::broomfields cave": {
+      "horse": "Broomfields Cave",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 5,
+      "form": "21-31P1",
+      "is_handicap": true
+    },
+    "2026-04-24::16:55::Chepstow::charles ritz": {
+      "horse": "Charles Ritz",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "6/P2-143",
+      "is_handicap": true
+    },
+    "2026-04-24::16:55::Chepstow::loup de maulde": {
+      "horse": "Loup De Maulde",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 2,
+      "form": "411/743",
+      "is_handicap": true
+    },
+    "2026-04-24::16:55::Chepstow::inflexible": {
+      "horse": "Inflexible",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "5/2",
+      "decimal": 3.5,
+      "tf_stars": 4,
+      "form": "331/F-P1",
+      "is_handicap": true
+    },
+    "2026-04-24::16:55::Chepstow::amateur": {
+      "horse": "Amateur",
+      "course": "Chepstow",
+      "time": "16:55",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "P548-3U",
+      "is_handicap": true
+    },
+    "2026-04-24::17:30::Chepstow::angel wave": {
+      "horse": "Angel Wave",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 2,
+      "form": "57F",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::caspada": {
+      "horse": "Caspada",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "4068",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::go try": {
+      "horse": "Go Try",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 1,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::jubertilee": {
+      "horse": "Jubertilee",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "51-2122",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::my boy aaron": {
+      "horse": "My Boy Aaron",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "11/8",
+      "decimal": 2.375,
+      "tf_stars": 5,
+      "form": "2-05332",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::polemon": {
+      "horse": "Polemon",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 4,
+      "form": "6572P-3",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::trapper john": {
+      "horse": "Trapper John",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "50",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::good girl rachel": {
+      "horse": "Good Girl Rachel",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "PP378",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::lakeview lass": {
+      "horse": "Lakeview Lass",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 1,
+      "form": "099",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::queens up": {
+      "horse": "Queens Up",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 1,
+      "form": "P-3P",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::both of us": {
+      "horse": "Both Of Us",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "43",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::grand harbour": {
+      "horse": "Grand Harbour",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "4",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::mariole": {
+      "horse": "Mariole",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "036",
+      "is_handicap": false
+    },
+    "2026-04-24::17:30::Chepstow::whatcombe": {
+      "horse": "Whatcombe",
+      "course": "Chepstow",
+      "time": "17:30",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "4",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::aimeric": {
+      "horse": "Aimeric",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "7/4",
+      "decimal": 2.75,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::cheap sandwiches": {
+      "horse": "Cheap Sandwiches",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "3-244",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::five valleys": {
+      "horse": "Five Valleys",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::just call me buzz": {
+      "horse": "Just Call Me Buzz",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 4,
+      "form": "835",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::louis des landes": {
+      "horse": "Louis Des Landes",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "05U",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::scrumpyjack": {
+      "horse": "Scrumpyjack",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "0-P0",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::teletime": {
+      "horse": "Teletime",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 3,
+      "form": "6",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::footage detectives": {
+      "horse": "Footage Detectives",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "878",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::miss kingston": {
+      "horse": "Miss Kingston",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "16/5",
+      "decimal": 4.2,
+      "tf_stars": 3,
+      "form": "9-04374",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::nowherenearmilan": {
+      "horse": "Nowherenearmilan",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "7735",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::maestrow": {
+      "horse": "Maestrow",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "007",
+      "is_handicap": false
+    },
+    "2026-04-24::18:05::Chepstow::one island": {
+      "horse": "One Island",
+      "course": "Chepstow",
+      "time": "18:05",
+      "odds": "10/3",
+      "decimal": 4.333,
+      "tf_stars": 5,
+      "form": "63",
+      "is_handicap": false
+    },
+    "2026-04-24::18:37::Chepstow::torneo": {
+      "horse": "Torneo",
+      "course": "Chepstow",
+      "time": "18:37",
+      "odds": "5/4",
+      "decimal": 2.25,
+      "tf_stars": 3,
+      "form": "224246",
+      "is_handicap": true
+    },
+    "2026-04-24::18:37::Chepstow::parramount": {
+      "horse": "Parramount",
+      "course": "Chepstow",
+      "time": "18:37",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 2,
+      "form": "0/7-2663",
+      "is_handicap": true
+    },
+    "2026-04-24::18:37::Chepstow::hypotenus": {
+      "horse": "Hypotenus",
+      "course": "Chepstow",
+      "time": "18:37",
+      "odds": "85/40",
+      "decimal": 3.125,
+      "tf_stars": 5,
+      "form": "271363",
+      "is_handicap": true
+    },
+    "2026-04-24::18:37::Chepstow::bonza boy": {
+      "horse": "Bonza Boy",
+      "course": "Chepstow",
+      "time": "18:37",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 4,
+      "form": "P2-6124",
+      "is_handicap": true
+    },
+    "2026-04-24::19:07::Chepstow::the kemble brewery": {
+      "horse": "The Kemble Brewery",
+      "course": "Chepstow",
+      "time": "19:07",
+      "odds": "7/5",
+      "decimal": 2.4,
+      "tf_stars": 5,
+      "form": "112P-F2",
+      "is_handicap": true
+    },
+    "2026-04-24::19:07::Chepstow::wreckless eric": {
+      "horse": "Wreckless Eric",
+      "course": "Chepstow",
+      "time": "19:07",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "0-79620",
+      "is_handicap": true
+    },
+    "2026-04-24::19:07::Chepstow::inside man": {
+      "horse": "Inside Man",
+      "course": "Chepstow",
+      "time": "19:07",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "421-179",
+      "is_handicap": true
+    },
+    "2026-04-24::19:07::Chepstow::american land": {
+      "horse": "American Land",
+      "course": "Chepstow",
+      "time": "19:07",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 2,
+      "form": "61-1144",
+      "is_handicap": true
+    },
+    "2026-04-24::19:07::Chepstow::razzle dazzle boy": {
+      "horse": "Razzle Dazzle Boy",
+      "course": "Chepstow",
+      "time": "19:07",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 3,
+      "form": "02-5212",
+      "is_handicap": true
+    },
+    "2026-04-24::19:37::Chepstow::stumps or slips": {
+      "horse": "Stumps Or Slips",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "6/4",
+      "decimal": 2.5,
+      "tf_stars": 4,
+      "form": "162F31",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::pink eyed pedro": {
+      "horse": "Pink Eyed Pedro",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "9/2",
+      "decimal": 5.5,
+      "tf_stars": 3,
+      "form": "5121-P2",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::ideal du tabert": {
+      "horse": "Ideal Du Tabert",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 3,
+      "form": "11-5423",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::important notice": {
+      "horse": "Important Notice",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "5B211U",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::poppa poutine": {
+      "horse": "Poppa Poutine",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "P-3P42U",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::windance": {
+      "horse": "Windance",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "F32-55F",
+      "is_handicap": false
+    },
+    "2026-04-24::19:37::Chepstow::yippee ki yay": {
+      "horse": "Yippee Ki Yay",
+      "course": "Chepstow",
+      "time": "19:37",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 5,
+      "form": "U-12321",
+      "is_handicap": false
+    },
+    "2026-04-24::20:07::Chepstow::star walking": {
+      "horse": "Star Walking",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 3,
+      "form": "846-21P",
+      "is_handicap": true
+    },
+    "2026-04-24::20:07::Chepstow::i spy a diva": {
+      "horse": "I Spy A Diva",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "7/9-6843",
+      "is_handicap": true
+    },
+    "2026-04-24::20:07::Chepstow::kilworth": {
+      "horse": "Kilworth",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 5,
+      "form": "F371P1",
+      "is_handicap": true
+    },
+    "2026-04-24::20:07::Chepstow::slim marvel": {
+      "horse": "Slim Marvel",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "F57527",
+      "is_handicap": true
+    },
+    "2026-04-24::20:07::Chepstow::roaring home": {
+      "horse": "Roaring Home",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 4,
+      "form": "242P54",
+      "is_handicap": true
+    },
+    "2026-04-24::20:07::Chepstow::love me": {
+      "horse": "Love Me",
+      "course": "Chepstow",
+      "time": "20:07",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 4,
+      "form": "0-43P53",
+      "is_handicap": true
+    },
+    "2026-04-24::17:05::Cork::chamonix": {
+      "horse": "Chamonix",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "5",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::coasting": {
+      "horse": "Coasting",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "4",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::fallacy": {
+      "horse": "Fallacy",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "96-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::nil bua gan dua": {
+      "horse": "Nil Bua Gan Dua",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "6/4",
+      "decimal": 2.5,
+      "tf_stars": 5,
+      "form": "435-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::oust": {
+      "horse": "Oust",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 3,
+      "form": "4-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::roaming coyote": {
+      "horse": "Roaming Coyote",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 1,
+      "form": "0-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::suspicious mindz": {
+      "horse": "Suspicious Mindz",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "8353-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:05::Cork::tashakour": {
+      "horse": "Tashakour",
+      "course": "Cork",
+      "time": "17:05",
+      "odds": "7/4",
+      "decimal": 2.75,
+      "tf_stars": 4,
+      "form": "67-2",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::dial me in": {
+      "horse": "Dial Me In",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "14-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::echo of faith": {
+      "horse": "Echo Of Faith",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "841-8",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::brownstown": {
+      "horse": "Brownstown",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 4,
+      "form": "14460-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::loch gamhna": {
+      "horse": "Loch Gamhna",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "03-7",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::star strewn": {
+      "horse": "Star Strewn",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "43-18",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::the publican's son": {
+      "horse": "The Publican's Son",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "5/6",
+      "decimal": 1.833,
+      "tf_stars": 5,
+      "form": "28-5",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::zia zabel": {
+      "horse": "Zia Zabel",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "4/1",
+      "decimal": 5.0,
+      "tf_stars": 4,
+      "form": "24-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::sursum corda": {
+      "horse": "Sursum Corda",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "6-",
+      "is_handicap": false
+    },
+    "2026-04-24::17:40::Cork::why wyoming": {
+      "horse": "Why Wyoming",
+      "course": "Cork",
+      "time": "17:40",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:15::Cork::bucaneer's spirit": {
+      "horse": "Bucaneer's Spirit",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "588000-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::jasmine affanalis": {
+      "horse": "Jasmine Affanalis",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "2521-07",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::shahada ace": {
+      "horse": "Shahada Ace",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "03418-6",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::land of the giants": {
+      "horse": "Land Of The Giants",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "7-36006",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::peig sayers": {
+      "horse": "Peig Sayers",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 1,
+      "form": "4000-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::launch time": {
+      "horse": "Launch Time",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 5,
+      "form": "03348-1",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::johnny's oasis": {
+      "horse": "Johnny's Oasis",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "185-990",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::tero d'rosa": {
+      "horse": "Tero D'rosa",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 4,
+      "form": "907032-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::notforalongtime": {
+      "horse": "Notforalongtime",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "13-5508",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::nibras rainbow": {
+      "horse": "Nibras Rainbow",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "919-936",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::brosna green": {
+      "horse": "Brosna Green",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "0-04990",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::reponse finale": {
+      "horse": "Reponse Finale",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "030560-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::river derwent": {
+      "horse": "River Derwent",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "003-440",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::yorkshire myth": {
+      "horse": "Yorkshire Myth",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 2,
+      "form": "07982-0",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::hale bopp": {
+      "horse": "Hale Bopp",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "24-5400",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::swiss army officer": {
+      "horse": "Swiss Army Officer",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "0/00002-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::he's holding court": {
+      "horse": "He's Holding Court",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 2,
+      "form": "0080",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::she's on the ball": {
+      "horse": "She's On The Ball",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "9-00",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::magna gee gee": {
+      "horse": "Magna Gee Gee",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "0355-07",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::oxford circus": {
+      "horse": "Oxford Circus",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "37105",
+      "is_handicap": true
+    },
+    "2026-04-24::18:15::Cork::my girl robyn": {
+      "horse": "My Girl Robyn",
+      "course": "Cork",
+      "time": "18:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "0000-0",
+      "is_handicap": true
+    },
+    "2026-04-24::18:45::Cork::a man's horse": {
+      "horse": "A Man's Horse",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 1,
+      "form": "00-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::big dispute": {
+      "horse": "Big Dispute",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::cut the rope": {
+      "horse": "Cut The Rope",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "3/606-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::eternal echo": {
+      "horse": "Eternal Echo",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "3-9",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::miners cabin": {
+      "horse": "Miners Cabin",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 1,
+      "form": "60",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::musical master": {
+      "horse": "Musical Master",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 1,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::the rock factor": {
+      "horse": "The Rock Factor",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 3,
+      "form": "9",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::almazann": {
+      "horse": "Almazann",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::confused": {
+      "horse": "Confused",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::enceladus": {
+      "horse": "Enceladus",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 4,
+      "form": "33-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::leeward": {
+      "horse": "Leeward",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "9",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::reynir": {
+      "horse": "Reynir",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "5",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::silver cuff": {
+      "horse": "Silver Cuff",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 1,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::strike de vega": {
+      "horse": "Strike De Vega",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::theorist": {
+      "horse": "Theorist",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "53-",
+      "is_handicap": false
+    },
+    "2026-04-24::18:45::Cork::trojan fighter": {
+      "horse": "Trojan Fighter",
+      "course": "Cork",
+      "time": "18:45",
+      "odds": "9/5",
+      "decimal": 2.8,
+      "tf_stars": 5,
+      "form": "4",
+      "is_handicap": false
+    },
+    "2026-04-24::19:15::Cork::summer is tomorrow": {
+      "horse": "Summer Is Tomorrow",
+      "course": "Cork",
+      "time": "19:15",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 3,
+      "form": "651210-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:15::Cork::limestone": {
+      "horse": "Limestone",
+      "course": "Cork",
+      "time": "19:15",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 5,
+      "form": "321-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:15::Cork::mr vettori": {
+      "horse": "Mr Vettori",
+      "course": "Cork",
+      "time": "19:15",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 3,
+      "form": "021-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:15::Cork::port ferdinand": {
+      "horse": "Port Ferdinand",
+      "course": "Cork",
+      "time": "19:15",
+      "odds": "6/5",
+      "decimal": 2.2,
+      "tf_stars": 4,
+      "form": "1-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:45::Cork::defiantly": {
+      "horse": "Defiantly",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "3147-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::dar toungi": {
+      "horse": "Dar Toungi",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "93645-0",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::apercu": {
+      "horse": "Apercu",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "181075-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::genealogy": {
+      "horse": "Genealogy",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "215/88-5",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::alphonse le grande": {
+      "horse": "Alphonse Le Grande",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "1/08587-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::iron fist": {
+      "horse": "Iron Fist",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 4,
+      "form": "28161-0",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::coeur d'or": {
+      "horse": "Coeur d'Or",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 5,
+      "form": "4240-06",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::akecheta": {
+      "horse": "Akecheta",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 4,
+      "form": "1248-00",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::mano chicago": {
+      "horse": "Mano Chicago",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "3355/2",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::westminster moon": {
+      "horse": "Westminster Moon",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "00000-0",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::bay colony": {
+      "horse": "Bay Colony",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "5/3177-4",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::final voyage": {
+      "horse": "Final Voyage",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "252-947",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::quatre bras": {
+      "horse": "Quatre Bras",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "23-4204",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::ben lawers": {
+      "horse": "Ben Lawers",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "924-156",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::calm the jets": {
+      "horse": "Calm The Jets",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "1-9",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::amplitude": {
+      "horse": "Amplitude",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "4041-04",
+      "is_handicap": true
+    },
+    "2026-04-24::19:45::Cork::eben zaabeel": {
+      "horse": "Eben Zaabeel",
+      "course": "Cork",
+      "time": "19:45",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "544322/",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::yousaynothingatall": {
+      "horse": "Yousaynothingatall",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "9/4",
+      "decimal": 3.25,
+      "tf_stars": 5,
+      "form": "94-3",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::honouramongthieves": {
+      "horse": "Honouramongthieves",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "662-5",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::nod of approval": {
+      "horse": "Nod Of Approval",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "6055-6",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::servare": {
+      "horse": "Servare",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "6/4",
+      "decimal": 2.5,
+      "tf_stars": 4,
+      "form": "00048-1",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::pliny": {
+      "horse": "Pliny",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "507-285",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::delusional": {
+      "horse": "Delusional",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "828-7",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::darius dark": {
+      "horse": "Darius Dark",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "09-0",
+      "is_handicap": true
+    },
+    "2026-04-24::20:15::Cork::sea of dubka": {
+      "horse": "Sea Of Dubka",
+      "course": "Cork",
+      "time": "20:15",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 3,
+      "form": "90-83",
+      "is_handicap": true
+    },
+    "2026-04-24::16:15::Kilbeggan::cullagh lad": {
+      "horse": "Cullagh Lad",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::endless talking": {
+      "horse": "Endless Talking",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 3,
+      "form": "1-784",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::lamikal d'airy": {
+      "horse": "Lamikal D'airy",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "6-61",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::master haku": {
+      "horse": "Master Haku",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "4/5",
+      "decimal": 1.8,
+      "tf_stars": 5,
+      "form": "32",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::microscope": {
+      "horse": "Microscope",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 2,
+      "form": "P/55-005",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::misery hill": {
+      "horse": "Misery Hill",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::phoenix arizona": {
+      "horse": "Phoenix Arizona",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "0-93272",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::the store boy": {
+      "horse": "The Store Boy",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "3357F",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::lost features": {
+      "horse": "Lost Features",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "250/1",
+      "decimal": 251.0,
+      "tf_stars": 1,
+      "form": "00-8P",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::strong contender": {
+      "horse": "Strong Contender",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 1,
+      "form": "3F",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::betterluckthistime": {
+      "horse": "Betterluckthistime",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::blues street": {
+      "horse": "Blues Street",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::granlahan": {
+      "horse": "Granlahan",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 1,
+      "form": "06",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::lenko": {
+      "horse": "Lenko",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "6",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::betty's glen": {
+      "horse": "Betty's Glen",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "33/1",
+      "decimal": 34.0,
+      "tf_stars": 2,
+      "form": "5",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::me wee nanny fran": {
+      "horse": "Me Wee Nanny Fran",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 1,
+      "form": "00",
+      "is_handicap": false
+    },
+    "2026-04-24::16:15::Kilbeggan::mirfaq": {
+      "horse": "Mirfaq",
+      "course": "Kilbeggan",
+      "time": "16:15",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "0",
+      "is_handicap": false
+    },
+    "2026-04-24::16:50::Kilbeggan::jerrari": {
+      "horse": "Jerrari",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "1147P0",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::kabylia": {
+      "horse": "Kabylia",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "232230",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::spinning web": {
+      "horse": "Spinning Web",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "093PFF",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::jazz forever": {
+      "horse": "Jazz Forever",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "9656-4P",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::malbas": {
+      "horse": "Malbas",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "410289",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::malbay madness": {
+      "horse": "Malbay Madness",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "61-1U77",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::jouster": {
+      "horse": "Jouster",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "9P-0805",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::lady doyanne": {
+      "horse": "Lady Doyanne",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 3,
+      "form": "P1-104",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::survivors sister": {
+      "horse": "Survivors Sister",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "42PF1P",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::piccolo player": {
+      "horse": "Piccolo Player",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 5,
+      "form": "693564",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::chanceawetmorning": {
+      "horse": "Chanceawetmorning",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "11/4",
+      "decimal": 3.75,
+      "tf_stars": 4,
+      "form": "00-652P",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::desert haven": {
+      "horse": "Desert Haven",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "232005",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::jury belle": {
+      "horse": "Jury Belle",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 2,
+      "form": "243447",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::mcloughlin": {
+      "horse": "Mcloughlin",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 4,
+      "form": "9960",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::must meet cecil": {
+      "horse": "Must Meet Cecil",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 3,
+      "form": "334506",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::coolboy christy": {
+      "horse": "Coolboy Christy",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "080645",
+      "is_handicap": true
+    },
+    "2026-04-24::16:50::Kilbeggan::metamorpheus": {
+      "horse": "Metamorpheus",
+      "course": "Kilbeggan",
+      "time": "16:50",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "048083",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::two can plan": {
+      "horse": "Two Can Plan",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "P067",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::pourquoi poi": {
+      "horse": "Pourquoi Poi",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "85/40",
+      "decimal": 3.125,
+      "tf_stars": 5,
+      "form": "0-0515",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::the dancen kid": {
+      "horse": "The Dancen Kid",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "000736",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::ferdia": {
+      "horse": "Ferdia",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 1,
+      "form": "PP8PPP",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::coup d'essay": {
+      "horse": "Coup D'essay",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "F8008",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::dontcavein": {
+      "horse": "Dontcavein",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "6-4496P",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::krishna bellevue": {
+      "horse": "Krishna Bellevue",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 1,
+      "form": "9840",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::dahoma": {
+      "horse": "Dahoma",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 1,
+      "form": "9000P",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::mon sheriffe": {
+      "horse": "Mon Sheriffe",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "4636P6",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::sarah's express": {
+      "horse": "Sarah's Express",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 2,
+      "form": "77-85P4",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::the toothpicker": {
+      "horse": "The Toothpicker",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "17/2",
+      "decimal": 9.5,
+      "tf_stars": 4,
+      "form": "F50055",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::michael's jet": {
+      "horse": "Michael's Jet",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "0P0",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::centaq": {
+      "horse": "Centaq",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "42290R",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::ahellofaman": {
+      "horse": "Ahellofaman",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "942075",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::dontdooddson": {
+      "horse": "Dontdooddson",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "796477",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::laska du breuil": {
+      "horse": "Laska Du Breuil",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 2,
+      "form": "607696",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::fort randall": {
+      "horse": "Fort Randall",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "803637-",
+      "is_handicap": true
+    },
+    "2026-04-24::17:23::Kilbeggan::move it on over": {
+      "horse": "Move It On Over",
+      "course": "Kilbeggan",
+      "time": "17:23",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 3,
+      "form": "0798",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::gino bella": {
+      "horse": "Gino Bella",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 5,
+      "form": "132624",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::embrace the day": {
+      "horse": "Embrace The Day",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "6/1",
+      "decimal": 7.0,
+      "tf_stars": 3,
+      "form": "100988",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::jinxs link": {
+      "horse": "Jinxs Link",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "1264-8P",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::jaadil": {
+      "horse": "Jaadil",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "15/4",
+      "decimal": 4.75,
+      "tf_stars": 4,
+      "form": "404212",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::thurman": {
+      "horse": "Thurman",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "40P-7",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::loughrask jet": {
+      "horse": "Loughrask Jet",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "0-090",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::hidalgo des mottes": {
+      "horse": "Hidalgo Des Mottes",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "404842",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::live my dream": {
+      "horse": "Live My Dream",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 2,
+      "form": "P6-07P7",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::miss donna": {
+      "horse": "Miss Donna",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "5048",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::bowgate street": {
+      "horse": "Bowgate Street",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 4,
+      "form": "035598",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::thatsmyroadie": {
+      "horse": "Thatsmyroadie",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "P000",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::crafty gael": {
+      "horse": "Crafty Gael",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "2239/00",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::crab road": {
+      "horse": "Crab Road",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 2,
+      "form": "P-00P",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::finnicky filly": {
+      "horse": "Finnicky Filly",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "P80957",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::chemdawg": {
+      "horse": "Chemdawg",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "334PP2",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::sidiriya": {
+      "horse": "Sidiriya",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "770830",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::avandra": {
+      "horse": "Avandra",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 2,
+      "form": "76P070",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::celtic crossing": {
+      "horse": "Celtic Crossing",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "00050-",
+      "is_handicap": true
+    },
+    "2026-04-24::17:56::Kilbeggan::kentucky bluebird": {
+      "horse": "Kentucky Bluebird",
+      "course": "Kilbeggan",
+      "time": "17:56",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "P07-066",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::midleton rare": {
+      "horse": "Midleton Rare",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "PP7041",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::sean mc": {
+      "horse": "Sean Mc",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "0-82271",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::mr dibbs": {
+      "horse": "Mr Dibbs",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "062P60",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::live to laugh": {
+      "horse": "Live To Laugh",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 5,
+      "form": "63F311",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::dolly watkins": {
+      "horse": "Dolly Watkins",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "0/893-21",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::it's time again": {
+      "horse": "It's Time Again",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 2,
+      "form": "P5P231-",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::anodandawink": {
+      "horse": "Anodandawink",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "2-P0000",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::creadan grace": {
+      "horse": "Creadan Grace",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "0-69613",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::dalmatic": {
+      "horse": "Dalmatic",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "064102",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::mickey hulie": {
+      "horse": "Mickey Hulie",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "809023",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::plain or battered": {
+      "horse": "Plain Or Battered",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "393632",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::courageous cleo": {
+      "horse": "Courageous Cleo",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "6889",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::ardera gun": {
+      "horse": "Ardera Gun",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 2,
+      "form": "74-0007",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::mistyburn": {
+      "horse": "Mistyburn",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "80PP73",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::coppola": {
+      "horse": "Coppola",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "5/1",
+      "decimal": 6.0,
+      "tf_stars": 4,
+      "form": "208222",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::la tene": {
+      "horse": "La Tene",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "25/1",
+      "decimal": 26.0,
+      "tf_stars": 3,
+      "form": "4/07P39",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::made in the woods": {
+      "horse": "Made In The Woods",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "7P-0668",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::appian way": {
+      "horse": "Appian Way",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "669909",
+      "is_handicap": true
+    },
+    "2026-04-24::18:28::Kilbeggan::clever court": {
+      "horse": "Clever Court",
+      "course": "Kilbeggan",
+      "time": "18:28",
+      "odds": "50/1",
+      "decimal": 51.0,
+      "tf_stars": 2,
+      "form": "P700PP",
+      "is_handicap": true
+    },
+    "2026-04-24::18:59::Kilbeggan::astley": {
+      "horse": "Astley",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "28/1",
+      "decimal": 29.0,
+      "tf_stars": 3,
+      "form": "20-0753",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::bobbysingindablues": {
+      "horse": "Bobbysingindablues",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "40/1",
+      "decimal": 41.0,
+      "tf_stars": 2,
+      "form": "7F57-P7",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::gatsby grey": {
+      "horse": "Gatsby Grey",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "66/1",
+      "decimal": 67.0,
+      "tf_stars": 2,
+      "form": "P/006PP",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::give him a chance": {
+      "horse": "Give Him A Chance",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 3,
+      "form": "32591S",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::maxi mac gold": {
+      "horse": "Maxi Mac Gold",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 3,
+      "form": "820-82P",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::my trump card": {
+      "horse": "My Trump Card",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "78-7856",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::pray tell": {
+      "horse": "Pray Tell",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "U0-52F0",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::supersundae": {
+      "horse": "Supersundae",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "15/8",
+      "decimal": 2.875,
+      "tf_stars": 4,
+      "form": "12PP-53",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::the burrow": {
+      "horse": "The Burrow",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 1,
+      "form": "975-956",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::billie frechette": {
+      "horse": "Billie Frechette",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "443-212",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::dameauscottlestown": {
+      "horse": "Dameauscottlestown",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "591220",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::gaoth chuil": {
+      "horse": "Gaoth Chuil",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "3/1",
+      "decimal": 4.0,
+      "tf_stars": 5,
+      "form": "2-3F662",
+      "is_handicap": false
+    },
+    "2026-04-24::18:59::Kilbeggan::rue taylor": {
+      "horse": "Rue Taylor",
+      "course": "Kilbeggan",
+      "time": "18:59",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 2,
+      "form": "541-070",
+      "is_handicap": false
+    },
+    "2026-04-24::19:29::Kilbeggan::harbour highway": {
+      "horse": "Harbour Highway",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "P-0701P",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::quornofamonday": {
+      "horse": "Quornofamonday",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 2,
+      "form": "0P61PU",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::hitthehayson": {
+      "horse": "Hitthehayson",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "16/5",
+      "decimal": 4.2,
+      "tf_stars": 3,
+      "form": "11P532",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::favori logique": {
+      "horse": "Favori Logique",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "4412-34",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::justabitofyours": {
+      "horse": "Justabitofyours",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "42770P",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::duffys hodey": {
+      "horse": "Duffys Hodey",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "13/2",
+      "decimal": 7.5,
+      "tf_stars": 4,
+      "form": "127813",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::stoneyford lady": {
+      "horse": "Stoneyford Lady",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "942218",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::ballybrittas": {
+      "horse": "Ballybrittas",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "622-907",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::musta lovea lovea": {
+      "horse": "Musta Lovea Lovea",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "3/4P000-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::iamagetaway": {
+      "horse": "Iamagetaway",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "7/2",
+      "decimal": 4.5,
+      "tf_stars": 5,
+      "form": "7-26507",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::riyami": {
+      "horse": "Riyami",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 3,
+      "form": "5/15350-",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::the blaggard": {
+      "horse": "The Blaggard",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "20/1",
+      "decimal": 21.0,
+      "tf_stars": 2,
+      "form": "416-P09",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::good world": {
+      "horse": "Good World",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "12/1",
+      "decimal": 13.0,
+      "tf_stars": 3,
+      "form": "195-701",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::sampoet": {
+      "horse": "Sampoet",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 2,
+      "form": "PPP308",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::tell nobody nothin": {
+      "horse": "Tell Nobody Nothin",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "426346",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::doyen magic": {
+      "horse": "Doyen Magic",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "8/1",
+      "decimal": 9.0,
+      "tf_stars": 3,
+      "form": "531P22",
+      "is_handicap": true
+    },
+    "2026-04-24::19:29::Kilbeggan::marelly": {
+      "horse": "Marelly",
+      "course": "Kilbeggan",
+      "time": "19:29",
+      "odds": "7/1",
+      "decimal": 8.0,
+      "tf_stars": 3,
+      "form": "713942",
+      "is_handicap": true
+    },
+    "2026-04-24::19:59::Kilbeggan::bells grove": {
+      "horse": "Bells Grove",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "11/2",
+      "decimal": 6.5,
+      "tf_stars": 3,
+      "form": "323",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::greenhills of cork": {
+      "horse": "Greenhills Of Cork",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "9/1",
+      "decimal": 10.0,
+      "tf_stars": 3,
+      "form": "48",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::it's all clear": {
+      "horse": "It's All Clear",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "100/1",
+      "decimal": 101.0,
+      "tf_stars": 2,
+      "form": "05",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::jodoro": {
+      "horse": "Jodoro",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "125/1",
+      "decimal": 126.0,
+      "tf_stars": 2,
+      "form": "405P",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::kershaw": {
+      "horse": "Kershaw",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 3,
+      "form": "2-4",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::lultimatom": {
+      "horse": "Lultimatom",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "13/8",
+      "decimal": 2.625,
+      "tf_stars": 5,
+      "form": "1-52",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::majestic mayhem": {
+      "horse": "Majestic Mayhem",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "14/1",
+      "decimal": 15.0,
+      "tf_stars": 2,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::seven towers": {
+      "horse": "Seven Towers",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "15/2",
+      "decimal": 8.5,
+      "tf_stars": 3,
+      "form": "32-36",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::carrigeen kirkia": {
+      "horse": "Carrigeen Kirkia",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "80/1",
+      "decimal": 81.0,
+      "tf_stars": 2,
+      "form": "5-PU64",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::gortnaclea castle": {
+      "horse": "Gortnaclea Castle",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "10/1",
+      "decimal": 11.0,
+      "tf_stars": 4,
+      "form": "25",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::mila ballerina": {
+      "horse": "Mila Ballerina",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "18/1",
+      "decimal": 19.0,
+      "tf_stars": 4,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::pets georgina": {
+      "horse": "Pets Georgina",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "35/1",
+      "decimal": 36.0,
+      "tf_stars": 2,
+      "form": "7",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::streamhill": {
+      "horse": "Streamhill",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "56/4",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::double indian": {
+      "horse": "Double Indian",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "11/1",
+      "decimal": 12.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::poets rambler": {
+      "horse": "Poets Rambler",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 3,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::everyday life": {
+      "horse": "Everyday Life",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "22/1",
+      "decimal": 23.0,
+      "tf_stars": 2,
+      "form": "F-352",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::its my twist": {
+      "horse": "Its My Twist",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "30/1",
+      "decimal": 31.0,
+      "tf_stars": 1,
+      "form": "-",
+      "is_handicap": false
+    },
+    "2026-04-24::19:59::Kilbeggan::double order": {
+      "horse": "Double Order",
+      "course": "Kilbeggan",
+      "time": "19:59",
+      "odds": "16/1",
+      "decimal": 17.0,
+      "tf_stars": 1,
+      "form": "9",
+      "is_handicap": false
+    }
+  }
 }

@@ -232,10 +232,34 @@ def take_show_snapshot(target_date: str = None) -> dict:
     These are the bookmakers' first published prices — often before smart money moves.
     Call this once in the afternoon/evening prior to race day.
     NOTE: Always targets tomorrow's card (called the evening before racing).
+
+    Fallback: if tomorrow's card is not yet published (0 runners), retry against
+    today's card so we still capture *some* baseline rather than writing an empty file.
     """
     if not target_date:
         target_date = _tomorrow_bst()
-    return _build_snapshot(target_date, "SHOW", _SHOW_FILE)
+    snap = _build_snapshot(target_date, "SHOW", _SHOW_FILE)
+    if not snap.get("horses"):
+        today = _today_bst()
+        if today != target_date:
+            print(f"SHOW snapshot for {target_date} was empty — falling back to today's card ({today})")
+            snap = _build_snapshot(today, "SHOW", _SHOW_FILE)
+    return snap
+
+
+def refresh_show_snapshot_if_empty() -> dict:
+    """
+    If show_price_snapshot is empty or mismatched for today, re-take it.
+    Called at morning brief time — by then today's card IS available.
+    On race day morning, we want YESTERDAY'S closing prices as the baseline,
+    so we fetch today's card at current prices (best proxy if snapshot is empty).
+    """
+    today = _today_bst()
+    snap  = _load_json(_SHOW_FILE)
+    if snap and snap.get("date") == today and len(snap.get("horses", {})) > 0:
+        return snap
+    print(f"SHOW snapshot missing/empty for {today} — rebuilding against today's card")
+    return _build_snapshot(today, "SHOW", _SHOW_FILE)
 
 
 def take_opening_snapshot(target_date: str = None) -> dict:
@@ -475,6 +499,65 @@ def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.1
                        key=lambda x: x["move_pct"], reverse=True)
     # STEAM and DRIFT first (actionable), NR_HOLD last (context only)
     return steamers + drifters + nr_holds
+
+
+def get_previous_day_moves(min_move_pct: float = 0.15) -> list:
+    """
+    Returns all horses that have moved significantly from yesterday 16:30
+    to now. Uses show_price_snapshot as baseline.
+    Unlike get_market_movers() which compares live card vs snapshot,
+    this function is specifically for the morning brief to show ALL moves
+    across the whole card (not just official selections).
+    """
+    today = _today_bst()
+    # Ensure snapshot is populated before comparing
+    snap = refresh_show_snapshot_if_empty()
+    if not snap or not snap.get("horses"):
+        return []
+
+    snap_horses = snap["horses"]
+    races = get_next_day_card(today)
+    movers = []
+
+    for race in races:
+        for rn in race["runners"]:
+            key = f"{today}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
+            baseline = snap_horses.get(key)
+            if not baseline:
+                continue
+            base_dec = float(baseline.get("decimal", 0) or 0)
+            curr_dec = float(rn.get("decimal", 0) or 0)
+            if base_dec <= 0 or curr_dec <= 0:
+                continue
+            # Filter outsiders — 200/1 shorteners are noise
+            if base_dec > 20.0:
+                continue
+            move_pct = (base_dec - curr_dec) / base_dec  # positive = shortened
+            if abs(move_pct) < min_move_pct:
+                continue
+            direction = "STEAM" if move_pct > 0 else "DRIFT"
+            movers.append({
+                "horse":         rn["horse"],
+                "course":        race["course"],
+                "time":          race["time"],
+                "direction":     direction,
+                "baseline_odds": baseline.get("odds", f"{base_dec:.2f}"),
+                "baseline_dec":  round(base_dec, 3),
+                "current_odds":  rn.get("odds", "?"),
+                "current_dec":   round(curr_dec, 3),
+                "move_pct":      round(abs(move_pct) * 100, 1),
+                "tf_stars":      baseline.get("tf_stars", rn.get("tf_stars", "-")),
+                "form":          baseline.get("form", rn.get("form", "-")),
+                "is_handicap":   race.get("is_handicap", False),
+                "snapshot_label": snap.get("label", "SHOW"),
+                "snapshot_time":  snap.get("taken_at", "?"),
+            })
+
+    steamers = sorted([m for m in movers if m["direction"] == "STEAM"],
+                     key=lambda x: x["move_pct"], reverse=True)
+    drifters = sorted([m for m in movers if m["direction"] == "DRIFT"],
+                     key=lambda x: x["move_pct"], reverse=True)
+    return steamers + drifters
 
 
 # ── Console Reports ───────────────────────────────────────────────────────────

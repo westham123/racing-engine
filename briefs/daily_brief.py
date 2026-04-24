@@ -56,15 +56,20 @@ def _to_decimal(odds_str) -> float:
 # ── Live Data Helpers ──────────────────────────────────────────
 def _get_overnight_moves(today: str = None) -> list:
     """
-    Returns horses that have moved significantly since yesterday's show prices.
-    Pulls from early_market snapshot — steamers and drifters above 15%.
+    Returns ALL horses that have moved significantly since yesterday's show prices
+    (across the entire card, not just official selections).
+    Pulls from the show_price_snapshot baseline via get_previous_day_moves().
+    Also refreshes the snapshot first if it was missed at 15:30 the day before.
     Returns empty list if no baseline exists.
     """
     try:
-        from dashboard.early_market import get_market_movers, _today_bst
-        target = today or _today_bst()
-        movers = get_market_movers(target, min_move_pct=0.15, vs="show")
-        if not movers or (len(movers) == 1 and "error" in movers[0]):
+        from dashboard.early_market import (
+            refresh_show_snapshot_if_empty,
+            get_previous_day_moves,
+        )
+        refresh_show_snapshot_if_empty()
+        movers = get_previous_day_moves(min_move_pct=0.15)
+        if not movers or (isinstance(movers[0], dict) and "error" in movers[0]):
             return []
         return movers
     except Exception as e:

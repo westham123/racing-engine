@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.36** — Historical settlement for past dates; Tab 7 auto-settle + P&L display")
+    st.markdown("**Engine v2.5.37** — Fix empty show snapshot; email/app data parity; full-card market moves in brief")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -481,7 +481,54 @@ if _pool_is_live and len(_pool_df) > 0:
             "trainer": str(_fr.get("Trainer", "")),
         })
 
-if _pool_is_live and len(_pool_df) > 0:
+# ── SELECTION PARITY WITH MORNING BRIEF ─────────────────────────────────────
+# Use the SAME function the morning brief uses. This guarantees the app display
+# and the emailed brief show the same horses under the same filters. The shared
+# function already performs: OddsModel exclusions, confidence threshold, handicap
+# uplift, 4/6 cut-off, favourite-gap exclusion, small/large-field exclusions,
+# NR gate, and one-horse-per-race. We then map its output into the dict shape
+# the app UI expects (adds odds_str, ev, tier, signal).
+_brief_selections = []
+try:
+    from briefs.daily_brief import _get_official_selections as _brief_sels_fn
+    _brief_selections = _brief_sels_fn(_conf_threshold)
+except Exception as _bs_err:
+    print(f"[App] Unable to load brief selections: {_bs_err}")
+    _brief_selections = []
+
+for _bs in _brief_selections:
+    _ptime = str(_bs.get("time", ""))
+    if _ptime and _ptime < _now_pool:
+        continue  # skip past races in the app view
+    _pdec = float(_bs.get("decimal", 0) or 0)
+    _pdisp_odds = str(_bs.get("odds", _bs.get("curr_odds", "N/A")))
+    _pconf = float(_bs.get("confidence", 0) or 0)
+    _six_pool.append({
+        'horse':              _bs.get("horse", ""),
+        'course':             _bs.get("course", ""),
+        'time':               _ptime,
+        'odds_str':           _pdisp_odds,
+        'decimal':            round(_pdec, 3),
+        'confidence':         round(_pconf, 3),
+        'ev':                 round(_pconf * _pdec - 1, 3) if _pdec else 0.0,
+        'tier':               _bs.get("tier", _assign_tier(round(_pdec, 3))),
+        'signal':             _bs.get("signal", "Stable"),
+        'is_fav':             bool(_bs.get("is_fav", False)),
+        'fav_price':          float(_bs.get("fav_price", 0) or 0),
+        'runners':             int(_bs.get("runners", 0) or 0),
+        'low_value_acca':      bool(_bs.get("low_value_acca", False)),
+        'low_value_reason':    str(_bs.get("low_value_reason", "") or ""),
+        'race_type':           str(_bs.get("race_type", "") or ""),
+        'rival_top_trainer':   bool(_bs.get("rival_top_trainer", False)),
+        'rival_trainer_name':  str(_bs.get("rival_trainer_name", "") or ""),
+    })
+
+_six_pool.sort(key=lambda x: x['confidence'], reverse=True)
+
+# The legacy inline-pool block below is retained only to compute
+# _race_runners_pool-style structures used elsewhere in the dashboard. It no
+# longer populates _six_pool — that is done above via _get_official_selections.
+if False and _pool_is_live and len(_pool_df) > 0:
     for _, _prow in _pool_df.iterrows():
         _ptime = str(_prow.get('Time', ''))
         if _ptime < _now_pool:
