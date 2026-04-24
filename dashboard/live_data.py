@@ -49,6 +49,19 @@ except Exception:
     MODEL_AVAILABLE = False
     _odds_model = None
 
+# Oddschecker multi-bookmaker odds (v2.5.40). Soft import — failures fall back
+# silently to Sporting Life odds so the main pipeline keeps running.
+try:
+    from engine.oddschecker import get_oddschecker_odds as _get_oc_odds, augment_runner as _oc_augment
+    OC_AVAILABLE = True
+except Exception:
+    OC_AVAILABLE = False
+    _get_oc_odds = None
+    _oc_augment  = None
+
+# Per-race Oddschecker cache — avoids re-fetching the same race within one pipeline run
+_oc_race_cache: dict = {}
+
 # ── Betfair BSP client — fail-fast, single attempt only ──────────────────────
 # The free delay key returns 403 from identitysso — attempt once, then skip.
 _bsp_client = None
@@ -369,6 +382,26 @@ def get_todays_selections():
 
             runners = get_race_runners(slug)
 
+            # Oddschecker — fetch once per race, augment each runner with best
+            # price across 24+ bookmakers. Silent fallback on any failure.
+            oc_data = {}
+            if OC_AVAILABLE and _get_oc_odds is not None:
+                oc_cache_key = f"{course}|{time}"
+                if oc_cache_key in _oc_race_cache:
+                    oc_data = _oc_race_cache[oc_cache_key]
+                else:
+                    try:
+                        oc_data = _get_oc_odds(course, time) or {}
+                    except Exception:
+                        oc_data = {}
+                    _oc_race_cache[oc_cache_key] = oc_data
+            if oc_data:
+                oc_lower = {k.lower().strip(): v for k, v in oc_data.items()}
+                for _rn in runners:
+                    _entry = oc_lower.get(str(_rn.get("horse", "")).lower().strip())
+                    if _entry and _oc_augment is not None:
+                        _oc_augment(_rn, _entry)
+
             # BSP — single session attempt (fail-fast)
             bsp_key       = f"{course}|{time}"
             bsp_race_data = _bsp_race_cache.get(bsp_key, "UNCHECKED")
@@ -442,6 +475,12 @@ def get_todays_selections():
                     "Going":       going,
                     "Odds":        odds_str,
                     "Current Odds": rn.get("current_odds", odds_str),
+                    # Oddschecker multi-bookie fields (None when unavailable)
+                    "Best Odds Decimal":    rn.get("best_odds_decimal"),
+                    "Best Odds Fractional": rn.get("best_odds_fractional"),
+                    "Best Bookmaker":       rn.get("best_bookmaker", ""),
+                    "Odds Consensus":       rn.get("odds_consensus"),
+                    "Bookmaker Count":      rn.get("bookmaker_count"),
                     "Confidence":  confidence,
                     "Signal":      signal,
                     "TF Stars":    rn.get("tf_stars", "-"),

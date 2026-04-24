@@ -265,6 +265,12 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
                                 "VALUE"  if dec <= 10.0 else "LONGSHOT"),
+                # Oddschecker multi-bookie fields (v2.5.40) — may be None
+                "best_odds_decimal":    row.get("Best Odds Decimal"),
+                "best_odds_fractional": row.get("Best Odds Fractional"),
+                "best_bookmaker":       row.get("Best Bookmaker", ""),
+                "odds_consensus":       row.get("Odds Consensus"),
+                "bookmaker_count":      row.get("Bookmaker Count"),
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
@@ -536,10 +542,30 @@ def _sel_table(selections: list, movers: list = None) -> str:
         else:
             fav_tag = ""
 
+        # Best-odds tag — multi-bookmaker price from Oddschecker (v2.5.40)
+        _best_frac = s.get("best_odds_fractional")
+        _best_bk   = s.get("best_bookmaker")
+        _bk_count  = s.get("bookmaker_count")
+        if _best_frac and _best_bk:
+            oc_tag = (
+                f'<br><span style="color:#4caf50;font-size:11px;">'
+                f'Best: {_best_frac} @ {_best_bk}'
+                f'{f" | {_bk_count} bookmakers" if _bk_count else ""}</span>'
+            )
+        else:
+            oc_tag = ""
+
+        # Odds cell — show best decimal when present, falling back to SL current odds
+        _best_dec = s.get("best_odds_decimal")
+        if _best_dec:
+            odds_cell = f'{s["curr_odds"]}<br><span style="color:#4caf50;font-size:11px;">best {_best_dec:.2f}x</span>'
+        else:
+            odds_cell = s["curr_odds"]
+
         rows += f"""<tr>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s['time']}<br><span style="font-size:11px;">{s['course']}</span></td>
-          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}{fav_tag}</td>
-          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s['curr_odds']}</td>
+          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}{fav_tag}{oc_tag}</td>
+          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{odds_cell}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{conf_col};">{conf_pct}%</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:12px;color:{sig_col};">{s['signal']}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:11px;color:#888;">{s['tier']}</td>

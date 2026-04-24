@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.39** — 2-Bet Fold Structure: Bet A (core 4-fold) / Bet B (extended 5-fold)")
+    st.markdown("**Engine v2.5.40** — Oddschecker 24-bookie best-price integration: best odds + bookmaker shown per selection")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -521,6 +521,12 @@ for _bs in _brief_selections:
         'race_type':           str(_bs.get("race_type", "") or ""),
         'rival_top_trainer':   bool(_bs.get("rival_top_trainer", False)),
         'rival_trainer_name':  str(_bs.get("rival_trainer_name", "") or ""),
+        # Oddschecker multi-bookie (v2.5.40)
+        'best_odds_decimal':    _bs.get("best_odds_decimal"),
+        'best_odds_fractional': _bs.get("best_odds_fractional"),
+        'best_bookmaker':       _bs.get("best_bookmaker", ""),
+        'odds_consensus':       _bs.get("odds_consensus"),
+        'bookmaker_count':      _bs.get("bookmaker_count"),
     })
 
 _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
@@ -678,6 +684,12 @@ if False and _pool_is_live and len(_pool_df) > 0:
             'race_type':  str(_prow.get('Race Type', '') or '').strip(),
             'rival_top_trainer':  _p_rival.get('rival_top_trainer', False),
             'rival_trainer_name': _p_rival.get('rival_trainer_name', ''),
+            # Oddschecker multi-bookie (v2.5.40)
+            'best_odds_decimal':    _prow.get("Best Odds Decimal"),
+            'best_odds_fractional': _prow.get("Best Odds Fractional"),
+            'best_bookmaker':       _prow.get("Best Bookmaker", ""),
+            'odds_consensus':       _prow.get("Odds Consensus"),
+            'bookmaker_count':      _prow.get("Bookmaker Count"),
         })
 
     _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
@@ -971,6 +983,20 @@ with tab2:
                 "hurdle": "Hurdle", "flat": "Flat", "chase": "Chase",
             }.get(_rt, _rt.title())
 
+        def _best_cell(sel):
+            _bf = sel.get('best_odds_fractional')
+            _bk = sel.get('best_bookmaker')
+            if _bf and _bk:
+                return f"{_bf} @ {_bk}"
+            return "—"
+
+        def _book_cell(sel):
+            _n = sel.get('bookmaker_count')
+            try:
+                return int(_n) if _n else 0
+            except Exception:
+                return 0
+
         df = pd.DataFrame([{
             'Time':        s['time'],
             'Course':      s['course'],
@@ -978,6 +1004,8 @@ with tab2:
             'Type':        _fmt_race_type(s.get('race_type', '')),
             'Odds':        s['odds_str'],
             'Decimal':     f"{s['decimal']:.2f}x",
+            'Best':        _best_cell(s),
+            'Books':       _book_cell(s),
             'Confidence':  s['confidence'],
             'Signal':      s.get('signal', 'Stable'),
             'Tier':        s['tier'],
