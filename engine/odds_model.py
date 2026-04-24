@@ -58,6 +58,21 @@ TOP_TRAVELLERS = [
     "stoute", "gosden", "appleby"
 ]
 
+# ── Race-type confidence multipliers (v2.5.35, backtest-driven) ──────────
+# Derived from 7-day backtest across 217 races:
+#   NHF/Bumper 75.0% strike, 91.5% ROI  → +8%
+#   Hurdle     55.8% strike, 40.2% ROI  → +5%
+#   Flat       41.6% strike,  8.1% ROI  → baseline
+#   Chase      37.5% strike,  4.1% ROI  → -3%
+# Keys are normalised to lower-case. Unknown types default to 1.0 (no change).
+RACE_TYPE_MULTIPLIERS = {
+    "nhf":    1.08,
+    "bumper": 1.08,
+    "hurdle": 1.05,
+    "flat":   1.00,
+    "chase":  0.97,
+}
+
 
 _times_store = None
 def _get_times_store():
@@ -447,8 +462,17 @@ class OddsModel:
         form_detail = self._get_form_detail(form_str)
         adjustment  = self._calculate_adjustments(runner_data, form_detail)
         travel      = self._trainer_travel_signal(trainer)
-        final       = round(min(max(raw + adjustment + travel, 0.05), 1.0), 4)
+        scored      = raw + adjustment + travel
 
+        # Race-type multiplier (fails silently if race_type missing)
+        try:
+            rt_key = str(runner_data.get("race_type", "") or "").strip().lower()
+            mult   = RACE_TYPE_MULTIPLIERS.get(rt_key, 1.0)
+        except Exception:
+            mult = 1.0
+        scored *= mult
+
+        final = round(min(max(scored, 0.05), 1.0), 4)
         return final
 
     def get_signal_breakdown(self, runner_data=None, course=None, time=None) -> dict:

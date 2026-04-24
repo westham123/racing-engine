@@ -595,7 +595,13 @@ if _pool_is_live and len(_pool_df) > 0:
                   f"({_prunners} runners, {_pconf:.0%} conf, not fav)")
             continue
 
-        _plow_value_acca = (_prunners > 0 and _prunners <= 4)
+        # Low acca value: thin field OR odds-on price (≤1.85) — v2.5.35
+        _plow_thin_field = (_prunners > 0 and _prunners <= 4)
+        _plow_odds_on   = (_pdec <= 1.85)
+        _plow_value_acca = _plow_thin_field or _plow_odds_on
+        _plow_reason = (
+            "thin field" if _plow_thin_field else ("odds-on price" if _plow_odds_on else "")
+        )
 
         # Top-trainer-in-race warning (warning flag only, never auto-excludes)
         _p_rival = {"rival_top_trainer": False, "rival_trainer_name": ""}
@@ -621,6 +627,8 @@ if _pool_is_live and len(_pool_df) > 0:
             'fav_price':  round(float(_pfav_dec), 2),
             'runners':    _prunners,
             'low_value_acca': _plow_value_acca,
+            'low_value_reason': _plow_reason,
+            'race_type':  str(_prow.get('Race Type', '') or '').strip(),
             'rival_top_trainer':  _p_rival.get('rival_top_trainer', False),
             'rival_trainer_name': _p_rival.get('rival_trainer_name', ''),
         })
@@ -837,48 +845,60 @@ with tab1:
 
         # ── Plan banner ───────────────────────────────────────────────
         _pt = _stk["plan_type"]
+        _four_b_mode = len(_stk["main_pool"]) >= 4 and all(
+            s.get("tier", "BANKER").startswith("BANKER") or s.get("decimal", 0) <= 4.0
+            for s in _stk["main_pool"]
+        )
+        # Prefer plan_label from the staking engine (it already reflects mode)
+        _pl_label = _stk.get("plan_label", "")
+        _bet3_lbl = ("Value" if _four_b_mode else "Value Double")
+        _bet2_lbl = ("4-fold Cover" if _four_b_mode else "Cover Acc")
+        _main_pct_txt = "50%" if _four_b_mode else "60%"
+        _cover_pct_txt = "30%" if _four_b_mode else "25%"
+        _value_pct_txt = "20%" if _four_b_mode else "15%"
+
         if _pt == "THREE_BET":
             st.success(
-                f"**3-BET PLAN** — Main Acc (£{_stk['main_stake']:.2f}) + "
-                f"Cover Acc (£{_stk['cover_stake']:.2f}) + "
-                f"Value Double (£{_stk['double_stake']:.2f}) | "
+                f"**{_pl_label}** — Main Acc (£{_stk['main_stake']:.2f}) + "
+                f"{_bet2_lbl} (£{_stk['cover_stake']:.2f}) + "
+                f"{_bet3_lbl} (£{_stk['double_stake']:.2f}) | "
                 f"Total: **£{_budget:.2f}** | Target: **£2,000+ uncapped**"
             )
         elif _pt == "MAIN_COVER":
             st.warning(
-                f"**2-BET PLAN** — Main Acc (£{_stk['main_stake']:.2f}) + "
-                f"Cover Acc (£{_stk['cover_stake']:.2f}) | "
-                f"No value horses today for double | Total: **£{_budget:.2f}**"
+                f"**{_pl_label}** — Main Acc (£{_stk['main_stake']:.2f}) + "
+                f"{_bet2_lbl} (£{_stk['cover_stake']:.2f}) | "
+                f"No value horses today | Total: **£{_budget:.2f}**"
             )
         elif _pt == "MAIN_ONLY":
             st.info(
                 f"**MAIN ACC ONLY** — £{_stk['main_stake']:.2f} on {len(_stk['main_pool'])}-fold accumulator | "
-                f"Bankers only today, no cover or double needed"
+                f"Bankers only today, no cover or value leg"
             )
         else:
-            st.info(f"**FULL ACCUMULATOR** — £{_stk['main_stake']:.2f} | {_stk['plan_label']}")
+            st.info(f"**FULL ACCUMULATOR** — £{_stk['main_stake']:.2f} | {_pl_label}")
 
         # ── KPI row ───────────────────────────────────────────────────
         _k1, _k2, _k3, _k4 = st.columns(4)
         _k1.metric("Budget",          f"£{_stk['budget']:.2f}")
-        _k2.metric("BET 1 — Main Acc", f"£{_stk['main_stake']:.2f}",
+        _k2.metric(f"BET 1 — Main Acc ({_main_pct_txt})", f"£{_stk['main_stake']:.2f}",
                    delta=f"Returns £{_stk['main_return']:,.0f}" if _stk['main_return'] else None)
-        _k3.metric("BET 2 — Cover Acc",
+        _k3.metric(f"BET 2 — {_bet2_lbl} ({_cover_pct_txt})",
                    f"£{_stk['cover_stake']:.2f}" if _stk["cover_pool"] else "—",
                    delta=f"Returns £{_stk['cover_return']:,.0f}" if _stk['cover_return'] else None)
-        _k4.metric("BET 3 — Value Double",
+        _k4.metric(f"BET 3 — {_bet3_lbl} ({_value_pct_txt})",
                    f"£{_stk['double_stake']:.2f}" if _stk["double_pool"] else "—",
                    delta=f"Returns £{_stk['double_return']:,.0f}" if _stk['double_return'] else None)
 
         st.markdown("---")
 
         # ── BET 1: Main accumulator ───────────────────────────────────
-        st.markdown("#### 🎰 BET 1 — Main Accumulator — Bankers Only (60% budget)")
+        st.markdown(f"#### 🎰 BET 1 — Main Accumulator — Bankers Only ({_main_pct_txt} budget)")
         _b1_rows = []
         for _i, _s in enumerate(_stk["main_pool"]):
             _tier_lbl = _s.get("tier", "BANKER")
             if _s.get("low_value_acca", False):
-                _tier_lbl = f"{_tier_lbl} ⚠ THIN FIELD"
+                _tier_lbl = f"{_tier_lbl} ⚠ LOW ACCA VALUE"
             _b1_rows.append({
                 "#":          _i + 1,
                 "Time":       _s["time"],
@@ -900,7 +920,7 @@ with tab1:
             st.warning("No horses qualified for the main accumulator today.")
 
         # ── BET 2: Cover accumulator ──────────────────────────────────
-        st.markdown("#### 🛡️ BET 2 — Cover Accumulator (25% budget)")
+        st.markdown(f"#### 🛡️ BET 2 — {_bet2_lbl} ({_cover_pct_txt} budget)")
         if _stk["cover_pool"]:
             _b2_rows = []
             for _i, _s in enumerate(_stk["cover_pool"]):
@@ -919,19 +939,23 @@ with tab1:
             _b1_horses = {s['horse'] for s in _stk['main_pool']}
             _b2_horses = {s['horse'] for s in _stk['cover_pool']}
             _omitted   = _b1_horses - _b2_horses
-            _omit_str  = f" | Omits: **{', '.join(_omitted)}** (riskiest leg)" if _omitted else ""
+            if _four_b_mode:
+                _cover_note = "Top 4 bankers by confidence — 4-fold shape profitable per backtest (+£183/7d)"
+                _omit_str   = ""
+            else:
+                _omit_str   = f" | Omits: **{', '.join(_omitted)}** (riskiest leg)" if _omitted else ""
+                _cover_note = "Lands if BET 1's riskiest horse fails"
             st.info(
                 f"Stake **£{_stk['cover_stake']:.2f}** | "
                 f"{len(_stk['cover_pool'])}-fold @ **{_stk['cover_dec']:,.1f}x** | "
                 f"Return if wins: **£{_stk['cover_return']:,.2f}**"
-                f"{_omit_str} | "
-                f"Lands if BET 1's riskiest horse fails"
+                f"{_omit_str} | {_cover_note}"
             )
         else:
             st.caption("No cover accumulator today — not enough bankers for a separate safety net.")
 
-        # ── BET 3: Value double ───────────────────────────────────────
-        st.markdown("#### 💎 BET 3 — Value Double (15% budget)")
+        # ── BET 3: Value double (or single in 4+ banker mode) ─────────
+        st.markdown(f"#### 💎 BET 3 — {_bet3_lbl} ({_value_pct_txt} budget)")
         if _stk["double_pool"]:
             _b3_rows = []
             for _i, _s in enumerate(_stk["double_pool"]):
@@ -946,14 +970,15 @@ with tab1:
                     "Tier":       "VALUE",
                 })
             st.dataframe(pd.DataFrame(_b3_rows), use_container_width=True, hide_index=True)
+            _shape_lbl = f"{len(_stk['double_pool'])}-leg" if len(_stk["double_pool"]) != 2 else "Double"
             st.info(
                 f"Stake **£{_stk['double_stake']:.2f}** | "
-                f"Double @ **{_stk['double_dec']:,.1f}x** | "
+                f"{_shape_lbl} @ **{_stk['double_dec']:,.1f}x** | "
                 f"Return if wins: **£{_stk['double_return']:,.2f}** | "
                 f"High-value horses — price ≥4x, conf ≥55%"
             )
         else:
-            st.caption("No value double today — need 2 horses at ≥4x odds and ≥55% confidence.")
+            st.caption("No value leg today — need horse(s) at ≥4x odds and ≥55% confidence.")
 
         st.markdown("---")
 
@@ -1031,10 +1056,20 @@ with tab2:
     # Tab 2 reads directly from _six_pool — already filtered, NR-gated, one-per-race.
     # This is the single source of truth. No re-filtering of _live_df here.
     if _six_pool:
+        def _fmt_race_type(rt: str) -> str:
+            _rt = str(rt or "").strip().lower()
+            if not _rt:
+                return ""
+            return {
+                "nhf": "NHF", "bumper": "NHF",
+                "hurdle": "Hurdle", "flat": "Flat", "chase": "Chase",
+            }.get(_rt, _rt.title())
+
         df = pd.DataFrame([{
             'Time':        s['time'],
             'Course':      s['course'],
             'Horse':       s['horse'],
+            'Type':        _fmt_race_type(s.get('race_type', '')),
             'Odds':        s['odds_str'],
             'Decimal':     f"{s['decimal']:.2f}x",
             'Confidence':  s['confidence'],

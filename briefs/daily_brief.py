@@ -149,6 +149,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "bet_movements": [],
                 "field_size":   int(row.get("Field Size", 0) or 0),
                 "is_handicap":  bool(row.get("Is Handicap", False)),
+                "race_type":    str(row.get("Race Type", "") or "").strip(),
             }
 
             # Hard filter layer
@@ -182,7 +183,14 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                       f"({_runners} runners, {conf:.0%} conf, not fav)")
                 continue
 
-            _low_value_acca = (_runners > 0 and _runners <= 4)
+            # Low acca value: thin field OR odds-on price (≤1.85) — v2.5.35
+            _low_thin_field = (_runners > 0 and _runners <= 4)
+            _low_odds_on    = (dec <= 1.85)
+            _low_value_acca = _low_thin_field or _low_odds_on
+            _low_reason     = (
+                "thin field" if _low_thin_field
+                else ("odds-on price" if _low_odds_on else "")
+            )
 
             # Top-trainer-in-race warning (warning flag only, never auto-excludes)
             _rival_flag = {"rival_top_trainer": False, "rival_trainer_name": ""}
@@ -207,7 +215,10 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "going":       str(row.get("Going", "")),
                 "race_name":   str(row.get("Race Name", row.get("Race", "")) or ""),
                 "runners":     _runners,
-                "low_value_acca": _low_value_acca,
+                "low_value_acca":  _low_value_acca,
+                "low_value_reason": _low_reason,
+                "race_type":   str(row.get("Race Type", "") or "").strip(),
+                "race_class":  str(row.get("Race Class", "") or "").strip(),
                 "form":        str(row.get("Form", "-")),
                 "trainer":     str(row.get("Trainer", "")),
                 "jockey":      str(row.get("Jockey", "")),
@@ -542,16 +553,33 @@ def _staking_block(staking: dict) -> str:
     budget       = staking.get("budget", 100)
     scenarios    = staking.get("scenarios", [])
 
+    # v2.5.35 — 4+ banker mode changes structure labels
+    four_banker_mode = len(main_pool) >= 4
+    cover_type_lbl = "4-fold Cover" if four_banker_mode else "Cover Accumulator"
+    value_type_lbl = (
+        ("Value Single" if len(double_pool) == 1 else "Value Double")
+        if four_banker_mode else "Value Double"
+    )
+
     # ── Plan banner ──────────────────────────────────────────────────
-    if plan_type == "THREE_BET":
+    if plan_type == "THREE_BET" and four_banker_mode:
         banner_col = "#437A22"
-        banner_txt = f"3-BET PLAN — Main Acc + Cover Acc + Value Double | Target: £2,000+ uncapped"
+        banner_txt = (
+            f"3-BET (4+ bankers) — Main 50% + 4-fold Cover 30% + {value_type_lbl} 20% "
+            f"| Doubles dropped, 4-folds promoted (backtest-driven)"
+        )
+    elif plan_type == "THREE_BET":
+        banner_col = "#437A22"
+        banner_txt = f"3-BET PLAN — Main Acc 60% + Cover Acc 25% + Value Double 15%"
+    elif plan_type == "MAIN_COVER" and four_banker_mode:
+        banner_col = "#964219"
+        banner_txt = f"2-BET (4+ bankers) — Main Acc 50% + 4-fold Cover 30% (no value today)"
     elif plan_type == "MAIN_COVER":
         banner_col = "#964219"
         banner_txt = f"2-BET PLAN — Main Acc + Cover Acc (no value double today)"
     elif plan_type == "MAIN_ONLY":
         banner_col = "#01696F"
-        banner_txt = f"MAIN ACCUMULATOR — bankers only, no cover or double needed"
+        banner_txt = f"MAIN ACCUMULATOR — bankers only, no cover or value leg"
     else:
         banner_col = "#888"
         banner_txt = f"FULL ACCUMULATOR — fallback plan"
@@ -573,15 +601,17 @@ def _staking_block(staking: dict) -> str:
     # ── BET 2: Cover accumulator ─────────────────────────────────────
     if cover_pool:
         cover_horses = ", ".join(s["horse"] for s in cover_pool)
-        # Identify omitted horse (in BET 1 but not BET 2)
-        _main_names  = {s["horse"] for s in main_pool}
-        _cover_names = {s["horse"] for s in cover_pool}
-        _omitted_h   = _main_names - _cover_names
-        _omit_note   = f" — omits {', '.join(_omitted_h)} (riskiest leg)" if _omitted_h else ""
+        if four_banker_mode:
+            _omit_note = " — top 4 bankers by confidence"
+        else:
+            _main_names  = {s["horse"] for s in main_pool}
+            _cover_names = {s["horse"] for s in cover_pool}
+            _omitted_h   = _main_names - _cover_names
+            _omit_note   = f" — omits {', '.join(_omitted_h)} (riskiest leg)" if _omitted_h else ""
         bet2_html = f"""
       <tr style="background:#1a221a;">
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;white-space:nowrap;">BET 2</td>
-        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Cover Accumulator{_omit_note}</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">{cover_type_lbl}{_omit_note}</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{cover_stake:.2f}</td>
         <td style="padding:8px 10px;font-size:12px;color:#aaa;">{len(cover_pool)}-fold @ {cover_dec:.1f}x</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#01696F;">£{cover_return:,.2f}</td>
@@ -596,16 +626,18 @@ def _staking_block(staking: dict) -> str:
         <td colspan="4" style="padding:8px 10px;font-size:12px;color:#555;">Cover Acc — not applicable today (bankers only)</td>
       </tr>"""
 
-    # ── BET 3: Value double ──────────────────────────────────────────
+    # ── BET 3: Value leg (double or single in 4+ banker mode) ───────
     if double_pool:
         double_horses = " + ".join(s["horse"] for s in double_pool)
         double_odds   = " / ".join(s.get("odds_str", f"{s['decimal']:.2f}x") for s in double_pool)
+        _shape_lbl    = ("Single" if len(double_pool) == 1
+                         else f"{len(double_pool)}-fold" if len(double_pool) != 2 else "Double")
         bet3_html = f"""
       <tr style="background:#1a1a2a;">
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#964219;white-space:nowrap;">BET 3</td>
-        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Value Double</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">{value_type_lbl}</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;">£{double_stake:.2f}</td>
-        <td style="padding:8px 10px;font-size:12px;color:#aaa;">Double @ {double_dec:.1f}x</td>
+        <td style="padding:8px 10px;font-size:12px;color:#aaa;">{_shape_lbl} @ {double_dec:.1f}x</td>
         <td style="padding:8px 10px;font-size:13px;font-weight:bold;color:#964219;">£{double_return:,.2f}</td>
       </tr>
       <tr>
@@ -858,13 +890,21 @@ def _morning_html(selections: list) -> str:
             is_fav      = bool(s.get("is_fav", False))
             fav_price   = float(s.get("fav_price", 0) or 0)
             fav_name    = (s.get("fav_name", "") or "").strip()
+            race_class  = (s.get("race_class", "") or "").strip()
+            race_type_raw = str(s.get("race_type", "") or "").strip().lower()
+            race_type_lbl = {
+                "nhf": "NHF", "bumper": "NHF",
+                "hurdle": "Hurdle", "flat": "Flat", "chase": "Chase",
+            }.get(race_type_raw, race_type_raw.title() if race_type_raw else "")
 
             role_col = "#0b5394" if role == "BANKER" else "#6a1b9a"
 
             header_bits = [t_time]
-            if race_name: header_bits.append(race_name)
-            if runners:   header_bits.append(f"{runners} runners")
-            if going:     header_bits.append(going)
+            if race_name:     header_bits.append(race_name)
+            if race_class:    header_bits.append(race_class)
+            if race_type_lbl: header_bits.append(race_type_lbl)
+            if runners:       header_bits.append(f"{runners} runners")
+            if going:         header_bits.append(going)
             header_txt  = " &nbsp;|&nbsp; ".join(header_bits)
 
             race_card = (
@@ -911,12 +951,26 @@ def _morning_html(selections: list) -> str:
                     '</div>'
                 )
 
-            if bool(s.get("low_value_acca", False)) and runners:
+            if bool(s.get("low_value_acca", False)):
+                _lva_reason = (s.get("low_value_reason", "") or "").strip() or (
+                    f"thin field ({runners} runners)" if runners and runners <= 4
+                    else "odds-on price"
+                )
                 race_card += (
                     '<div style="background:#fff3cd;border:1px solid #ffe08a;color:#7a5c00;'
                     'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;">'
-                    f'&#9888; Thin field ({runners} runners) &mdash; low acca value, '
+                    f'&#9888; Low acca value ({_lva_reason}) &mdash; '
                     f'consider omitting from accumulator'
+                    '</div>'
+                )
+
+            if race_type_raw == "chase":
+                race_card += (
+                    '<div style="background:#f8d7da;border:1px solid #e4868d;color:#842029;'
+                    'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;'
+                    'font-weight:bold;">'
+                    '&#9888; CHASE RACE &mdash; 37.5% historical strike rate '
+                    '(vs 55.8% for hurdles). Market leaders beaten more often over fences.'
                     '</div>'
                 )
 

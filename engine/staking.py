@@ -78,9 +78,16 @@ BANKER_MAX_PRICE = 4.00    # maximum price to be a banker leg
 VALUE_MIN_PRICE  = 4.00    # minimum price to be a value leg
 VALUE_MIN_CONF   = 0.55    # minimum confidence to be a value leg
 
-MAIN_PCT   = 0.60          # 60% of budget on main accumulator
-COVER_PCT  = 0.25          # 25% of budget on cover accumulator
-DOUBLE_PCT = 0.15          # 15% of budget on value double
+MAIN_PCT   = 0.60          # 60% of budget on main accumulator (<4 bankers)
+COVER_PCT  = 0.25          # 25% of budget on cover accumulator (<4 bankers)
+DOUBLE_PCT = 0.15          # 15% of budget on value double (<4 bankers)
+
+# ── v2.5.35 — 4+ bankers restructure ─────────────────────────────────────
+# Backtest 7-day P&L: doubles -£192 (losing), 4-folds +£183 (profitable).
+# When we have 4+ bankers: drop the losing double, promote a 4-fold cover.
+MAIN_PCT_4B   = 0.50       # 50% main acc (all bankers)
+COVER_PCT_4B  = 0.30       # 30% cover 4-fold (best 4 bankers)
+VALUE_PCT_4B  = 0.20       # 20% value selection(s)
 
 
 def recommend_bet_type(selections: list) -> dict:
@@ -167,23 +174,31 @@ def recommend_bet_type(selections: list) -> dict:
         }
 
     if n_bankers >= 4:
+        # v2.5.35 — 4+ bankers: Lucky 15 (30%) + Main Acc (50%) + Value (20%).
+        # Swap from the old Lucky 15 (40%) + 4-fold acca (60%) split — backtest
+        # P&L showed 4-folds profitable and doubles losing, so the Lucky 15
+        # covers the perm insurance and the main acc chases the big-return leg.
         pool = bankers[:4]
         return {
-            "recommendation": "Lucky 15 (4 bankers)",
+            "recommendation": "Lucky 15 + Main Acc + Value (4+ bankers)",
             "rationale": (
-                f"{n_bankers} bankers available today — Lucky 15 gives insurance "
-                f"on 15 combinations (4 singles, 6 doubles, 4 trebles, 1 4-fold). "
-                f"Any single winner returns stake; 2+ winners returns profit."
+                f"{n_bankers} bankers available — Lucky 15 covers 15 combinations "
+                f"(4 singles, 6 doubles, 4 trebles, 1 4-fold). Split: Main Acc 50% "
+                f"(big-return leg), Lucky 15 30% (£2/bet insurance), Value 20%."
             ),
             "structure": [
+                {"bet": "Main Accumulator", "legs": len(bankers), "combinations": 1,
+                 "horses": [s["horse"] for s in bankers],
+                 "stake_per_line": "£50 on full acca",
+                 "total_stake": 50.0},
                 {"bet": "Lucky 15", "legs": 4, "combinations": 15,
                  "horses": [s["horse"] for s in pool],
-                 "stake_per_line": "£2.67 per line (£40 / 15)",
-                 "total_stake": 40.0},
-                {"bet": "Straight 4-fold acca", "legs": 4, "combinations": 1,
-                 "horses": [s["horse"] for s in pool],
-                 "stake_per_line": "£60 retained",
-                 "total_stake": 60.0},
+                 "stake_per_line": "£2.00 per line (£30 / 15)",
+                 "total_stake": 30.0},
+                {"bet": "Value selection(s)", "legs": min(n_value, 2), "combinations": 1,
+                 "horses": [s["horse"] for s in value[:2]] if n_value >= 1 else [],
+                 "stake_per_line": "£20 on value" if n_value >= 1 else "rolled into main",
+                 "total_stake": 20.0 if n_value >= 1 else 0.0},
             ],
             "bankers": n_bankers,
             "value":   n_value,
@@ -318,12 +333,23 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     # BANKERS ONLY — value horses are isolated to BET 3 to protect the acca.
     # Lesson: outlier prices (4x+) destroy accumulator probability.
     # VALUE horses never enter BET 1 regardless of EV.
-    main_pool = bankers
+    main_pool = sorted(bankers, key=lambda x: x["time"])
 
-    # Sort by race time
-    main_pool = sorted(main_pool, key=lambda x: x["time"])
+    # ── v2.5.35 — structure branches on banker count ─────────────────────────
+    # 4+ bankers: main (50%) + 4-fold cover (30%) + value (20%) — profitable shape
+    # <4 bankers: legacy 3-bet structure — main (60%) + cover minus riskiest (25%) + double (15%)
+    four_bankers_mode = len(bankers) >= 4
 
-    main_stake = round(budget * MAIN_PCT, 2)
+    if four_bankers_mode:
+        main_pct_use   = MAIN_PCT_4B
+        cover_pct_use  = COVER_PCT_4B
+        value_pct_use  = VALUE_PCT_4B
+    else:
+        main_pct_use   = MAIN_PCT
+        cover_pct_use  = COVER_PCT
+        value_pct_use  = DOUBLE_PCT
+
+    main_stake = round(budget * main_pct_use, 2)
     main_dec   = 1.0
     for s in main_pool:
         main_dec *= s["decimal"]
@@ -331,30 +357,36 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     main_return = round(main_stake * main_dec, 2)
 
     # ── BET 2: Cover Accumulator ──────────────────────────────────────────────
-    # Bankers minus the highest-priced one — genuine safety net.
-    # If BET 1's riskiest banker fails, BET 2 still lands.
-    # Requires at least 2 bankers after removing the longest price.
-    if has_bankers and len(bankers) >= 2:
-        # Remove the highest-priced (riskiest) banker from BET 2
+    if four_bankers_mode:
+        # 4-fold cover: TOP 4 bankers by confidence (profitable shape per backtest)
+        _top4 = sorted(bankers, key=lambda x: -x["confidence"])[:4]
+        cover_pool  = sorted(_top4, key=lambda x: x["time"])
+        cover_stake = round(budget * cover_pct_use, 2)
+        cover_dec   = 1.0
+        for s in cover_pool:
+            cover_dec *= s["decimal"]
+        cover_dec    = round(cover_dec, 2)
+        cover_return = round(cover_stake * cover_dec, 2)
+    elif has_bankers and len(bankers) >= 2:
+        # Legacy: bankers minus highest-priced (riskiest) leg
         _riskiest   = max(bankers, key=lambda x: x["decimal"])
         cover_pool  = sorted(
             [b for b in bankers if b is not _riskiest],
             key=lambda x: x["time"]
         )
         if len(cover_pool) >= 2:
-            cover_stake = round(budget * COVER_PCT, 2)
+            cover_stake = round(budget * cover_pct_use, 2)
             cover_dec   = 1.0
             for s in cover_pool:
                 cover_dec *= s["decimal"]
             cover_dec    = round(cover_dec, 2)
             cover_return = round(cover_stake * cover_dec, 2)
         else:
-            # Only 1 banker after removing riskiest — no meaningful cover
             cover_pool   = []
             cover_stake  = 0.0
             cover_dec    = 1.0
             cover_return = 0.0
-            main_stake   = round(main_stake + budget * COVER_PCT, 2)
+            main_stake   = round(main_stake + budget * cover_pct_use, 2)
             main_return  = round(main_stake * main_dec, 2)
     else:
         cover_pool   = []
@@ -362,23 +394,32 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
         cover_dec    = 1.0
         cover_return = 0.0
 
-    # ── BET 3: Value Double ───────────────────────────────────────────────────
-    # Top 2 value horses by EV — isolated here, never in BET 1.
-    # If only 1 value horse, or none, stake rolls into main acc.
-    if has_value and len(value) >= 2:
-        double_pool  = value[:2]
-        double_stake = round(budget * DOUBLE_PCT, 2)
-    elif has_value and len(value) == 1:
-        # Only 1 value horse — no double, roll stake into main
-        double_pool  = []
-        double_stake = 0.0
-        main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
-        main_return  = round(main_stake * main_dec, 2)  # recalc with extra stake
+    # ── BET 3: Value selection(s) ─────────────────────────────────────────────
+    # 4+ bankers mode: value is a single or double on top value horse(s).
+    # <4 bankers mode: legacy 2-leg value double; single value rolls into main.
+    if four_bankers_mode:
+        # In 4-banker mode, don't require pairs — a single value horse gets the stake
+        if has_value and len(value) >= 2:
+            double_pool  = value[:2]
+            double_stake = round(budget * value_pct_use, 2)
+        elif has_value and len(value) == 1:
+            double_pool  = value[:1]
+            double_stake = round(budget * value_pct_use, 2)
+        else:
+            double_pool  = []
+            double_stake = 0.0
+            # No value available — roll value stake into main
+            main_stake   = round(main_stake + budget * value_pct_use, 2)
+            main_return  = round(main_stake * main_dec, 2)
     else:
-        double_pool  = []
-        double_stake = 0.0
-        main_stake   = round(main_stake + budget * DOUBLE_PCT, 2)
-        main_return  = round(main_stake * main_dec, 2)  # recalc with extra stake
+        if has_value and len(value) >= 2:
+            double_pool  = value[:2]
+            double_stake = round(budget * value_pct_use, 2)
+        else:
+            double_pool  = []
+            double_stake = 0.0
+            main_stake   = round(main_stake + budget * value_pct_use, 2)
+            main_return  = round(main_stake * main_dec, 2)
 
     if double_pool:
         double_pool  = sorted(double_pool, key=lambda x: x["time"])
@@ -394,21 +435,37 @@ def build_staking_plan(selections: list, budget: float = 100.0) -> dict:
     # ── Plan label + rationale ────────────────────────────────────────────────
     plan_type = "THREE_BET" if double_pool else ("MAIN_COVER" if cover_pool else "MAIN_ONLY")
 
-    if plan_type == "THREE_BET":
+    if four_bankers_mode and plan_type == "THREE_BET":
+        _value_leg_txt = (
+            "Value Double" if len(double_pool) == 2 else "Value Single"
+        )
+        plan_label = f"3-Bet (4+ Bankers): Main Acc + 4-fold Cover + {_value_leg_txt}"
+        rationale  = (
+            f"{len(bankers)} bankers available — backtest-validated 4+ banker structure: "
+            f"50% Main Acc ({len(main_pool)}-fold) + 30% 4-fold Cover (top 4 by conf) + "
+            f"20% value. Doubles dropped (-£192 P&L over 7d); 4-folds promoted (+£183)."
+        )
+    elif four_bankers_mode and plan_type == "MAIN_COVER":
+        plan_label = f"2-Bet (4+ Bankers): Main Acc + 4-fold Cover"
+        rationale  = (
+            f"{len(bankers)} bankers — no value horses today. "
+            f"50% Main Acc ({len(main_pool)}-fold) + 30% 4-fold Cover. "
+            f"Value stake rolled into main."
+        )
+    elif plan_type == "THREE_BET":
         plan_label = "3-Bet Plan: Main Acc + Cover + Value Double"
         rationale  = (
             f"{len(bankers)} banker leg(s) (≥63% conf, ≤4x price) form the core. "
-            f"{len(value)} value horse(s) (≥4x price) targeted in main acc and value double. "
+            f"{len(value)} value horse(s) (≥4x price) targeted in value double. "
             f"Main acc targets £{main_return:,.0f} return. "
-            f"Cover protects if value leg fails. "
-            f"Double fires ~1 in {round(1/(value[0]['confidence']*value[1]['confidence'])):.0f} days."
+            f"Cover protects if riskiest banker fails."
         )
     elif plan_type == "MAIN_COVER":
         plan_label = "2-Bet Plan: Main Acc + Cover"
         rationale  = (
             f"No value horses above 4x today. "
             f"{len(bankers)} banker legs form both the main and cover accumulator. "
-            f"Full 15% double stake rolled into main accumulator."
+            f"Full value stake rolled into main accumulator."
         )
     else:
         plan_label = "Main Accumulator"
