@@ -144,8 +144,8 @@ def get_next_day_card(target_date: str = None) -> list:
                 rdata       = _get_page_json(full_url)
                 race_detail = rdata.get("props", {}).get("pageProps", {}).get("race", {}) if rdata else {}
                 for ride in race_detail.get("rides", []):
-                    if ride.get("ride_status", "").replace("_", "") == "NONRUNNER":
-                        continue  # normalised: feed returns NONRUNNER (no underscore)
+                    if str(ride.get("ride_status", "")).upper().replace("_", "").replace("-", "") == "NONRUNNER":
+                        continue  # case-insensitive — feed returns NONRUNNER/NonRunner/non_runner
                     horse     = ride.get("horse", {}).get("name", "Unknown")
                     betting   = ride.get("betting", {})
                     curr_odds = betting.get("current_odds", "N/A")

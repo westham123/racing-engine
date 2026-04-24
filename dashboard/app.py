@@ -627,13 +627,24 @@ if _pool_is_live and len(_pool_df) > 0:
 
     _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
 
-# NR gate — strip non-runners silently here; warning shown in Tab 1
+# NR gate — strip non-runners silently here; warning shown in Tab 1.
+# Runs fresh on every Tab 1 load (no caching). Case-insensitive comparison so
+# feed variants ("NONRUNNER", "NonRunner", "non_runner") can never slip through.
 try:
     from dashboard.live_data import get_non_runners as _get_nrs_pool
-    _nr_pool_list = _get_nrs_pool()
-    _nr_pool_names = {nr['Horse'].lower().strip() for nr in _nr_pool_list}
-    _nr_removed_names = [s['horse'] for s in _six_pool if s['horse'].lower().strip() in _nr_pool_names]
-    _six_pool = [s for s in _six_pool if s['horse'].lower().strip() not in _nr_pool_names]
+    _nr_pool_list  = _get_nrs_pool()  # fresh pull every call
+    _nr_pool_names = {str(nr.get('Horse', '')).strip().upper() for nr in _nr_pool_list}
+    _nr_removed_names = []
+    _pool_kept = []
+    for _s_pool in _six_pool:
+        _hn = str(_s_pool.get('horse', '')).strip().upper()
+        if _hn in _nr_pool_names:
+            print(f"[NR Gate] Stripped {_s_pool.get('horse','?')} — status: NONRUNNER "
+                  f"(race {_s_pool.get('time','?')} {_s_pool.get('course','?')})")
+            _nr_removed_names.append(_s_pool.get('horse', ''))
+            continue
+        _pool_kept.append(_s_pool)
+    _six_pool = _pool_kept
 except Exception:
     pass
 

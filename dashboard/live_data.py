@@ -265,7 +265,8 @@ def get_race_runners(slug):
     race_summary = race.get("race_summary", {})
     going        = race_summary.get("going", "")
     # Extra race metadata for filter layer
-    field_size   = len([r for r in rides if r.get("ride_status","").replace("_","") != "NONRUNNER"])
+    # NR check: case-insensitive — feed may return "NONRUNNER", "NonRunner", "non_runner", etc.
+    field_size   = len([r for r in rides if str(r.get("ride_status","")).upper().replace("_","").replace("-","") != "NONRUNNER"])
     race_type    = str(race_summary.get("race_type",  "")).lower()   # flat/hurdle/chase/bumper
     race_class   = str(race_summary.get("race_class", "")).lower()   # class 1-6, group 1-3 etc
     is_handicap  = any(x in str(race_summary.get("race_name","")).lower()
@@ -326,7 +327,9 @@ def get_race_runners(slug):
             "draw":           ride.get("draw_number", "-"),
             "tf_stars":       ride.get("timeform_stars", "-"),
             "rating":         ride.get("rating123", "-"),
-            "status":         "NON_RUNNER" if ride.get("ride_status","").replace("_","") == "NONRUNNER" else "RUNNER",
+            # Case-insensitive NR check — normalise to uppercase, strip _ and - so
+            # "NONRUNNER", "Non_Runner", "non-runner", "NonRunner" all match.
+            "status":         "NON_RUNNER" if str(ride.get("ride_status","")).upper().replace("_","").replace("-","") == "NONRUNNER" else "RUNNER",
             "finish_position":finish_pos,
             "bet_movements":  bm,
             # Filter layer fields
@@ -379,6 +382,8 @@ def get_todays_selections():
 
             for rn in runners:
                 if rn.get("status") == "NON_RUNNER":
+                    print(f"[NR Gate] Stripped {rn.get('horse','?')} — status: NON_RUNNER "
+                          f"(race {time} {course})")
                     continue  # non-runner — skip from selections
 
                 odds_str    = rn.get("odds", "N/A")

@@ -254,12 +254,25 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         out.sort(key=lambda x: x["time"])
 
         # ── HARD NR GATE — final check before any selection reaches the email ──
-        # Even if the dataframe is cached, this strips NRs unconditionally.
+        # Runs fresh on EVERY call (no caching). Case-insensitive comparison:
+        # normalise both sides to uppercase so feed variants ("NONRUNNER",
+        # "NonRunner", "non_runner") can never leak through — e.g. the Milteye
+        # incident (15:22 Beverley) where a case mismatch allowed a non-runner
+        # into the selection list.
         try:
             from dashboard.live_data import get_non_runners as _gnr
-            _nr_names = {nr['Horse'].lower().strip() for nr in _gnr()}
-            _before = len(out)
-            out = [s for s in out if s['horse'].lower().strip() not in _nr_names]
+            _nr_rows  = _gnr()  # fresh pull, no cache
+            _nr_names = {str(nr.get('Horse', '')).strip().upper() for nr in _nr_rows}
+            _before   = len(out)
+            _kept = []
+            for s in out:
+                _hname = str(s.get('horse', '')).strip().upper()
+                if _hname in _nr_names:
+                    print(f"[NR Gate] Stripped {s.get('horse','?')} — status: NONRUNNER "
+                          f"(race {s.get('time','?')} {s.get('course','?')})")
+                    continue
+                _kept.append(s)
+            out = _kept
             _dropped = _before - len(out)
             if _dropped:
                 print(f"[Brief] NR gate removed {_dropped} non-runner(s) from selections")
@@ -1436,7 +1449,65 @@ def send_morning_brief(budget: float = 100.0):
 
     html    = build_morning_brief(budget)
     subject = f"Racing Engine — Morning Brief | {_date_bst()}"
-    return send_email(subject, html)
+    ok      = send_email(subject, html)
+
+    # ── Early-race pre-race alerts ───────────────────────────────
+    # Cron granularity is 1h, so we can't fire every 5 minutes. Instead, when
+    # the morning brief lands (~10:00 BST), immediately send pre-race alerts
+    # for any race starting between 10:00 and 11:30 BST — the punter has
+    # little time to act on these.
+    try:
+        _send_prerace_window(start_hhmm="10:00", end_hhmm="11:30", label="early")
+    except Exception as _e:
+        print(f"[PreRace] Early window failed: {_e}")
+
+    return ok
+
+
+def _send_prerace_window(start_hhmm: str, end_hhmm: str, label: str = "") -> int:
+    """Send pre-race alerts for every selection whose race time falls in
+    [start_hhmm, end_hhmm] BST. Returns count of alerts sent."""
+    try:
+        selections = _get_official_selections()
+    except Exception as _e:
+        print(f"[PreRace] {label}: unable to load selections: {_e}")
+        return 0
+
+    def _parse_hhmm(s: str) -> int:
+        try:
+            hh, mm = str(s).strip().split(":")
+            return int(hh) * 60 + int(mm)
+        except Exception:
+            return -1
+
+    lo = _parse_hhmm(start_hhmm)
+    hi = _parse_hhmm(end_hhmm)
+    if lo < 0 or hi < 0:
+        return 0
+
+    sent = 0
+    for s in selections:
+        t_min = _parse_hhmm(str(s.get("time", "")))
+        if t_min < 0:
+            continue
+        if lo <= t_min <= hi:
+            try:
+                if send_prerace_alert(s):
+                    sent += 1
+            except Exception as _e:
+                print(f"[PreRace] alert failed for {s.get('horse','?')}: {_e}")
+    print(f"[PreRace] {label}: sent {sent} alert(s) for window {start_hhmm}-{end_hhmm} BST")
+    return sent
+
+
+def send_afternoon_prerace_alerts():
+    """Called by a 12:30 BST cron. Pre-race alerts for races 13:00-15:00 BST."""
+    return _send_prerace_window("13:00", "15:00", label="afternoon")
+
+
+def send_late_prerace_alerts():
+    """Called by a 14:30 BST cron. Pre-race alerts for races 15:00-18:30 BST."""
+    return _send_prerace_window("15:00", "18:30", label="late")
 
 
 def send_evening_summary(budget: float = 100.0):
