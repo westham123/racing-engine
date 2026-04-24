@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.38** — Best Accumulator Advisor: EV-ranked combinations in brief + app")
+    st.markdown("**Engine v2.5.39** — 2-Bet Fold Structure: Bet A (core 4-fold) / Bet B (extended 5-fold)")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -844,232 +844,91 @@ with tab1:
         st.markdown("---")
 
         # ══════════════════════════════════════════════════════════════
-        # STAKING ENGINE v3.0 — 3-Bet Structure
-        # BET 1: Main accumulator (60%) — BANKERS ONLY (value horses isolated to BET 3)
-        # BET 2: Cover accumulator (25%) — bankers only, safety net
-        # BET 3: Value double (15%) — top 2 highest-EV horses (≥4x)
-        # Target: £2,000+ profit, uncapped
+        # STAKING ENGINE v2.5.39 — 2-Bet Fold Structure
+        # Bet A: Core 4-fold — dominant favs only (gap to 2nd ≥50%, field <10)
+        # Bet B: Extended 5-fold — Bet A + one optional leg (may be YG_RISK)
+        # Backtest: 3-bet structure lost -£700 over 7 days; 4-5 leg folds optimal
         # ══════════════════════════════════════════════════════════════
-        from engine.staking import build_staking_plan as _build_staking_plan, recommend_bet_type as _recommend_bet_type
+        from engine.staking import get_fold_bets as _get_fold_bets
 
-        _budget = float(st.session_state.get("daily_budget", 100))
-        _stk    = _build_staking_plan(_six_pool, budget=_budget)
+        _folds = _get_fold_bets(_six_pool)
+        _bet_a = _folds.get("bet_a")
+        _bet_b = _folds.get("bet_b")
 
-        # ── Flexible Bet-Type Recommendation ─────────────────────────
-        _rec = _recommend_bet_type(_six_pool)
-        st.markdown("#### 🎯 Recommended Bet Structure")
-        if _rec.get("default_ok"):
-            st.success(
-                f"**{_rec['recommendation']}** — {_rec['rationale']}"
-            )
-        elif _rec["recommendation"] == "Hold or Reduce Stakes":
+        st.markdown("#### 💳 Today's Staking Plan — Bet A / Bet B")
+
+        if not _bet_a and not _bet_b:
             st.warning(
-                f"**{_rec['recommendation']}** — {_rec['rationale']}"
+                "**No qualifying fold bets today.** Fewer than 4 dominant-fav selections "
+                "(gap to 2nd ≥50%, field <10). Engine abstains."
             )
         else:
-            st.info(
-                f"**{_rec['recommendation']}** — {_rec['rationale']}"
-            )
-        if _rec.get("structure"):
-            _rec_rows = []
-            for _rbt in _rec["structure"]:
-                _rec_rows.append({
-                    "Bet":          _rbt["bet"],
-                    "Legs":         _rbt["legs"],
-                    "Combinations": _rbt["combinations"],
-                    "Horses":       ", ".join(_rbt["horses"]) if _rbt["horses"] else "—",
-                    "Stake":        f"£{_rbt['total_stake']:.2f}",
-                    "Per line":     _rbt["stake_per_line"],
-                })
-            st.dataframe(pd.DataFrame(_rec_rows), use_container_width=True, hide_index=True)
-        st.caption(
-            f"Bankers: **{_rec['bankers']}** | Value horses: **{_rec['value']}** | "
-            f"The structured 3-bet plan below remains shown — final call is yours."
-        )
-
-        st.markdown("---")
-        st.markdown("#### 💳 Today's Staking Plan")
-
-        # ── Plan banner ───────────────────────────────────────────────
-        _pt = _stk["plan_type"]
-        _four_b_mode = len(_stk["main_pool"]) >= 4 and all(
-            s.get("tier", "BANKER").startswith("BANKER") or s.get("decimal", 0) <= 4.0
-            for s in _stk["main_pool"]
-        )
-        # Prefer plan_label from the staking engine (it already reflects mode)
-        _pl_label = _stk.get("plan_label", "")
-        _bet3_lbl = ("Value" if _four_b_mode else "Value Double")
-        _bet2_lbl = ("4-fold Cover" if _four_b_mode else "Cover Acc")
-        _main_pct_txt = "50%" if _four_b_mode else "60%"
-        _cover_pct_txt = "30%" if _four_b_mode else "25%"
-        _value_pct_txt = "20%" if _four_b_mode else "15%"
-
-        if _pt == "THREE_BET":
             st.success(
-                f"**{_pl_label}** — Main Acc (£{_stk['main_stake']:.2f}) + "
-                f"{_bet2_lbl} (£{_stk['cover_stake']:.2f}) + "
-                f"{_bet3_lbl} (£{_stk['double_stake']:.2f}) | "
-                f"Total: **£{_budget:.2f}** | Target: **£2,000+ uncapped**"
+                f"**2-Bet Fold Structure (v2.5.39)** — "
+                f"Bet A: {'✅' if _bet_a else '—'} | "
+                f"Bet B: {'✅' if _bet_b else '—'}"
             )
-        elif _pt == "MAIN_COVER":
-            st.warning(
-                f"**{_pl_label}** — Main Acc (£{_stk['main_stake']:.2f}) + "
-                f"{_bet2_lbl} (£{_stk['cover_stake']:.2f}) | "
-                f"No value horses today | Total: **£{_budget:.2f}**"
+
+        def _render_fold_card(bet, colour, bet_key):
+            if not bet:
+                st.caption(f"{bet_key} unavailable today.")
+                return
+            horses = bet["horses"]
+            dec    = bet["combined_decimal"]
+
+            st.markdown(
+                f"##### <span style='color:{colour}'>{bet_key} — {bet['label']}</span> "
+                f"&nbsp;&nbsp; **{dec:.2f}x combined**",
+                unsafe_allow_html=True,
             )
-        elif _pt == "MAIN_ONLY":
-            st.info(
-                f"**MAIN ACC ONLY** — £{_stk['main_stake']:.2f} on {len(_stk['main_pool'])}-fold accumulator | "
-                f"Bankers only today, no cover or value leg"
-            )
-        else:
-            st.info(f"**FULL ACCUMULATOR** — £{_stk['main_stake']:.2f} | {_pl_label}")
-
-        # ── KPI row ───────────────────────────────────────────────────
-        _k1, _k2, _k3, _k4 = st.columns(4)
-        _k1.metric("Budget",          f"£{_stk['budget']:.2f}")
-        _k2.metric(f"BET 1 — Main Acc ({_main_pct_txt})", f"£{_stk['main_stake']:.2f}",
-                   delta=f"Returns £{_stk['main_return']:,.0f}" if _stk['main_return'] else None)
-        _k3.metric(f"BET 2 — {_bet2_lbl} ({_cover_pct_txt})",
-                   f"£{_stk['cover_stake']:.2f}" if _stk["cover_pool"] else "—",
-                   delta=f"Returns £{_stk['cover_return']:,.0f}" if _stk['cover_return'] else None)
-        _k4.metric(f"BET 3 — {_bet3_lbl} ({_value_pct_txt})",
-                   f"£{_stk['double_stake']:.2f}" if _stk["double_pool"] else "—",
-                   delta=f"Returns £{_stk['double_return']:,.0f}" if _stk['double_return'] else None)
-
-        st.markdown("---")
-
-        # ── BET 1: Main accumulator ───────────────────────────────────
-        st.markdown(f"#### 🎰 BET 1 — Main Accumulator — Bankers Only ({_main_pct_txt} budget)")
-        _b1_rows = []
-        for _i, _s in enumerate(_stk["main_pool"]):
-            _tier_lbl = _s.get("tier", "BANKER")
-            if _s.get("low_value_acca", False):
-                _tier_lbl = f"{_tier_lbl} ⚠ LOW ACCA VALUE"
-            _b1_rows.append({
-                "#":          _i + 1,
-                "Time":       _s["time"],
-                "Horse":      _s["horse"],
-                "Course":     _s["course"],
-                "Odds":       _s.get("odds_str", f"{_s['decimal']:.2f}x"),
-                "Decimal":    f"{_s['decimal']:.2f}x",
-                "Confidence": f"{_s['confidence']:.1%}",
-                "Tier":       _tier_lbl,
-            })
-        if _b1_rows:
-            st.dataframe(pd.DataFrame(_b1_rows), use_container_width=True, hide_index=True)
-            st.success(
-                f"Stake **£{_stk['main_stake']:.2f}** | "
-                f"{len(_stk['main_pool'])}-fold @ **{_stk['main_dec']:,.1f}x** | "
-                f"Return if wins: **£{_stk['main_return']:,.2f}**"
-            )
-        else:
-            st.warning("No horses qualified for the main accumulator today.")
-
-        # ── BET 2: Cover accumulator ──────────────────────────────────
-        st.markdown(f"#### 🛡️ BET 2 — {_bet2_lbl} ({_cover_pct_txt} budget)")
-        if _stk["cover_pool"]:
-            _b2_rows = []
-            for _i, _s in enumerate(_stk["cover_pool"]):
-                _b2_rows.append({
-                    "#":          _i + 1,
-                    "Time":       _s["time"],
-                    "Horse":      _s["horse"],
-                    "Course":     _s["course"],
-                    "Odds":       _s.get("odds_str", f"{_s['decimal']:.2f}x"),
-                    "Decimal":    f"{_s['decimal']:.2f}x",
-                    "Confidence": f"{_s['confidence']:.1%}",
-                    "Tier":       "BANKER",
+            _rows = []
+            for h in horses:
+                _yg = "⚠ YG_RISK" if h.get("yg_risk") else ""
+                _rows.append({
+                    "Time":       h.get("time", ""),
+                    "Horse":      h.get("horse", ""),
+                    "Course":     h.get("course", ""),
+                    "Odds":       h.get("curr_odds", h.get("odds", "N/A")),
+                    "Decimal":    f"{float(h.get('decimal', 0)):.2f}x",
+                    "Runners":    int(h.get("runners", 0) or 0),
+                    "Gap→2nd":    f"{float(h.get('gap_to_2nd', 0)):.0%}",
+                    "Confidence": f"{float(h.get('confidence', 0)):.1%}",
+                    "Flag":       _yg,
                 })
-            st.dataframe(pd.DataFrame(_b2_rows), use_container_width=True, hide_index=True)
-            # Identify which banker was omitted (highest-priced in BET 1 not in BET 2)
-            _b1_horses = {s['horse'] for s in _stk['main_pool']}
-            _b2_horses = {s['horse'] for s in _stk['cover_pool']}
-            _omitted   = _b1_horses - _b2_horses
-            if _four_b_mode:
-                _cover_note = "Top 4 bankers by confidence — 4-fold shape profitable per backtest (+£183/7d)"
-                _omit_str   = ""
-            else:
-                _omit_str   = f" | Omits: **{', '.join(_omitted)}** (riskiest leg)" if _omitted else ""
-                _cover_note = "Lands if BET 1's riskiest horse fails"
+            st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+            _r10 = dec * 10.0
+            _r20 = dec * 20.0
+            _r50 = dec * 50.0
             st.info(
-                f"Stake **£{_stk['cover_stake']:.2f}** | "
-                f"{len(_stk['cover_pool'])}-fold @ **{_stk['cover_dec']:,.1f}x** | "
-                f"Return if wins: **£{_stk['cover_return']:,.2f}**"
-                f"{_omit_str} | {_cover_note}"
+                f"Combined **{dec:.2f}x** | "
+                f"£10 → **£{_r10:,.2f}** | "
+                f"£20 → **£{_r20:,.2f}** | "
+                f"£50 → **£{_r50:,.2f}**"
             )
-        else:
-            st.caption("No cover accumulator today — not enough bankers for a separate safety net.")
+            for w in bet.get("warnings", []):
+                st.warning(f"⚠ {w}")
 
-        # ── BET 3: Value double (or single in 4+ banker mode) ─────────
-        st.markdown(f"#### 💎 BET 3 — {_bet3_lbl} ({_value_pct_txt} budget)")
-        if _stk["double_pool"]:
-            _b3_rows = []
-            for _i, _s in enumerate(_stk["double_pool"]):
-                _b3_rows.append({
-                    "#":          _i + 1,
-                    "Time":       _s["time"],
-                    "Horse":      _s["horse"],
-                    "Course":     _s["course"],
-                    "Odds":       _s.get("odds_str", f"{_s['decimal']:.2f}x"),
-                    "Decimal":    f"{_s['decimal']:.2f}x",
-                    "Confidence": f"{_s['confidence']:.1%}",
-                    "Tier":       "VALUE",
-                })
-            st.dataframe(pd.DataFrame(_b3_rows), use_container_width=True, hide_index=True)
-            _shape_lbl = f"{len(_stk['double_pool'])}-leg" if len(_stk["double_pool"]) != 2 else "Double"
-            st.info(
-                f"Stake **£{_stk['double_stake']:.2f}** | "
-                f"{_shape_lbl} @ **{_stk['double_dec']:,.1f}x** | "
-                f"Return if wins: **£{_stk['double_return']:,.2f}** | "
-                f"High-value horses — price ≥4x, conf ≥55%"
-            )
-        else:
-            st.caption("No value leg today — need horse(s) at ≥4x odds and ≥55% confidence.")
+        _render_fold_card(_bet_a, "#00ff88", "Bet A")
+        st.markdown("")
+        _render_fold_card(_bet_b, "#ffaa00", "Bet B")
 
-        st.markdown("---")
+        with st.expander("Why this structure? (click to expand)"):
+            st.markdown("""
+**v2.5.39 — 2-Bet Fold Structure**
 
-        # ── Scenario table ────────────────────────────────────────────
-        st.markdown("#### 📊 P&L Scenarios")
-        st.caption(f"What happens to your £{_stk['budget']:.2f} budget in key win/loss combinations.")
-        _scen_rows = []
-        for _sc in _stk["scenarios"]:
-            _scen_rows.append({
-                "Scenario":      _sc.get("Scenario", ""),
-                "BET 1 Return":  _sc.get("Acc Return", "—"),
-                "BET 2 Return":  _sc.get("Cover Return", "n/a"),
-                "BET 3 Return":  _sc.get("Double Return", "n/a"),
-                "Total Back":    _sc.get("Total Back", "£0.00"),
-                "Net P&L":       _sc.get("Net P&L", "£0.00"),
-            })
-        _scen_df = pd.DataFrame(_scen_rows)
+Backtest (17–23 Apr 2026, 7 days) showed the old 3-bet structure lost £700:
+the main acca had too many legs and never landed. Short-priced favourites
+(4/6–6/4) win 72% of the time — ideal acca anchors.
 
-        def _colour_pnl(val):
-            try:
-                v = float(str(val).replace("£","").replace("+","").replace(",",""))
-                if v > 0:  return "color: green; font-weight: bold"
-                if v < 0:  return "color: red"
-                return ""
-            except Exception:
-                return ""
+- **Bet A — Core 4-fold:** only STRONG selections (dominant fav with gap to 2nd ≥50% AND field <10).
+- **Bet B — Extended 5-fold:** Bet A + one optional leg. May include a YG_RISK horse
+  (field ≥10 runners with gap <50%) as the 5th leg only.
 
-        if not _scen_df.empty:
-            st.dataframe(
-                _scen_df.style.map(_colour_pnl, subset=["Net P&L"]),
-                use_container_width=True, hide_index=True
-            )
+**Yorkshire Glory rule:** YG_RISK horses are excluded from Bet A entirely and may
+only appear in Bet B. Flagged inline with a ⚠ symbol.
 
-        # ── Rationale ─────────────────────────────────────────────────
-        with st.expander("Why this plan? (click to expand)"):
-            st.markdown(f"""
-**{_stk['plan_label']}** — {_stk['plan_rationale']}
-
-**3-Bet structure:**
-- **BET 1 — Main Accumulator (60%):** Bankers only (conf ≥63%, price ≤4x). Profit engine.
-- **BET 2 — Cover Accumulator (25%):** All bankers minus riskiest leg. Safety net.
-- **BET 3 — Value Double (15%):** Top 2 value horses (≥4x, ≥55% conf). Independent high-reward bet.
-
-**Exclusion rules:** 4/6 cut-off | Favourite gap >35% | Fields 16+ | Singles/Lucky 15 permanently removed.
+**Exclusion rules:** 4/6 cut-off (≤1.67) | low-value acca (odds-on or ≤4 runners) |
+fav gap >35% (non-fav eliminated upstream).
             """)
 
         st.markdown("---")

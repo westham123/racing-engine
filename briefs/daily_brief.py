@@ -102,6 +102,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         _race_fav_price_brief = {}
         _race_fav_name_brief  = {}
         _race_runners_brief   = {}  # race_key -> list of {horse, trainer} dicts
+        _race_all_prices_brief = {}  # race_key -> sorted list of decimal prices
         for _, _fr in df.iterrows():
             _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
             _frodds = str(_fr.get('Current Odds','') or _fr.get('Odds','N/A')).strip()
@@ -113,10 +114,18 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 if _frkey not in _race_fav_price_brief or _frdec < _race_fav_price_brief[_frkey]:
                     _race_fav_price_brief[_frkey] = _frdec
                     _race_fav_name_brief[_frkey]  = str(_fr.get('Horse', ''))
+                _race_all_prices_brief.setdefault(_frkey, []).append(_frdec)
             _race_runners_brief.setdefault(_frkey, []).append({
                 "horse":   str(_fr.get("Horse", "")),
                 "trainer": str(_fr.get("Trainer", "")),
             })
+
+        # Compute 2nd-fav price per race for Yorkshire Glory / dominant-fav logic
+        _race_second_fav_price = {}
+        for _rk, _prices in _race_all_prices_brief.items():
+            _sorted = sorted(_prices)
+            if len(_sorted) >= 2:
+                _race_second_fav_price[_rk] = _sorted[1]
 
         for _, row in df.iterrows():
             t = str(row.get("Time", ""))
@@ -171,8 +180,22 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
             is_fav     = dec <= _bfav_dec + 1e-9
             fav_price  = round(float(_bfav_dec), 2)
             fav_name   = _race_fav_name_brief.get(_bracekey, "")
+            _second_fav_dec = _race_second_fav_price.get(_bracekey)
+            second_fav_price = round(float(_second_fav_dec), 2) if _second_fav_dec else 0.0
+
+            # Gap to 2nd-fav (only meaningful when we ARE the fav).
+            # gap_to_2nd = (2nd_price - our_price) / our_price
+            if is_fav and second_fav_price > 0:
+                gap_to_2nd = round((second_fav_price - dec) / dec, 4)
+            else:
+                gap_to_2nd = 0.0
 
             _runners = int(row.get("Field Size", row.get("Runners", 0)) or 0)
+
+            # Dominant fav: we're the fav AND gap to 2nd ≥50%
+            is_dominant_fav = bool(is_fav and gap_to_2nd >= 0.50)
+            # Yorkshire Glory risk: field ≥10 AND gap to 2nd <50% (even if fav)
+            yg_risk = bool(is_fav and _runners >= 10 and gap_to_2nd < 0.50)
 
             # Small-field non-fav exclusion: ≤6 runners and we're not the fav.
             # Market is better informed in small fields; edge is too thin.
@@ -232,6 +255,10 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "is_fav":      is_fav,
                 "fav_price":   fav_price,
                 "fav_name":    fav_name,
+                "second_fav_price": second_fav_price,
+                "gap_to_2nd":       gap_to_2nd,
+                "is_dominant_fav":  is_dominant_fav,
+                "yg_risk":          yg_risk,
                 "rival_top_trainer":  _rival_flag.get("rival_top_trainer", False),
                 "rival_trainer_name": _rival_flag.get("rival_trainer_name", ""),
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
@@ -529,6 +556,94 @@ def _sel_table(selections: list, movers: list = None) -> str:
       </tr></thead>
       <tbody>{rows}</tbody>
     </table>"""
+
+
+def _fold_bets_block(fold_bets: dict) -> str:
+    """v2.5.39 — 2-bet fold structure (Bet A core / Bet B extended) HTML block."""
+    if not fold_bets or (not fold_bets.get("bet_a") and not fold_bets.get("bet_b")):
+        return (
+            '<p style="color:#888;font-size:13px;margin:0;">'
+            'No qualifying fold bets today — fewer than 4 dominant-fav selections '
+            '(gap to 2nd ≥50%, field &lt;10). Engine abstains.'
+            '</p>'
+        )
+
+    def _bet_card(bet: dict, label_col: str, bet_key: str) -> str:
+        horses = bet["horses"]
+        dec    = bet["combined_decimal"]
+        warns  = bet.get("warnings", [])
+
+        leg_rows = ""
+        for h in horses:
+            yg_flag = ""
+            if bool(h.get("yg_risk", False)):
+                yg_flag = (
+                    ' <span style="color:#e8a33d;font-weight:bold;">'
+                    f'&#9888; Yorkshire Glory risk ({h.get("runners", 0)} runners, '
+                    f'gap {h.get("gap_to_2nd", 0):.0%})</span>'
+                )
+            leg_rows += f"""
+          <tr>
+            <td style="padding:4px 8px;font-size:12px;color:#aaa;white-space:nowrap;">{h.get('time','')} {h.get('course','')}</td>
+            <td style="padding:4px 8px;font-size:13px;font-weight:bold;">{h.get('horse','')}{yg_flag}</td>
+            <td style="padding:4px 8px;font-size:12px;color:#aaa;">{h.get('curr_odds', h.get('odds','N/A'))} ({h.get('decimal',0):.2f}x)</td>
+            <td style="padding:4px 8px;font-size:12px;color:#aaa;">{int(h.get('runners', 0) or 0)} run</td>
+          </tr>"""
+
+        ret_10  = dec * 10.0
+        ret_20  = dec * 20.0
+        ret_50  = dec * 50.0
+
+        warn_html = ""
+        if warns:
+            warn_html = (
+                '<p style="margin:6px 0 0;font-size:11px;color:#e8a33d;">'
+                + " &middot; ".join(warns) + "</p>"
+            )
+
+        return f"""
+        <div style="background:#16191d;border:1px solid {label_col};border-radius:4px;padding:10px 12px;margin-bottom:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+            <span style="color:{label_col};font-size:14px;font-weight:bold;">{bet_key} — {bet['label']}</span>
+            <span style="color:#fff;font-size:14px;font-weight:bold;">{dec:.2f}x combined</span>
+          </div>
+          <table style="width:100%;border-collapse:collapse;">
+            <tbody>{leg_rows}</tbody>
+          </table>
+          <div style="margin-top:8px;padding-top:6px;border-top:1px solid #2a2a2a;font-size:12px;color:#aaa;">
+            Example returns: £10 &rarr; <span style="color:#fff;font-weight:bold;">£{ret_10:,.2f}</span>
+            &nbsp;|&nbsp; £20 &rarr; <span style="color:#fff;font-weight:bold;">£{ret_20:,.2f}</span>
+            &nbsp;|&nbsp; £50 &rarr; <span style="color:#fff;font-weight:bold;">£{ret_50:,.2f}</span>
+          </div>
+          {warn_html}
+        </div>"""
+
+    html_parts = [
+        '<div style="background:#437A22;border-radius:4px;padding:8px 12px;margin-bottom:10px;">'
+        '<span style="color:#fff;font-size:13px;font-weight:bold;">'
+        '2-BET FOLD STRUCTURE (v2.5.39) — Bet A core only / Bet B extended with optional 5th leg'
+        '</span></div>'
+    ]
+
+    if fold_bets.get("bet_a"):
+        html_parts.append(_bet_card(fold_bets["bet_a"], "#437A22", "Bet A"))
+    else:
+        html_parts.append(
+            '<p style="color:#888;font-size:12px;margin:0 0 10px;">'
+            'Bet A unavailable — fewer than 4 dominant-fav selections today.'
+            '</p>'
+        )
+
+    if fold_bets.get("bet_b"):
+        html_parts.append(_bet_card(fold_bets["bet_b"], "#01696F", "Bet B"))
+    else:
+        html_parts.append(
+            '<p style="color:#888;font-size:12px;margin:0;">'
+            'Bet B unavailable — no qualifying 5th leg.'
+            '</p>'
+        )
+
+    return "".join(html_parts)
 
 
 def _staking_block(staking: dict) -> str:
@@ -1146,9 +1261,15 @@ def build_morning_brief(budget: float = 100.0) -> str:
         "#01696F"
     )
 
-    # 4. Staking plan
+    # 4. Staking plan — v2.5.39 2-bet fold structure (Bet A / Bet B)
     if selections:
-        body += _section("Staking Plan", _staking_block(staking), "#437A22")
+        try:
+            from engine.staking import get_fold_bets as _get_fold_bets
+            _folds = _get_fold_bets(selections)
+        except Exception as _fb_err:
+            print(f"[Brief] Fold-bets failed: {_fb_err}")
+            _folds = {"bet_a": None, "bet_b": None}
+        body += _section("Staking Plan — Bet A / Bet B", _fold_bets_block(_folds), "#437A22")
 
     # 4b. Best Accumulator Options — EV-ranked combinations (additive)
     if selections:

@@ -751,6 +751,133 @@ def rank_accumulator_combinations(
     return top
 
 
+def get_fold_bets(selections: list) -> dict:
+    """
+    v2.5.39 — 2-bet fold structure based on 7-day backtest.
+
+    Bet A = Core 4-fold — only STRONG selections:
+        is_dominant_fav (gap to 2nd ≥50%) AND field_size < 10
+        Cap at 4 legs, pick top-4 by confidence.
+
+    Bet B = Extended 5-fold — Bet A + one optional horse:
+        Best remaining selection, preferring field_size < 10.
+        May include a YG_RISK horse (field ≥10, gap <50%) if no better option.
+
+    Yorkshire Glory rule: YG_RISK horses excluded from Bet A,
+    may appear in Bet B as the optional 5th leg only.
+
+    Selection requirements:
+        - Must pass 4/6 cut-off (decimal > 1.67) — enforced upstream
+        - Must have is_dominant_fav flag for Bet A eligibility
+        - Must have field_size < 10 for Bet A eligibility
+
+    Returns:
+        {
+          "bet_a": {horses, combined_decimal, label, legs, warnings} | None,
+          "bet_b": {horses, combined_decimal, label, legs, warnings} | None,
+        }
+    If no 5th selection qualifies, bet_b is None.
+    If fewer than 4 core legs qualify, bet_a is None.
+    """
+    result = {"bet_a": None, "bet_b": None}
+    if not selections:
+        return result
+
+    # Hard exclude: 4/6 cut-off and low_value_acca
+    eligible = []
+    for s in selections:
+        try:
+            dec = float(s.get("decimal") or 0.0)
+        except Exception:
+            continue
+        if dec <= 1.67:
+            continue
+        if s.get("low_value_acca", False):
+            continue
+        eligible.append(s)
+
+    # Core pool: strong, non-YG, field < 10
+    core = [
+        s for s in eligible
+        if bool(s.get("is_dominant_fav", False))
+        and int(s.get("runners", s.get("field_size", 0)) or 0) < 10
+        and not bool(s.get("yg_risk", False))
+    ]
+    core.sort(key=lambda x: -float(x.get("confidence", 0.0)))
+
+    if len(core) < 4:
+        # Not enough strong legs for a core 4-fold — engine abstains
+        return result
+
+    core_4 = core[:4]
+    core_names = {s["horse"] for s in core_4}
+
+    def _combined(pool):
+        d = 1.0
+        for s in pool:
+            d *= float(s["decimal"])
+        return round(d, 2)
+
+    def _warnings(pool):
+        w = []
+        for s in pool:
+            if s.get("yg_risk"):
+                w.append(f"YG_RISK: {s['horse']} — {s.get('runners', 0)} runners, gap {s.get('gap_to_2nd', 0):.0%}")
+        return w
+
+    bet_a_pool = sorted(core_4, key=lambda x: x.get("time", ""))
+    result["bet_a"] = {
+        "horses":            bet_a_pool,
+        "combined_decimal":  _combined(bet_a_pool),
+        "label":             "Core 4-fold",
+        "legs":              4,
+        "warnings":          _warnings(bet_a_pool),
+    }
+
+    # Optional 5th leg: prefer strong + field<10 outside core, else best YG_RISK,
+    # else any remaining eligible selection by confidence.
+    remaining = [s for s in eligible if s["horse"] not in core_names]
+    remaining.sort(key=lambda x: -float(x.get("confidence", 0.0)))
+
+    optional = None
+    # Preference 1: another strong (dominant-fav, field<10) selection — shouldn't
+    # exist normally since we took top 4, but handles the case where the pool had
+    # >4 dominant favs and the 5th is still strong.
+    for s in remaining:
+        if (bool(s.get("is_dominant_fav", False))
+                and int(s.get("runners", s.get("field_size", 0)) or 0) < 10
+                and not bool(s.get("yg_risk", False))):
+            optional = s
+            break
+
+    # Preference 2: YG_RISK horse (field ≥10, we ARE fav, gap <50%)
+    if optional is None:
+        for s in remaining:
+            if bool(s.get("yg_risk", False)):
+                optional = s
+                break
+
+    # Preference 3: highest-confidence remaining (still must have decent gap)
+    if optional is None and remaining:
+        # Only accept if we're the fav — otherwise too speculative for a 5-fold
+        for s in remaining:
+            if bool(s.get("is_fav", False)):
+                optional = s
+                break
+
+    if optional is not None:
+        bet_b_pool = sorted(core_4 + [optional], key=lambda x: x.get("time", ""))
+        result["bet_b"] = {
+            "horses":            bet_b_pool,
+            "combined_decimal":  _combined(bet_b_pool),
+            "label":             "Extended 5-fold",
+            "legs":              5,
+            "warnings":          _warnings(bet_b_pool),
+        }
+
+    return result
+
+
 def get_best_acca_label(combo: dict) -> str:
     """Short human-readable label, e.g. 'Double: Organise + Misterdoc (EV: 1.42x)'."""
     if not combo:
