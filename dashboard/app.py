@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.27** — Filter layer: field size, dual signal, handicap uplift")
+    st.markdown("**Engine v2.5.36** — Historical settlement for past dates; Tab 7 auto-settle + P&L display")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -1466,10 +1466,18 @@ with tab6:
 # ── Tab 7: Results History ────────────────────────────────────
 with tab7:
     st.markdown("### 📊 Results History")
-    st.caption("Every logged recommendation. Results feed back automatically each evening after 18:30 BST.")
+    st.caption("Every logged recommendation. Past dates auto-settle from Sporting Life results on tab load.")
+
+    # Auto-heal: settle any outstanding past-date recommendations silently
+    try:
+        from learning.loop import settle_outstanding_recommendations as _settle_outstanding
+        _healed = _settle_outstanding()
+    except Exception as _e_heal:
+        _healed = 0
 
     import json as _res_json
-    _r7_path = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+    _r7_path   = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+    _res_path7 = os.path.join(os.path.dirname(__file__), "..", "learning", "results_store.json")
     _records = []
     try:
         if os.path.exists(_r7_path):
@@ -1479,47 +1487,67 @@ with tab7:
     except Exception:
         _records = []
 
+    _results_idx = {}
+    try:
+        if os.path.exists(_res_path7):
+            with open(_res_path7) as _rsf:
+                _rs = _res_json.load(_rsf)
+            for _e in (_rs.get("results", []) if isinstance(_rs, dict) else []):
+                rid = _e.get("race_id")
+                if rid:
+                    _results_idx[rid] = _e
+    except Exception:
+        _results_idx = {}
+
     _total_recs    = len(_records)
     _settled_recs  = [r for r in _records if r.get("won") is not None]
     _pending_recs  = [r for r in _records if r.get("won") is None]
     _wins_recs     = [r for r in _settled_recs if r.get("won")]
 
-    _k1, _k2, _k3 = st.columns(3)
-    _k1.metric("Recommendations Logged", str(_total_recs))
-    _k2.metric("Settled",                str(len(_settled_recs)))
-    _k3.metric("Pending",                str(len(_pending_recs)))
+    def _frac_to_decimal(odds_str):
+        s = str(odds_str).strip()
+        if not s or s.lower() == "n/a":
+            return None
+        try:
+            if "/" in s:
+                num, den = s.split("/")
+                return 1.0 + float(num) / float(den)
+            if s.lower() in ("evs", "evens"):
+                return 2.0
+            return float(s)
+        except Exception:
+            return None
+
+    STAKE = 60.0
+    _total_pnl = 0.0
+    for _r in _settled_recs:
+        _dec = _frac_to_decimal(_r.get("odds"))
+        if _r.get("won") and _dec:
+            _total_pnl += STAKE * (_dec - 1.0)
+        else:
+            _total_pnl -= STAKE
+
+    _hit_rate = (len(_wins_recs) / len(_settled_recs) * 100) if _settled_recs else 0.0
+
+    _k1, _k2, _k3, _k4 = st.columns(4)
+    _k1.metric("Selections",  str(_total_recs))
+    _k2.metric("Won",         str(len(_wins_recs)))
+    _k3.metric("Strike Rate", f"{_hit_rate:.1f}%")
+    _k4.metric("P&L (£60 ew-level flat)", f"£{_total_pnl:+,.2f}")
+
+    if _healed:
+        st.success(f"Auto-settled {_healed} past race(s) from Sporting Life results.")
+
+    st.markdown(
+        f"**{_total_recs} selections, {len(_wins_recs)} won "
+        f"({_hit_rate:.1f}% strike rate)** — P&L at £{STAKE:.0f} flat stake: **£{_total_pnl:+,.2f}**"
+    )
 
     st.markdown("---")
 
     if not _records:
-        st.info("No results recorded yet — results feed back automatically each evening after 18:30 BST.")
+        st.info("No results recorded yet — selections will appear here once the morning brief runs.")
     else:
-        _row_sorted = sorted(_records, key=lambda r: (r.get("date",""), r.get("time","")), reverse=True)
-        _res_rows = []
-        for _r in _row_sorted:
-            _won = _r.get("won")
-            if _won is True:
-                _result = "✅ WON"
-            elif _won is False:
-                _result = "❌ LOST"
-            else:
-                _result = "⏳ Pending"
-            _conf_v = _r.get("confidence")
-            try:
-                _conf_disp = f"{float(_conf_v):.1%}" if _conf_v is not None else "—"
-            except Exception:
-                _conf_disp = "—"
-            _res_rows.append({
-                "Date":   _r.get("date", ""),
-                "Horse":  _r.get("runner", ""),
-                "Course": _r.get("course", ""),
-                "Time":   _r.get("time", ""),
-                "Odds":   str(_r.get("odds", "")),
-                "Conf":   _conf_disp,
-                "Result": _result,
-            })
-        _res_df7 = pd.DataFrame(_res_rows)
-
         def _colour_result(val):
             s = str(val)
             if "WON" in s:      return "background-color: #003300; color: #00ff88; font-weight: bold"
@@ -1527,18 +1555,82 @@ with tab7:
             if "Pending" in s:  return "color: #ffaa00"
             return ""
 
-        st.dataframe(
-            _res_df7.style.map(_colour_result, subset=["Result"]),
-            use_container_width=True, hide_index=True
-        )
+        # Settled table
+        if _settled_recs:
+            st.markdown("#### Settled")
+            _sorted_settled = sorted(
+                _settled_recs,
+                key=lambda r: (r.get("date",""), r.get("time","")),
+                reverse=True,
+            )
+            _rows = []
+            for _r in _sorted_settled:
+                _won = _r.get("won")
+                _result = "✅ WON" if _won else "❌ LOST"
+                _conf_v = _r.get("confidence")
+                try:
+                    _conf_disp = f"{float(_conf_v):.1%}" if _conf_v is not None else "—"
+                except Exception:
+                    _conf_disp = "—"
+                _dec = _frac_to_decimal(_r.get("odds"))
+                if _won and _dec:
+                    _pnl = STAKE * (_dec - 1.0)
+                else:
+                    _pnl = -STAKE
+                _settled_by = _r.get("settled_at", "")
+                if _settled_by:
+                    _settled_by = str(_settled_by)[:10]
+                _rid = _r.get("race_id", "")
+                _winner = _results_idx.get(_rid, {}).get("winner") or _r.get("outcome") or ""
+                _rows.append({
+                    "Date":      _r.get("date", ""),
+                    "Time":      _r.get("time", ""),
+                    "Course":    _r.get("course", ""),
+                    "Horse":     _r.get("runner", ""),
+                    "Confidence": _conf_disp,
+                    "Odds":      str(_r.get("odds", "")),
+                    "Result":    _result,
+                    "Winner":    _winner,
+                    "P&L (£)":   round(_pnl, 2),
+                    "Settled":   _settled_by,
+                })
+            _df_settled = pd.DataFrame(_rows)
+            st.dataframe(
+                _df_settled.style.map(_colour_result, subset=["Result"]),
+                use_container_width=True, hide_index=True,
+            )
 
-        if _wins_recs:
-            _hit_rate = len(_wins_recs) / len(_settled_recs) * 100
-            st.caption(f"Hit rate: **{_hit_rate:.1f}%** across {len(_settled_recs)} settled recommendations.")
+        # Pending table
+        if _pending_recs:
+            st.markdown("#### Pending")
+            st.caption("Today's races or dates without published results yet.")
+            _sorted_pending = sorted(
+                _pending_recs,
+                key=lambda r: (r.get("date",""), r.get("time","")),
+                reverse=True,
+            )
+            _prows = []
+            for _r in _sorted_pending:
+                _conf_v = _r.get("confidence")
+                try:
+                    _conf_disp = f"{float(_conf_v):.1%}" if _conf_v is not None else "—"
+                except Exception:
+                    _conf_disp = "—"
+                _prows.append({
+                    "Date":       _r.get("date", ""),
+                    "Time":       _r.get("time", ""),
+                    "Course":     _r.get("course", ""),
+                    "Horse":      _r.get("runner", ""),
+                    "Confidence": _conf_disp,
+                    "Odds":       str(_r.get("odds", "")),
+                    "Status":     "⏳ Pending",
+                })
+            st.dataframe(pd.DataFrame(_prows), use_container_width=True, hide_index=True)
 
     st.markdown("---")
     st.caption(
-        f"{_total_recs} recommendations logged, {len(_settled_recs)} settled, {len(_pending_recs)} pending."
+        f"{_total_recs} recommendations logged, {len(_settled_recs)} settled, {len(_pending_recs)} pending. "
+        f"P&L uses £{STAKE:.0f} flat win stake per selection."
     )
 
 

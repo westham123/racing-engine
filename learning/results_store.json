@@ -1,1 +1,60 @@
-{"results": []}
+{
+  "results": [
+    {
+      "race_id": "2026-04-21::12:42::Pontefract",
+      "course": "Pontefract",
+      "time": "12:42",
+      "date": "2026-04-21",
+      "winner": "Margaret's Pearl",
+      "settled_at": "2026-04-24T06:47:36.951459"
+    },
+    {
+      "race_id": "2026-04-21::13:17::Pontefract",
+      "course": "Pontefract",
+      "time": "13:17",
+      "date": "2026-04-21",
+      "winner": "Lady Youmzain",
+      "settled_at": "2026-04-24T06:47:36.951486"
+    },
+    {
+      "race_id": "2026-04-21::13:52::Pontefract",
+      "course": "Pontefract",
+      "time": "13:52",
+      "date": "2026-04-21",
+      "winner": "Cape Ashizuri",
+      "settled_at": "2026-04-24T06:47:36.951508"
+    },
+    {
+      "race_id": "2026-04-21::14:27::Pontefract",
+      "course": "Pontefract",
+      "time": "14:27",
+      "date": "2026-04-21",
+      "winner": "Have Secret",
+      "settled_at": "2026-04-24T06:47:36.951530"
+    },
+    {
+      "race_id": "2026-04-21::15:02::Pontefract",
+      "course": "Pontefract",
+      "time": "15:02",
+      "date": "2026-04-21",
+      "winner": "Diamont Katie",
+      "settled_at": "2026-04-24T06:47:36.951553"
+    },
+    {
+      "race_id": "2026-04-21::15:32::Pontefract",
+      "course": "Pontefract",
+      "time": "15:32",
+      "date": "2026-04-21",
+      "winner": "Lady Phoebe",
+      "settled_at": "2026-04-24T06:47:36.951575"
+    },
+    {
+      "race_id": "2026-04-21::16:05::Pontefract",
+      "course": "Pontefract",
+      "time": "16:05",
+      "date": "2026-04-21",
+      "winner": "Betweenthesticks",
+      "settled_at": "2026-04-24T06:47:36.951596"
+    }
+  ]
+}

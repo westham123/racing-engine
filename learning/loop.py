@@ -29,7 +29,14 @@ import sys, os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import json
+import requests
+from bs4 import BeautifulSoup
 from datetime import datetime, date, timedelta
+
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                  "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+}
 
 RECOMMENDATIONS_PATH = os.path.join(os.path.dirname(__file__), "recommendations.json")
 RESULTS_PATH         = os.path.join(os.path.dirname(__file__), "results_store.json")
@@ -256,6 +263,95 @@ class LearningLoop:
 
         return settled
 
+    # ─────────────────────────────────────────────────────────
+    # 2b. HISTORICAL SETTLEMENT — for past dates not covered by auto_settle
+    # ─────────────────────────────────────────────────────────
+
+    def settle_historical_date(self, date_str: str) -> int:
+        """
+        Fetch Sporting Life results for a past date and settle open recommendations.
+        date_str: YYYY-MM-DD string
+        Returns count of races settled.
+        """
+        url = f"https://www.sportinglife.com/racing/results/{date_str}"
+        try:
+            r = requests.get(url, headers=HEADERS, timeout=15)
+            if r.status_code != 200:
+                print(f"[LearningLoop] Historical fetch {date_str} status {r.status_code}")
+                return 0
+            soup = BeautifulSoup(r.text, "html.parser")
+            nd = soup.find("script", id="__NEXT_DATA__")
+            if not nd:
+                print(f"[LearningLoop] No __NEXT_DATA__ for {date_str}")
+                return 0
+            data = json.loads(nd.get_text())
+        except Exception as e:
+            print(f"[LearningLoop] Historical fetch failed {date_str}: {e}")
+            return 0
+
+        meetings = data.get("props", {}).get("pageProps", {}).get("meetings", []) or []
+        settled = 0
+
+        for meeting in meetings:
+            for race in meeting.get("races", []) or []:
+                course = race.get("course_name", "")
+                time_  = race.get("time", "")
+                if not course or not time_:
+                    continue
+
+                winner = None
+                for th in race.get("top_horses", []) or []:
+                    try:
+                        if int(th.get("position", 0)) == 1:
+                            winner = th.get("name", "")
+                            break
+                    except Exception:
+                        pass
+                if not winner:
+                    continue
+
+                race_id = f"{date_str}::{time_}::{course}"
+
+                already_settled = any(
+                    r.get("race_id") == race_id and r.get("won") is not None
+                    for r in self.recommendations["records"]
+                )
+                if already_settled:
+                    continue
+
+                # Match to open recs
+                matched_any = False
+                for rec in self.recommendations["records"]:
+                    if rec.get("race_id") == race_id and rec.get("outcome") is None:
+                        rec["outcome"]    = winner
+                        rec["won"]        = (str(rec.get("runner", "")).strip().lower()
+                                             == str(winner).strip().lower())
+                        rec["settled_at"] = datetime.now().isoformat()
+                        matched_any = True
+
+                if not matched_any:
+                    continue
+
+                # Store result
+                result_record = {
+                    "race_id":    race_id,
+                    "course":     course,
+                    "time":       time_,
+                    "date":       date_str,
+                    "winner":     winner,
+                    "settled_at": datetime.now().isoformat(),
+                }
+                self.results.setdefault("results", []).append(result_record)
+
+                print(f"[LearningLoop] Settled: {winner} won {race_id}")
+                settled += 1
+
+        if settled:
+            _save(RECOMMENDATIONS_PATH, self.recommendations)
+            _save(RESULTS_PATH, self.results)
+        print(f"[LearningLoop] Historical settlement {date_str}: {settled} races")
+        return settled
+
     def _update_form_stores(self, winning_runner: dict, course: str, today: str):
         """
         After settlement, record the win in results_store for
@@ -453,3 +549,36 @@ class LearningLoop:
         if w and abs(sum(w.values()) - 1.0) < 0.02:
             return w
         return DEFAULT_WEIGHTS.copy()
+
+
+# ── Standalone helpers (for scripts / dashboard auto-heal) ─────────
+
+def run_historical_settlement(date_str: str) -> int:
+    """Instantiate a LearningLoop and settle a single past date."""
+    loop = LearningLoop()
+    return loop.settle_historical_date(date_str)
+
+
+def settle_outstanding_recommendations() -> int:
+    """
+    Settle all pending recommendations by fetching their historical dates.
+    Skips today's date (auto_settle handles that). Returns total races settled.
+    """
+    data = _load(RECOMMENDATIONS_PATH, {"records": []})
+    recs = data.get("records", []) if isinstance(data, dict) else []
+    today = date.today().isoformat()
+    pending_dates = sorted({
+        r.get("date") for r in recs
+        if r.get("won") is None and r.get("date") and r.get("date") != today
+    })
+    if not pending_dates:
+        return 0
+
+    loop = LearningLoop()
+    total = 0
+    for d in pending_dates:
+        try:
+            total += loop.settle_historical_date(d)
+        except Exception as e:
+            print(f"[LearningLoop] settle_outstanding_recommendations error {d}: {e}")
+    return total
