@@ -714,6 +714,74 @@ def _staking_block(staking: dict) -> str:
     {scen_table}"""
 
 
+def _best_acca_block(combos: list) -> str:
+    """Render the top-ranked accumulator combinations as an HTML table."""
+    if not combos:
+        return ('<p style="color:#888;font-size:13px;margin:0;">'
+                'No qualifying combinations today — pool too thin to rank.</p>')
+
+    rows = ""
+    for c in combos:
+        rank = c.get("rank", 0)
+        horses = " + ".join(c.get("horses", []))
+        warnings = c.get("warnings", []) or []
+        warn_txt = "<br>".join(warnings) if warnings else '<span style="color:#437A22;">Clean</span>'
+
+        # Highlight rank 1 in green.
+        if rank == 1:
+            row_bg = "#1a2a1a"
+            rank_col = "#437A22"
+            rank_txt = f"#{rank} ★"
+        else:
+            row_bg = "#111"
+            rank_col = "#aaa"
+            rank_txt = f"#{rank}"
+
+        rows += f"""
+          <tr style="background:{row_bg};">
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:13px;
+                       font-weight:bold;color:{rank_col};white-space:nowrap;">{rank_txt}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                       color:#e0e0e0;">{horses}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                       color:#aaa;text-align:center;">{c.get('legs',0)}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                       color:#fff;white-space:nowrap;">{c.get('combined_dec',0):.1f}x<br>
+                       <span style="font-size:10px;color:#666;">{c.get('combined_frac','')}</span></td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                       color:#fff;">{c.get('win_prob',0)*100:.1f}%</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:12px;
+                       color:#437A22;font-weight:bold;">£{c.get('proj_return',0):,.2f}</td>
+            <td style="padding:7px 8px;border-bottom:1px solid #2a2a2a;font-size:11px;
+                       color:#964219;">{warn_txt}</td>
+          </tr>"""
+
+    note = (
+        '<p style="font-size:11px;color:#888;margin:10px 0 0;line-height:1.4;">'
+        'Ranked by probability × odds value (Expected Value). '
+        'Not the same as the staking plan — these are the mathematically '
+        'strongest combinations from today\'s card. Projected return assumes '
+        '£10 stake per combination.</p>'
+    )
+
+    return f"""
+    <table style="width:100%;border-collapse:collapse;">
+      <thead>
+        <tr style="color:#555;font-size:10px;text-transform:uppercase;">
+          <th style="padding:5px 8px;text-align:left;">Rank</th>
+          <th style="padding:5px 8px;text-align:left;">Combination</th>
+          <th style="padding:5px 8px;text-align:center;">Legs</th>
+          <th style="padding:5px 8px;text-align:left;">Combined Odds</th>
+          <th style="padding:5px 8px;text-align:left;">Win Prob</th>
+          <th style="padding:5px 8px;text-align:left;">Proj. Return (£10)</th>
+          <th style="padding:5px 8px;text-align:left;">Warnings</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    {note}"""
+
+
 # ── Email Type 1: Morning Brief ────────────────────────────────
 def _going_section_html(going: list) -> str:
     """Compact going table — one row per course."""
@@ -1081,6 +1149,20 @@ def build_morning_brief(budget: float = 100.0) -> str:
     # 4. Staking plan
     if selections:
         body += _section("Staking Plan", _staking_block(staking), "#437A22")
+
+    # 4b. Best Accumulator Options — EV-ranked combinations (additive)
+    if selections:
+        try:
+            from engine.staking import rank_accumulator_combinations as _rank_accas
+            _best_combos = _rank_accas(selections, top_n=5)
+        except Exception as _ba_err:
+            print(f"[Brief] Best-acca ranking failed: {_ba_err}")
+            _best_combos = []
+        body += _section(
+            "🎯 Best Accumulator Options",
+            _best_acca_block(_best_combos),
+            "#437A22"
+        )
 
     # 5. Active filters — concise one-liner
     body += _section(

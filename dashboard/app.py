@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.37** — Fix empty show snapshot; email/app data parity; full-card market moves in brief")
+    st.markdown("**Engine v2.5.38** — Best Accumulator Advisor: EV-ranked combinations in brief + app")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -1154,6 +1154,55 @@ with tab2:
             _style = _style.map(colour_signal, subset=["Signal"])
 
         st.dataframe(_style, use_container_width=True, hide_index=True)
+
+    # ── Best Accumulator Options (EV-ranked) ──────────────────────
+    if _six_pool:
+        with st.expander("🎯 Best Accumulator Options (Ranked by EV)"):
+            try:
+                from engine.staking import rank_accumulator_combinations as _rank_accas_app
+                _acca_combos = _rank_accas_app(_six_pool, top_n=5)
+            except Exception as _ba_err:
+                _acca_combos = []
+                st.caption(f"Ranking unavailable: {_ba_err}")
+
+            if not _acca_combos:
+                st.info("No qualifying accumulator combinations — pool too thin after excluding low-value legs.")
+            else:
+                _rows_app = []
+                for c in _acca_combos:
+                    _warns = " | ".join(c.get("warnings", [])) or "Clean"
+                    _rows_app.append({
+                        "Rank":         c.get("rank", 0),
+                        "Horses":       " + ".join(c.get("horses", [])),
+                        "Legs":         c.get("legs", 0),
+                        "Odds":         f"{c.get('combined_dec', 0):.1f}x ({c.get('combined_frac','')})",
+                        "Win Prob %":   round(c.get("win_prob", 0) * 100, 1),
+                        "Proj Return (£10)": f"£{c.get('proj_return', 0):,.2f}",
+                        "Warnings":     _warns,
+                    })
+                _acca_df = pd.DataFrame(_rows_app)
+
+                def _colour_rank(val):
+                    try:
+                        return "color: #00ff88; font-weight: bold" if int(val) == 1 else "color: #aaaaaa"
+                    except Exception:
+                        return ""
+
+                def _colour_warn(val):
+                    return "color: #ffaa00" if str(val) != "Clean" else "color: #00ff88"
+
+                st.dataframe(
+                    _acca_df.style
+                        .map(_colour_rank, subset=["Rank"])
+                        .map(_colour_warn, subset=["Warnings"]),
+                    use_container_width=True, hide_index=True
+                )
+                st.caption(
+                    "Ranked by Expected Value (probability × return). "
+                    "Lower-ranked accas have worse mathematical expected value. "
+                    "These are additive to the staking plan above — shown so you can spot "
+                    "stronger combinations than the default main acc."
+                )
 
     st.markdown("---")
     st.markdown("### Signal Breakdown")

@@ -613,6 +613,156 @@ def _full_acc_fallback(selections: list, budget: float) -> dict:
     }
 
 
+def _approx_fractional(decimal_odds: float) -> str:
+    """Convert combined decimal odds into an 'approximately X/Y' fraction label."""
+    try:
+        d = float(decimal_odds)
+    except Exception:
+        return "approximately 1/1"
+    net = max(d - 1.0, 0.0)
+    if net <= 0.0:
+        return "approximately 1/1"
+    common = [
+        (0.5, "1/2"), (0.8, "4/5"), (1.0, "1/1"), (1.2, "6/5"), (1.5, "6/4"),
+        (1.75, "7/4"), (2.0, "2/1"), (2.5, "5/2"), (3.0, "3/1"), (3.5, "7/2"),
+        (4.0, "4/1"), (4.5, "9/2"), (5.0, "5/1"), (6.0, "6/1"), (7.0, "7/1"),
+        (8.0, "8/1"), (9.0, "9/1"), (10.0, "10/1"), (12.0, "12/1"), (14.0, "14/1"),
+        (16.0, "16/1"), (20.0, "20/1"), (25.0, "25/1"), (33.0, "33/1"), (40.0, "40/1"),
+        (50.0, "50/1"), (66.0, "66/1"), (80.0, "80/1"), (100.0, "100/1"),
+    ]
+    best_lbl = common[-1][1]
+    best_diff = abs(net - common[-1][0])
+    for num, lbl in common:
+        diff = abs(net - num)
+        if diff < best_diff:
+            best_diff = diff
+            best_lbl = lbl
+    if net > 100.0:
+        return f"approximately {int(round(net))}/1"
+    return f"approximately {best_lbl}"
+
+
+def rank_accumulator_combinations(
+    selections: list,
+    min_legs: int = 2,
+    max_legs: int = 5,
+    top_n: int = 5,
+    budget: float = 100.0,
+) -> list:
+    """
+    Score and rank every meaningful accumulator combination from the
+    qualifying selection pool. Returns top_n dicts sorted by EV score.
+
+    Score = win_prob × combined_decimal_return (EV multiplier).
+    Per-leg probability: (1 / decimal) × (confidence / 0.55), capped at 0.95.
+
+    Same-race combinations (same time + course) are excluded.
+    Combinations with low_value_acca / non-favourite / rival-top-trainer
+    legs are flagged via warnings but not excluded.
+
+    Each result dict:
+      legs, horses, times, courses, combined_dec, combined_frac,
+      win_prob, ev_score, proj_return, warnings, rank.
+    """
+    if not selections:
+        return []
+
+    # Build eligible pool: must have a valid decimal price, not low_value_acca.
+    pool = []
+    for s in selections:
+        if s.get("low_value_acca", False):
+            continue
+        try:
+            dec = float(s.get("decimal") or 0.0)
+        except Exception:
+            continue
+        if dec <= 1.0:
+            continue
+        try:
+            conf = float(s.get("confidence") or 0.0)
+        except Exception:
+            conf = 0.0
+        pool.append({
+            "horse":             str(s.get("horse", "")),
+            "time":              str(s.get("time", "")),
+            "course":            str(s.get("course", "")),
+            "decimal":           dec,
+            "confidence":        conf,
+            "is_fav":            bool(s.get("is_fav", False)),
+            "rival_top_trainer": bool(s.get("rival_top_trainer", False)),
+            "rival_trainer_name": str(s.get("rival_trainer_name", "") or ""),
+            "low_value_acca":    bool(s.get("low_value_acca", False)),
+        })
+
+    if len(pool) < min_legs:
+        return []
+
+    # £ stake per combination used for projected return (matches test rubric).
+    stake_per_combo = 10.0
+
+    upper = min(max_legs, len(pool))
+    scored = []
+    for k in range(min_legs, upper + 1):
+        for combo in _combs(pool, k):
+            # Same-race exclusion: no two legs with identical time + course.
+            race_keys = [(leg["time"], leg["course"]) for leg in combo]
+            if len(set(race_keys)) != len(race_keys):
+                continue
+
+            combined_dec = 1.0
+            win_prob = 1.0
+            warnings = []
+            for leg in combo:
+                combined_dec *= leg["decimal"]
+                # Per-leg implied probability × confidence quality multiplier.
+                base_p = 1.0 / leg["decimal"]
+                mult = (leg["confidence"] / 0.55) if leg["confidence"] > 0 else 1.0
+                leg_p = min(base_p * mult, 0.95)
+                win_prob *= leg_p
+
+                if leg.get("low_value_acca"):
+                    warnings.append(f"LOW VALUE: {leg['horse']}")
+                if not leg.get("is_fav"):
+                    warnings.append(f"NOT FAV: {leg['horse']}")
+                if leg.get("rival_top_trainer"):
+                    rival = leg.get("rival_trainer_name", "top yard")
+                    warnings.append(f"RIVAL TRAINER ({rival}) vs {leg['horse']}")
+
+            ev_score = win_prob * combined_dec
+            proj_return = round(stake_per_combo * combined_dec, 2)
+
+            scored.append({
+                "legs":         len(combo),
+                "horses":       [leg["horse"]  for leg in combo],
+                "times":        [leg["time"]   for leg in combo],
+                "courses":      [leg["course"] for leg in combo],
+                "combined_dec": round(combined_dec, 3),
+                "combined_frac": _approx_fractional(combined_dec),
+                "win_prob":     round(win_prob, 5),
+                "ev_score":     round(ev_score, 4),
+                "proj_return":  proj_return,
+                "warnings":     warnings,
+            })
+
+    scored.sort(key=lambda x: x["ev_score"], reverse=True)
+    top = scored[:max(top_n, 0)]
+    for i, row in enumerate(top, start=1):
+        row["rank"] = i
+    return top
+
+
+def get_best_acca_label(combo: dict) -> str:
+    """Short human-readable label, e.g. 'Double: Organise + Misterdoc (EV: 1.42x)'."""
+    if not combo:
+        return ""
+    legs = combo.get("legs", 0)
+    name_map = {2: "Double", 3: "Treble", 4: "4-fold", 5: "5-fold"}
+    lbl = name_map.get(legs, f"{legs}-fold")
+    horses = " + ".join(combo.get("horses", []))
+    ev = combo.get("ev_score", 0.0)
+    return f"{lbl}: {horses} (EV: {ev:.2f}x)"
+
+
 def format_plan_summary(plan: dict) -> str:
     """Plain-text summary for emails and logging."""
     lines = [
