@@ -100,6 +100,11 @@ def get_next_day_card(target_date: str = None) -> list:
     Fetch race card from Sporting Life for target_date (default: tomorrow).
     Uses the same slug-building logic as live_data.py to ensure runners populate.
     Returns list of races with runners and current odds.
+
+    NOTE: the Sporting Life racecards listing endpoint ignores the date
+    path segment and always returns the current day's card. We therefore
+    trust the feed's own `date` field rather than the requested target_date
+    for filtering, and fall back to feed_date when building slugs.
     """
     import re as _re
     if not target_date:
@@ -113,30 +118,32 @@ def get_next_day_card(target_date: str = None) -> list:
                    "IRL", "IRE", "IE", "Ire", "Eire", "GB", "UK", "Northern Ireland", "NI"}
     races_out = []
 
-    def _make_slug(course: str, rc_id: str, rc_name: str) -> str:
-        """Matches live_data.py slug builder exactly."""
+    def _make_slug(date_str: str, course: str, rc_id: str, rc_name: str) -> str:
         course_slug = _re.sub(r"[^a-z0-9]+", "-", course.lower()).strip("-")
         name_slug   = _re.sub(r"[^a-z0-9]+", "-", rc_name.lower()).strip("-")
-        return f"/racing/racecards/{target_date}/{course_slug}/racecard/{rc_id}/{name_slug}"
+        return f"/racing/racecards/{date_str}/{course_slug}/racecard/{rc_id}/{name_slug}"
 
     for mt in meetings:
-        ms      = mt.get("meeting_summary", {})
-        date    = ms.get("date", "")
-        if date != target_date:
-            continue
-        course  = ms.get("course", {}).get("name", "")
-        country = ms.get("course", {}).get("country", {}).get("short_name", "")
+        ms        = mt.get("meeting_summary", {})
+        # Country filter still works from meeting_summary (retained in new structure)
+        country   = ms.get("course", {}).get("country", {}).get("short_name", "")
         if country not in UK_COUNTRIES:
             continue
-        going   = ms.get("going", "TBC")
+        mt_going  = ms.get("going", "TBC")
+        mt_course = ms.get("course", {}).get("name", "")
 
         for rc in mt.get("races", []):
-            rc_id    = str(rc.get("race_summary_reference", {}).get("id", ""))
-            rc_name  = rc.get("name", "")
-            time_str = _utc_to_bst(rc.get("time", ""))   # convert UTC → BST
-            is_hcap  = any(x in rc_name.lower() for x in ["handicap", "hcap", "h'cap"])
+            # NEW flat structure: pull fields directly off the race object
+            rc_id     = str(rc.get("race_summary_reference", {}).get("id", ""))
+            rc_name   = rc.get("name", "")
+            course    = rc.get("course_name") or mt_course
+            feed_date = rc.get("date") or ms.get("date") or target_date
+            time_str  = _utc_to_bst(rc.get("time", ""))   # UTC → BST
+            going     = rc.get("going") or mt_going or "TBC"
+            is_hcap   = bool(rc.get("has_handicap")) or any(
+                x in rc_name.lower() for x in ["handicap", "hcap", "h'cap"])
 
-            slug = _make_slug(course, rc_id, rc_name) if rc_id and rc_name else None
+            slug = _make_slug(feed_date, course, rc_id, rc_name) if rc_id and rc_name and course else None
             runners = []
 
             if slug:
@@ -177,13 +184,13 @@ def get_next_day_card(target_date: str = None) -> list:
                     })
 
             races_out.append({
-                "date":        target_date,
+                "date":        feed_date,
                 "course":      course,
                 "time":        time_str,
                 "name":        rc_name,
                 "going":       going,
                 "is_handicap": is_hcap,
-                "field_size":  len(runners),
+                "field_size":  len(runners) if runners else int(rc.get("ride_count", 0) or 0),
                 "runners":     runners,
             })
 
