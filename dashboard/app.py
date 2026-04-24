@@ -461,6 +461,7 @@ _FAV_GAP_PCT = 0.35
 if _pool_is_live and len(_pool_df) > 0:
     # Build race-level favourite price lookup {"HH:MM::Course": shortest_decimal}
     _race_fav_price = {}
+    _race_runners_pool = {}  # race_key -> list of {horse, trainer}
     for _, _fr in _pool_df.iterrows():
         _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
         _frodds = str(_fr.get('Current Odds', '') or _fr.get('Odds', 'N/A')).strip()
@@ -475,6 +476,10 @@ if _pool_is_live and len(_pool_df) > 0:
         if _frdec > 1.0:
             if _frkey not in _race_fav_price or _frdec < _race_fav_price[_frkey]:
                 _race_fav_price[_frkey] = _frdec
+        _race_runners_pool.setdefault(_frkey, []).append({
+            "horse":   str(_fr.get("Horse", "")),
+            "trainer": str(_fr.get("Trainer", "")),
+        })
 
 if _pool_is_live and len(_pool_df) > 0:
     for _, _prow in _pool_df.iterrows():
@@ -592,6 +597,17 @@ if _pool_is_live and len(_pool_df) > 0:
 
         _plow_value_acca = (_prunners > 0 and _prunners <= 4)
 
+        # Top-trainer-in-race warning (warning flag only, never auto-excludes)
+        _p_rival = {"rival_top_trainer": False, "rival_trainer_name": ""}
+        try:
+            from engine.staking import detect_rival_top_trainer as _p_detect_rival
+            _p_rival = _p_detect_rival(
+                _phorse_name,
+                _race_runners_pool.get(_pracekey, []),
+            )
+        except Exception:
+            pass
+
         _six_pool.append({
             'horse':      _phorse_name,
             'course':     str(_prow.get('Course', '')),
@@ -605,6 +621,8 @@ if _pool_is_live and len(_pool_df) > 0:
             'fav_price':  round(float(_pfav_dec), 2),
             'runners':    _prunners,
             'low_value_acca': _plow_value_acca,
+            'rival_top_trainer':  _p_rival.get('rival_top_trainer', False),
+            'rival_trainer_name': _p_rival.get('rival_trainer_name', ''),
         })
 
     _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
@@ -740,6 +758,10 @@ with tab1:
                           else f"⬇{_mv['move_pct']:.0f}% ({_mv['baseline_odds']}→{_mv['current_odds']})"
             else:
                 _mv_str = "—"
+            _warn_bits = []
+            if _s.get("rival_top_trainer"):
+                _rv_nm = (_s.get("rival_trainer_name", "") or "TOP TRAINER").strip()
+                _warn_bits.append(f"⚠ TOP TRAINER IN RACE ({_rv_nm})")
             _sel_rows.append({
                 "Time":           _s["time"],
                 "Horse":          _s["horse"],
@@ -749,6 +771,7 @@ with tab1:
                 "Overnight Move": _mv_str,
                 "Signal":         _s.get("signal", "Stable"),
                 "Tier":           _s["tier"],
+                "Warning":        " | ".join(_warn_bits) if _warn_bits else "—",
             })
         st.dataframe(pd.DataFrame(_sel_rows), use_container_width=True, hide_index=True)
 
@@ -1060,13 +1083,13 @@ with tab2:
 
             # Map breakdown keys safely — use .get() with N/A fallback
             _sig_rows = [
-                ("Market Odds",  0.25, breakdown.get("market_odds",  "—")),
+                ("Market Odds",  0.20, breakdown.get("market_odds",  "—")),
                 ("Horse Form",   0.20, breakdown.get("horse_form",   "—")),
                 ("Track Form",   0.15, breakdown.get("track_form",   "—")),
                 ("Going",        0.10, breakdown.get("going",        "—")),
-                ("Trainer Form", 0.10, breakdown.get("trainer_form", "—")),
-                ("Jockey Form",  0.10, breakdown.get("jockey_form",  "—")),
-                ("Market Moves", 0.10, breakdown.get("market_moves", "—")),
+                ("Trainer Form", 0.15, breakdown.get("trainer_form", "—")),
+                ("Jockey Form",  0.08, breakdown.get("jockey_form",  "—")),
+                ("Market Moves", 0.12, breakdown.get("market_moves", "—")),
             ]
             signals = pd.DataFrame(_sig_rows, columns=["Signal", "Weight", f"Score ({label})"])
             st.caption(f"Live signal breakdown for: **{label}** | Confidence: {top_sel['confidence']:.1%}")
@@ -1316,7 +1339,7 @@ with tab5:
 # ── Tab 6: Learning Engine ────────────────────────────────────
 with tab6:
     st.markdown("### 🧠 Learning Engine")
-    st.caption("Weights last manually calibrated — 21 April 2026. Self-adjustment begins at 20 settled races.")
+    st.caption("Last updated: Manually recalibrated 24 Apr 2026 — trainer_form increased after Henderson/Perth analysis.")
 
     import json as _learn_json
     _weights_path = os.path.join(os.path.dirname(__file__), "..", "learning", "learned_weights.json")
@@ -1324,9 +1347,9 @@ with tab6:
     _settled_path = os.path.join(os.path.dirname(__file__), "..", "learning", "settled_races.json")
 
     _current_weights = {
-        "market_odds":  0.25, "horse_form":   0.20, "track_form":   0.15,
-        "going":        0.10, "trainer_form": 0.10, "jockey_form":  0.10,
-        "market_moves": 0.10,
+        "market_odds":  0.20, "horse_form":   0.20, "track_form":   0.15,
+        "going":        0.10, "trainer_form": 0.15, "jockey_form":  0.08,
+        "market_moves": 0.12,
     }
     try:
         if os.path.exists(_weights_path):
@@ -1392,7 +1415,7 @@ with tab6:
     st.caption(f"Total weight: **{_total_w*100:.0f}%** (must sum to 100%).")
 
     st.markdown("---")
-    st.caption("Weights last manually calibrated — 21 April 2026. Self-adjustment begins at 20 settled races.")
+    st.caption("Last updated: Manually recalibrated 24 Apr 2026 — trainer_form increased after Henderson/Perth analysis.")
 
 # ── Tab 7: Results History ────────────────────────────────────
 with tab7:

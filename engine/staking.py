@@ -32,6 +32,46 @@
 from itertools import combinations as _combs
 
 
+# ── Top trainers whose presence in a race is a WARNING flag (not auto-exclude)
+# If one of these trainers has a runner in the same race as our selection
+# (and it's NOT our selection), flag it — serious intent from a top yard.
+TOP_RIVAL_TRAINERS = [
+    "henderson", "mullins", "o'brien", "elliott", "nicholls",
+    "o'neill", "stoute", "gosden", "appleby",
+]
+
+
+def detect_rival_top_trainer(our_horse: str, race_runners: list) -> dict:
+    """
+    Scan the other runners in a race for a top-tier trainer.
+    Returns dict: {"rival_top_trainer": bool, "rival_trainer_name": str}.
+
+    our_horse      : the horse name we selected (case-insensitive compare)
+    race_runners   : list of runner dicts containing "horse" and "trainer" keys
+
+    If trainer data is missing per runner, silently returns False/"" —
+    this is a best-effort warning, never an automatic exclusion.
+    """
+    result = {"rival_top_trainer": False, "rival_trainer_name": ""}
+    if not race_runners or not our_horse:
+        return result
+    our_name = str(our_horse).lower().strip()
+    for rn in race_runners:
+        try:
+            rn_horse   = str(rn.get("horse", "")).lower().strip()
+            rn_trainer = str(rn.get("trainer", "")).lower().strip()
+        except Exception:
+            continue
+        if not rn_trainer or rn_horse == our_name:
+            continue
+        for top in TOP_RIVAL_TRAINERS:
+            if top in rn_trainer:
+                # Preserve original casing from the feed for display
+                original = rn.get("trainer", "") or top.title()
+                return {"rival_top_trainer": True, "rival_trainer_name": original}
+    return result
+
+
 # ── Thresholds ────────────────────────────────────────────────────────────────
 BANKER_CONF      = 0.63    # minimum confidence to be a banker leg
 BANKER_MAX_PRICE = 4.00    # maximum price to be a banker leg

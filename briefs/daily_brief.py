@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 _LONDON = zoneinfo.ZoneInfo("Europe/London")
 
@@ -96,6 +96,7 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         _FAV_GAP_PCT = 0.35
         _race_fav_price_brief = {}
         _race_fav_name_brief  = {}
+        _race_runners_brief   = {}  # race_key -> list of {horse, trainer} dicts
         for _, _fr in df.iterrows():
             _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
             _frodds = str(_fr.get('Current Odds','') or _fr.get('Odds','N/A')).strip()
@@ -107,6 +108,10 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 if _frkey not in _race_fav_price_brief or _frdec < _race_fav_price_brief[_frkey]:
                     _race_fav_price_brief[_frkey] = _frdec
                     _race_fav_name_brief[_frkey]  = str(_fr.get('Horse', ''))
+            _race_runners_brief.setdefault(_frkey, []).append({
+                "horse":   str(_fr.get("Horse", "")),
+                "trainer": str(_fr.get("Trainer", "")),
+            })
 
         for _, row in df.iterrows():
             t = str(row.get("Time", ""))
@@ -179,6 +184,17 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
 
             _low_value_acca = (_runners > 0 and _runners <= 4)
 
+            # Top-trainer-in-race warning (warning flag only, never auto-excludes)
+            _rival_flag = {"rival_top_trainer": False, "rival_trainer_name": ""}
+            try:
+                from engine.staking import detect_rival_top_trainer as _detect_rival
+                _rival_flag = _detect_rival(
+                    str(row.get("Horse", "")),
+                    _race_runners_brief.get(_bracekey, []),
+                )
+            except Exception:
+                pass
+
             out.append({
                 "time":        t,
                 "course":      str(row.get("Course", "")),
@@ -200,6 +216,8 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 "is_fav":      is_fav,
                 "fav_price":   fav_price,
                 "fav_name":    fav_name,
+                "rival_top_trainer":  _rival_flag.get("rival_top_trainer", False),
+                "rival_trainer_name": _rival_flag.get("rival_trainer_name", ""),
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
@@ -266,11 +284,20 @@ def _get_going() -> list:
 
 
 def _get_todays_results() -> list:
-    """Returns settled races from today's results feed."""
+    """Returns settled races from today's results feed — strictly today only.
+
+    Defence-in-depth: even though get_todays_meetings() already filters to today,
+    we stamp each row with today's ISO date on ingest and strip rows that
+    cannot be matched to today. Prevents any upstream cache bleed from putting
+    yesterday's results into the evening summary.
+    """
+    today_str = datetime.now(_LONDON).date().isoformat()
+    print(f"[Evening] Fetching results for {today_str}")
     try:
         from dashboard.live_data import get_todays_results
         df = get_todays_results()
         if df is None or len(df) == 0:
+            print(f"[Evening] No results returned for {today_str}")
             return []
         out = []
         for _, row in df.iterrows():
@@ -278,9 +305,12 @@ def _get_todays_results() -> list:
                 "race":    str(row.get("Race", "")),
                 "winner":  str(row.get("Winner", "")),
                 "sp":      str(row.get("Odds", "")),
+                "date":    today_str,
             })
+        print(f"[Evening] Got {len(out)} results for {today_str}")
         return out
-    except Exception:
+    except Exception as _err:
+        print(f"[Evening] Results fetch failed for {today_str}: {_err}")
         return []
 
 
@@ -877,6 +907,16 @@ def _morning_html(selections: list) -> str:
                     '</div>'
                 )
 
+            if bool(s.get("rival_top_trainer", False)):
+                _rival_nm = (s.get("rival_trainer_name", "") or "top trainer").strip()
+                race_card += (
+                    '<div style="background:#f8d7da;border:1px solid #e4868d;color:#842029;'
+                    'padding:8px 10px;border-radius:6px;margin:8px 0;font-size:12px;'
+                    'font-weight:bold;">'
+                    f'&#9888; TOP TRAINER DANGER: {_rival_nm} has a runner in this race'
+                    '</div>'
+                )
+
             snap_key  = (f"{horse.lower().strip()}|"
                          f"{s.get('course','').lower().strip()}|"
                          f"{t_time.strip()}")
@@ -1191,6 +1231,141 @@ def build_market_alert(horse: str, race: str, move_type: str,
     )
 
 
+# ── Pre-Race Alert (30 minutes before off) ─────────────────────
+def _fetch_live_price(horse: str, course: str, race_time: str) -> float:
+    """Best-effort fresh price lookup. Returns 0.0 if not found."""
+    try:
+        from dashboard.live_data import get_todays_selections
+        df = get_todays_selections()
+        if df is None or len(df) == 0:
+            return 0.0
+        hn, cn, tn = horse.lower().strip(), course.lower().strip(), race_time.strip()
+        for _, r in df.iterrows():
+            if (str(r.get("Horse", "")).lower().strip() == hn
+                    and str(r.get("Course", "")).lower().strip() == cn
+                    and str(r.get("Time", "")).strip() == tn):
+                odds_s = str(r.get("Current Odds", "") or r.get("Odds", "")).strip()
+                try:
+                    return _to_decimal(odds_s)
+                except Exception:
+                    return 0.0
+    except Exception:
+        pass
+    return 0.0
+
+
+def send_prerace_alert(selection: dict) -> bool:
+    """
+    Send a single-race pre-race alert ~30 minutes before the off.
+
+    selection keys used: horse, course, time, decimal (morning price),
+    is_fav, rival_top_trainer, rival_trainer_name, odds (fractional morning).
+    Fetches a fresh live price, computes move, and emits GO/MONITOR/AVOID.
+    """
+    horse     = str(selection.get("horse", "")) or "Unknown"
+    course    = str(selection.get("course", "")) or ""
+    race_time = str(selection.get("time", "")) or ""
+
+    morning_dec   = float(selection.get("decimal", 0) or 0)
+    morning_odds  = str(selection.get("odds", "N/A") or selection.get("curr_odds", "N/A"))
+    live_dec      = _fetch_live_price(horse, course, race_time)
+    live_odds     = f"{live_dec:.2f}" if live_dec > 0 else "N/A"
+
+    # Price move (positive = shortened = steamer)
+    move_pct = 0.0
+    if morning_dec > 0 and live_dec > 0:
+        move_pct = (morning_dec - live_dec) / morning_dec * 100.0
+
+    if move_pct >= 5.0:
+        move_line = f"Shortened from {morning_odds} to {live_odds} — ✅ STEAMING"
+    elif move_pct <= -5.0:
+        move_line = f"Drifted from {morning_odds} to {live_odds} — ⚠ MONITOR"
+    else:
+        move_line = f"Price stable {morning_odds} → {live_odds}"
+
+    still_fav         = bool(selection.get("is_fav", False))
+    rival_flag        = bool(selection.get("rival_top_trainer", False))
+    rival_name        = str(selection.get("rival_trainer_name", "") or "")
+
+    # Signal
+    drifted_hard = move_pct <= -20.0
+    if drifted_hard:
+        signal = "AVOID"
+    elif move_pct >= 5.0 and still_fav and not rival_flag:
+        signal = "GO"
+    elif not still_fav or move_pct < 0 or rival_flag:
+        signal = "MONITOR"
+    else:
+        signal = "MONITOR"
+
+    subject = f"⚡ PRE-RACE: {horse} @ {race_time} {course} — {signal}"
+
+    rows = [
+        ("Horse",         horse),
+        ("Race",          f"{race_time} {course}"),
+        ("Current price", live_odds),
+        ("Morning price", morning_odds),
+        ("Price move",    move_line),
+        ("Still fav?",    "Yes" if still_fav else "No"),
+        ("Top trainer danger?",
+         (f"Yes — {rival_name}" if rival_flag else "No")),
+        ("Signal",        signal),
+    ]
+    table = "".join(
+        f'<tr><td style="padding:6px 10px;color:#888;font-size:12px;">{k}</td>'
+        f'<td style="padding:6px 10px;font-size:13px;font-weight:bold;">{v}</td></tr>'
+        for k, v in rows
+    )
+    body = _section(f"Pre-Race Check — {horse}",
+                    f'<table style="width:100%;border-collapse:collapse;">{table}</table>',
+                    "#01696F")
+    html = _email_shell(
+        title       = f"PRE-RACE {signal}: {horse}",
+        label_color = "#01696F",
+        label_text  = "Pre-Race Alert",
+        body_html   = body,
+    )
+    return send_email(subject, html)
+
+
+def schedule_prerace_alerts() -> list:
+    """
+    Build a schedule of (send_time_utc, selection) tuples for today's selections
+    that haven't started yet. Each alert fires 30 minutes before the race (BST),
+    returned in UTC so an external cron can consume it directly.
+    """
+    out = []
+    try:
+        selections = _get_official_selections()
+    except Exception as _e:
+        print(f"[PreRace] Unable to load selections: {_e}")
+        return out
+
+    now_bst = datetime.now(_LONDON)
+    today_d = now_bst.date()
+
+    for s in selections:
+        t_str = str(s.get("time", "")).strip()
+        if not t_str or ":" not in t_str:
+            continue
+        try:
+            hh, mm = t_str.split(":")
+            race_dt_bst = datetime(
+                today_d.year, today_d.month, today_d.day,
+                int(hh), int(mm), tzinfo=_LONDON,
+            )
+        except Exception:
+            continue
+        send_bst = race_dt_bst - timedelta(minutes=30)
+        if send_bst <= now_bst:
+            continue  # already past
+        send_utc = send_bst.astimezone(zoneinfo.ZoneInfo("UTC"))
+        out.append((send_utc, s))
+
+    out.sort(key=lambda x: x[0])
+    return out
+
+
 # ── Email Sender ───────────────────────────────────────────────
 def send_email(subject: str, html_content: str, recipient: str = RECIPIENT) -> bool:
     if not SENDER_EMAIL or not SENDER_PASSWORD:
@@ -1265,11 +1440,45 @@ def send_morning_brief(budget: float = 100.0):
 
 
 def send_evening_summary(budget: float = 100.0):
-    """Called directly by the 21:00 BST cron. Fetches live results + runs ML settlement."""
+    """Called directly by the 21:00 BST cron. Fetches live results + runs ML settlement.
+
+    Guards against stale data: if 0 results for today, send a fallback
+    notice rather than any cached/yesterday content.
+    """
+    today_str  = datetime.now(_LONDON).date().isoformat()
+    print(f"[Evening] Fetching results for {today_str}")
     selections = _get_official_selections()
     results    = _get_todays_results()
-    html       = build_evening_summary(results, selections, budget)
     subject    = f"Racing Engine — Evening Summary | {_date_bst()}"
+
+    if not results:
+        # Fallback: feed empty for today — don't send yesterday's/Tuesday's data.
+        import smtplib
+        from email.mime.text import MIMEText
+        SENDER_EMAIL = "racingengine.sender@gmail.com"
+        SENDER_PASS  = "aase pwst fcbf smfs"
+        RECIPIENT    = "richardking123@outlook.com"
+        msg = MIMEText(
+            f"Racing Engine — Evening Summary\n"
+            f"{_date_bst()} | {_now_bst()} BST\n\n"
+            f"No results available for {today_str}.\n"
+            "Results feed returned 0 races — sending holding notice rather than stale data.\n"
+            "Check again later or review the dashboard directly.",
+            "plain"
+        )
+        msg["Subject"] = subject
+        msg["From"]    = SENDER_EMAIL
+        msg["To"]      = RECIPIENT
+        try:
+            with smtplib.SMTP_SSL("smtp.gmail.com", 465) as srv:
+                srv.login(SENDER_EMAIL, SENDER_PASS)
+                srv.sendmail(SENDER_EMAIL, RECIPIENT, msg.as_string())
+            print(f"[Evening] No results for {today_str} — fallback email sent")
+        except Exception as e:
+            print(f"[Evening] Fallback email failed: {e}")
+        return False
+
+    html       = build_evening_summary(results, selections, budget)
     ok         = send_email(subject, html)
 
     # ── ML Learning loop ──────────────────────────────────────

@@ -474,6 +474,13 @@ def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.1
 
 def print_movers_report(target_date: str = None, vs: str = "opening"):
     """Print a readable market movers report to console."""
+    # ── BST quiet hours: user doesn't want notifications before 08:00 BST.
+    # The hourly cron can still fire; we just exit silently so no email/log
+    # is produced before 08:00 Europe/London local time.
+    _bst_hour = datetime.datetime.now(_LONDON).hour
+    if _bst_hour < 8:
+        return
+
     movers = get_market_movers(target_date, vs=vs)
     if not movers:
         print("No significant market moves detected yet.")
@@ -515,6 +522,11 @@ def print_movers_report(target_date: str = None, vs: str = "opening"):
 
 def print_show_vs_morning_report(target_date: str = None):
     """Print overnight show→morning move report."""
+    # ── BST quiet hours: silence before 08:00 Europe/London.
+    _bst_hour = datetime.datetime.now(_LONDON).hour
+    if _bst_hour < 8:
+        return
+
     movers = get_show_vs_morning_moves(target_date)
     if not movers:
         print("No significant overnight moves detected.")

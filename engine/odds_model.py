@@ -54,7 +54,8 @@ from engine.form_scorer import score_trainer_form, score_jockey_form
 from engine.race_times_stride import score_race_pace, RaceTimesStore
 
 TOP_TRAVELLERS = [
-    "henderson", "mullins", "o'brien", "elliott", "nicholls", "o'neill"
+    "henderson", "mullins", "o'brien", "elliott", "nicholls", "o'neill",
+    "stoute", "gosden", "appleby"
 ]
 
 
