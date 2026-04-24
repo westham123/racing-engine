@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.40** — Oddschecker 24-bookie best-price integration: best odds + bookmaker shown per selection")
+    st.markdown("**Engine v2.5.41** — operator brief staking rules updated to 2-bet fold structure (Bet A core / Bet B extended)")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")

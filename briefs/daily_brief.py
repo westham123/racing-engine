@@ -2049,17 +2049,26 @@ Short price cut-off : 4/6 (1.67 decimal) — hard exclusion from ALL bets
 Confidence threshold: 55% minimum (handicaps: 65%)
 One horse per race  : highest confidence only
 
-3-BET STRUCTURE (approved {date_str}):
-  BET 1 — Main Accumulator (£60) — BANKERS ONLY
-           Bankers = conf ≥ 63% AND price ≤ 4.0x
-           VALUE horses (4x+) are NEVER in BET 1
-  BET 2 — Cover Accumulator (£25) — all bankers MINUS riskiest leg
-           Riskiest = highest-priced banker in BET 1
-           Safety net: lands if BET 1's longest-priced horse fails
-           Must be genuinely different from BET 1 — never a duplicate
-  BET 3 — Value Double (£15) — top 2 VALUE horses only
-           Value = price ≥ 4.0x AND conf ≥ 55%
-           Independent of both accumulators
+2-BET FOLD STRUCTURE (live from v2.5.39, 24 April 2026):
+  BET A — Core Fold — STRONG selections only
+           Strong = dominant fav (gap to 2nd ≥50%) AND field <10 runners
+           No short-price singles (4/6 or shorter excluded)
+           Cap at 4 legs, picked by confidence
+
+  BET B — Extended Fold — Core + best optional selection
+           Optional may include YG_RISK horses (field ≥10 runners, gap <50%)
+           YG_RISK horses flagged with Yorkshire Glory warning
+           If no valid 5th selection, BET B = BET A (not duplicated)
+
+Yorkshire Glory Rule:
+  If field ≥10 runners AND gap from our horse to 2nd fav <50%:
+  → Exclude from BET A (core fold)
+  → May appear in BET B with ⚠ YG_RISK warning only
+
+Oddschecker multi-bookmaker odds (v2.5.40):
+  Best available price shown across 24 bookmakers
+  Betfair Exchange price included via BF bookmaker code
+  Fallback to Sporting Life if Oddschecker unavailable
 
 Target: £2,000+ profit, uncapped.
 
@@ -2143,9 +2152,6 @@ KNOWN BUGS & NEXT BUILDS (in priority order)
 2. FAVOURITE CHECK THRESHOLD REVIEW
    35% gap exclusion is live. Review after 1 week of data.
    Scheduled review: Friday 24 April 2026.
-
-3. SCENARIO TABLE — Double Return column
-   Verify "Double Return" column displays correctly after 3-bet rebuild.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
