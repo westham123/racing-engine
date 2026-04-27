@@ -33,8 +33,8 @@ COURSE_SLUGS = {
     "pontefract":      "pontefract",
     "haydock":         "haydock",
     "york":            "york",
-    "lingfield":       "lingfield-park",
-    "kempton":         "kempton-park",
+    "lingfield":       "lingfield",
+    "kempton":         "kempton",
     "leicester":       "leicester",
     "nottingham":      "nottingham",
     "windsor":         "windsor",
@@ -46,7 +46,7 @@ COURSE_SLUGS = {
     "ripon":           "ripon",
     "redcar":          "redcar",
     "ayr":             "ayr",
-    "hamilton":        "hamilton-park",
+    "hamilton":        "hamilton",
     "musselburgh":     "musselburgh",
 }
 
