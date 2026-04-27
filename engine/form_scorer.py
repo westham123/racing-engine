@@ -120,8 +120,12 @@ def score_trainer_form(trainer_name: str) -> dict:
 
     combined = score_14d + score_30d
 
-    # If store is empty / very new, return neutral
-    if wins_30d == 0 and len(_get_results_since(30)) < 5:
+    # If store is sparse or this trainer has no recorded wins, fall back to
+    # neutral. v2.5.45: raised threshold from 5 to 50 — with only ~10 results
+    # in store, individual trainers almost always have 0 wins, returning 0.0
+    # and dragging confidence to the floor. Until the results store builds
+    # meaningful coverage, prefer neutral over false-zero signals.
+    if wins_30d == 0 and len(_get_results_since(30)) < 50:
         return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
 
     return {
@@ -155,7 +159,8 @@ def score_jockey_form(jockey_name: str) -> dict:
 
     combined = score_14d + score_30d
 
-    if wins_30d == 0 and len(_get_results_since(30)) < 5:
+    # v2.5.45: raised threshold from 5 to 50 (see score_trainer_form).
+    if wins_30d == 0 and len(_get_results_since(30)) < 50:
         return {"score": 0.50, "wins_14d": 0, "wins_30d": 0, "note": "insufficient_data"}
 
     return {

@@ -42,7 +42,9 @@ SHORT_PRICE_CUTOFF_DISPLAY = "4/6"
 
 # Confidence threshold — only runners above this qualify for any selection
 # v2.5.43: aligned with live gate in briefs/_get_official_selections (was 0.60)
-MIN_CONFIDENCE = 0.55
+# v2.5.45: lowered to 0.50 after fixing neutral-signal drag in calculate_confidence.
+# Calibration threshold — review after 2 weeks of live data
+MIN_CONFIDENCE = 0.50
 
 # ── Accumulator Settings ─────────────────────────────────────
 MAX_RACES_PER_DAY = 8

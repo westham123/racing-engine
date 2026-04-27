@@ -77,7 +77,8 @@ def _get_overnight_moves(today: str = None) -> list:
         return []
 
 
-def _get_official_selections(conf_threshold: float = 0.55) -> list:
+def _get_official_selections(conf_threshold: float = 0.50) -> list:
+    # Calibration threshold — review after 2 weeks of live data
     """
     Returns only official selections: cleared threshold + 4/6 cut-off
     on the live engine. No fallback — returns empty list if feed is down.

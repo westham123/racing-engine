@@ -435,8 +435,8 @@ class OddsModel:
         """
         Handicap uplift: raise the required threshold for handicap races.
         Handicaps have larger, more competitive fields — harder to predict.
-        Flat conditions races: base_threshold (default 55%)
-        Handicaps: base_threshold + 0.10 (default 65%)
+        Flat conditions races: base_threshold (default 50% — v2.5.45)
+        Handicaps: base_threshold + 0.10 (default 60% — v2.5.45)
         """
         if runner_data.get("is_handicap", False):
             return round(base_threshold + 0.10, 2)
@@ -483,14 +483,26 @@ class OddsModel:
         # Active weights — loaded from learning/learned_weights.json at
         # runtime (with default fallback). Always renormalised to sum to 1.0.
         w = _load_scoring_weights()
-        raw = (
-            s_form    * w["s_form"] +
-            s_tf      * w["s_tf"] +
-            s_odds    * w["s_odds"] +
-            s_moves   * w["s_moves"] +
-            s_trainer * w["s_trainer"] +
-            s_jockey  * w["s_jockey"]
-        )
+
+        # v2.5.45: signals returning EXACTLY 0.50 (no-data neutral) drag the
+        # weighted average toward the centre. Drop neutral signals and
+        # renormalise weights across signals that have real data.
+        # Note: _score_tf_stars(None) returns 0.45 (not 0.50), so missing
+        # tf_stars stays in the active set as a slight negative.
+        signal_scores = {
+            "s_form":    s_form,
+            "s_tf":      s_tf,
+            "s_odds":    s_odds,
+            "s_moves":   s_moves,
+            "s_trainer": s_trainer,
+            "s_jockey":  s_jockey,
+        }
+        active = {k: v for k, v in signal_scores.items() if abs(v - 0.50) > 0.01}
+        if not active:
+            raw = 0.50
+        else:
+            total_active_weight = sum(w[k] for k in active)
+            raw = sum(v * w[k] / total_active_weight for k, v in active.items())
 
         # Apply penalty/bonus
         form_detail = self._get_form_detail(form_str)
