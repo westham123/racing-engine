@@ -89,9 +89,13 @@ class LearningLoop:
 
     def auto_record_day(self) -> int:
         """
-        Pull today's live runners, score each with the odds model,
-        and record a recommendation for every runner.
-        Returns count of recommendations recorded.
+        Record only OFFICIAL selections for today — those that cleared
+        BOTH the confidence threshold AND the 4/6 price cut-off via
+        _get_official_selections() in briefs/daily_brief.py.
+
+        Previously this recorded every runner in every race (~268/day),
+        which drowned the learning signal in noise. v2.5.42: official
+        selections only (typically 5–15/day).
         """
         today = date.today().isoformat()
 
@@ -103,75 +107,72 @@ class LearningLoop:
             return len(existing_today)
 
         try:
-            from dashboard.live_data import get_todays_meetings, get_race_runners
+            # Use the same official-selection pipeline that drives the
+            # morning brief and the app — single source of truth.
+            from briefs.daily_brief import _get_official_selections
             from engine.odds_model import OddsModel
-            model    = OddsModel()
-            meetings = get_todays_meetings()
+            selections = _get_official_selections()
+            model      = OddsModel()
         except Exception as e:
-            print(f"[LearningLoop] Could not load data/model: {e}")
+            print(f"[LearningLoop] Could not load official selections: {e}")
+            return 0
+
+        if not selections:
+            print(f"[LearningLoop] No official selections for {today} — nothing to record")
             return 0
 
         count = 0
-        for meeting in meetings:
-            course = meeting.get("course", "")
-            going  = meeting.get("going", "")
+        for sel in selections:
+            horse  = str(sel.get("horse", ""))
+            course = str(sel.get("course", ""))
+            time_  = str(sel.get("time", ""))
+            if not horse or not course or not time_:
+                continue
 
-            for race in meeting.get("races", []):
-                time_  = race.get("time", "")
-                name_  = race.get("name", "")
-                slug   = race.get("slug")
-                stage  = race.get("stage", "")
+            race_id = f"{today}::{time_}::{course}"
 
-                # Only record upcoming races
-                if stage in ("WEIGHEDIN", "RESULT") or not slug:
-                    continue
+            # Recompute signal breakdown so each record has full signal context
+            runner_data = {
+                "odds":    sel.get("curr_odds", sel.get("odds", "N/A")),
+                "form":    sel.get("form", "-"),
+                "going":   sel.get("going", ""),
+                "trainer": sel.get("trainer", "-"),
+                "jockey":  sel.get("jockey", "-"),
+                "signal":  sel.get("signal", "Stable"),
+                "tf_stars": sel.get("tf_stars"),
+                "course":  course,
+                "bet_movements": [],
+            }
+            try:
+                signals = model.get_signal_breakdown(runner_data)
+            except Exception:
+                signals = {}
 
-                race_id = f"{today}::{time_}::{course}"
+            try:
+                confidence = float(sel.get("confidence", 0.0) or 0.0)
+            except Exception:
+                confidence = 0.0
 
-                try:
-                    runners = get_race_runners(slug)
-                except Exception:
-                    continue
-
-                for runner in runners:
-                    if runner.get("status") == "NON_RUNNER":
-                        continue
-
-                    horse  = runner.get("horse", "")
-                    runner_data = {
-                        "odds":    runner.get("odds", "N/A"),
-                        "form":    runner.get("form", "-"),
-                        "going":   going,
-                        "trainer": runner.get("trainer", "-"),
-                        "jockey":  runner.get("jockey", "-"),
-                        "signal":  runner.get("signal", "Stable"),
-                        "tf_stars": runner.get("tf_stars"),
-                        "course":  course,
-                        "bet_movements": runner.get("bet_movements", []),
-                    }
-
-                    confidence = model.calculate_confidence(runner_data)
-                    signals    = model.get_signal_breakdown(runner_data)
-
-                    record = {
-                        "race_id":        race_id,
-                        "race_name":      name_,
-                        "runner":         horse,
-                        "course":         course,
-                        "time":           time_,
-                        "date":           today,
-                        "confidence":     confidence,
-                        "signals":        signals,
-                        "odds":           runner.get("odds", "N/A"),
-                        "recommended_at": datetime.now().isoformat(),
-                        "outcome":        None,
-                        "won":            None,
-                    }
-                    self.recommendations["records"].append(record)
-                    count += 1
+            record = {
+                "race_id":        race_id,
+                "race_name":      str(sel.get("race_name", "")),
+                "runner":         horse,
+                "course":         course,
+                "time":           time_,
+                "date":           today,
+                "confidence":     confidence,
+                "signals":        signals,
+                "odds":           str(sel.get("odds", "N/A")),
+                "current_odds":   str(sel.get("curr_odds", "")),
+                "recommended_at": datetime.now().isoformat(),
+                "outcome":        None,
+                "won":            None,
+            }
+            self.recommendations["records"].append(record)
+            count += 1
 
         _save(RECOMMENDATIONS_PATH, self.recommendations)
-        print(f"[LearningLoop] Recorded {count} recommendations for {today}")
+        print(f"[LearningLoop] Recorded {count} OFFICIAL selections for {today}")
         return count
 
     # ─────────────────────────────────────────────────────────
@@ -404,21 +405,39 @@ class LearningLoop:
         signal_names = list(DEFAULT_WEIGHTS.keys())
         win_sums  = {s: 0.0 for s in signal_names}
         loss_sums = {s: 0.0 for s in signal_names}
-        winners   = [r for r in settled if r.get("won")]
-        losers    = [r for r in settled if not r.get("won")]
+
+        # `won` may come back from JSON as bool, None, or string ("True"/"False").
+        # Normalise to a real bool before partitioning so arithmetic later can't
+        # accidentally see a string in the signal sums.
+        def _won(rec) -> bool:
+            v = rec.get("won")
+            if isinstance(v, bool):
+                return v
+            return str(v).strip().lower() == "true"
+
+        winners = [r for r in settled if _won(r)]
+        losers  = [r for r in settled if not _won(r)]
 
         if not winners or not losers:
             print("[LearningLoop] No win/loss spread — skipping")
             return self.learned_weights
 
+        def _sigval(rec, s) -> float:
+            try:
+                return float(rec.get("signals", {}).get(s, 0.5) or 0.5)
+            except (TypeError, ValueError):
+                return 0.5
+
         for rec in winners:
             for s in signal_names:
-                win_sums[s] += rec.get("signals", {}).get(s, 0.5)
+                win_sums[s] += _sigval(rec, s)
         for rec in losers:
             for s in signal_names:
-                loss_sums[s] += rec.get("signals", {}).get(s, 0.5)
+                loss_sums[s] += _sigval(rec, s)
 
-        new_weights = dict(self.learned_weights)
+        # Cast learned weights through float() — any value re-read from JSON
+        # may surface as a string and break the renormalise arithmetic.
+        new_weights = {k: float(v or 0.0) for k, v in self.learned_weights.items()}
         NUDGE = 0.01
         MIN_W = 0.01
         MAX_W = 0.40
@@ -457,10 +476,16 @@ class LearningLoop:
 
     def get_performance_stats(self) -> dict:
         """Returns stats for the dashboard Learning Engine tab."""
+        def _won(rec) -> bool:
+            v = rec.get("won")
+            if isinstance(v, bool):
+                return v
+            return str(v).strip().lower() == "true"
+
         all_recs  = self.recommendations["records"]
         settled   = [r for r in all_recs if r.get("won") is not None]
-        winners   = [r for r in settled if r.get("won")]
-        losers    = [r for r in settled if not r.get("won")]
+        winners   = [r for r in settled if _won(r)]
+        losers    = [r for r in settled if not _won(r)]
 
         if not settled:
             return {
@@ -481,11 +506,17 @@ class LearningLoop:
 
         cutoff      = (date.today() - timedelta(days=7)).isoformat()
         recent      = [r for r in settled if r.get("date", "") >= cutoff]
-        recent_wins = [r for r in recent if r.get("won")]
+        recent_wins = [r for r in recent if _won(r)]
         hit_7d      = len(recent_wins) / len(recent) * 100 if recent else 0.0
 
-        avg_conf_win  = sum(r["confidence"] for r in winners) / len(winners) if winners else 0
-        avg_conf_lose = sum(r["confidence"] for r in losers)  / len(losers)  if losers  else 0
+        def _conf(rec) -> float:
+            try:
+                return float(rec.get("confidence", 0.0) or 0.0)
+            except (TypeError, ValueError):
+                return 0.0
+
+        avg_conf_win  = sum(_conf(r) for r in winners) / len(winners) if winners else 0
+        avg_conf_lose = sum(_conf(r) for r in losers)  / len(losers)  if losers  else 0
 
         # Detect weight adjustments (any signal diverged from default)
         adjustments = sum(
@@ -496,7 +527,7 @@ class LearningLoop:
         # Recent form (last 7 days results)
         recent_results = _load(RESULTS_PATH, {"results": []})
         recent_winners = [r for r in recent_results.get("results", [])
-                         if r.get("date", "") >= cutoff and r.get("won")]
+                         if r.get("date", "") >= cutoff and _won(r)]
 
         return {
             "total_recommendations":   len(all_recs),

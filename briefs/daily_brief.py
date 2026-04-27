@@ -81,6 +81,12 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
     """
     Returns only official selections: cleared threshold + 4/6 cut-off
     on the live engine. No fallback — returns empty list if feed is down.
+
+    Drift auto-drop (v2.5.42): horses whose current price has drifted
+    >20% out from the morning baseline (show-price snapshot) are
+    silently excluded — never reach staking. Excluded horses are
+    written to learning/drift_excluded.json for the app to display
+    as "DRIFTED — excluded".
     """
     try:
         from dashboard.live_data import get_todays_selections
@@ -94,10 +100,19 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
         model    = OddsModel()
         now_bst  = datetime.now(_zi.ZoneInfo("Europe/London")).strftime("%H:%M")
         out      = []
+        drift_excluded_log = []  # populated as we exclude drifters
+
+        # Load morning-price baseline (show-price snapshot) for drift detection.
+        # Snapshot is keyed by lower(horse)|lower(course)|time.
+        try:
+            _morning_prices = _load_show_price_snapshot()
+        except Exception:
+            _morning_prices = {}
 
         # ── Favourite gap lookup ─────────────────────────────────────────────
         # Build race-level shortest price lookup before iterating.
         # Excludes selections running against a dominant market leader (>35% gap).
+        # Reviewed 27 Apr 2026, threshold confirmed.
         _FAV_GAP_PCT = 0.35
         _race_fav_price_brief = {}
         _race_fav_name_brief  = {}
@@ -150,6 +165,31 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                     print(f"[Brief] Fav-gap excluded {row.get('Horse','')} @ {dec:.2f}x "
                           f"(fav @ {_bfav_dec:.2f}x, gap {_bgap:.0%})")
                     continue
+
+            # Drift auto-drop — silent exclusion if current price has drifted
+            # >20% out from the morning baseline (show-price snapshot).
+            # Drift signals the market thinks worse of the horse since 15:30 BST
+            # the day before — staking through it has historically lost money.
+            _horse_str  = str(row.get("Horse", ""))
+            _course_str = str(row.get("Course", ""))
+            _morn_key   = (f"{_horse_str.lower().strip()}|"
+                           f"{_course_str.lower().strip()}|"
+                           f"{t.strip()}")
+            _morn_dec   = _morning_prices.get(_morn_key, 0.0)
+            if _morn_dec and _morn_dec > 1.0 and dec > _morn_dec * 1.20:
+                _drift_pct = (dec - _morn_dec) / _morn_dec * 100.0
+                print(f"[Brief] Drift-excluded {_horse_str} @ {dec:.2f}x "
+                      f"(morning {_morn_dec:.2f}x, drift {_drift_pct:+.1f}%)")
+                drift_excluded_log.append({
+                    "horse":        _horse_str,
+                    "course":       _course_str,
+                    "time":         t,
+                    "morning_odds": round(_morn_dec, 2),
+                    "current_odds": round(dec, 2),
+                    "drift_pct":    round(_drift_pct, 1),
+                    "drift_excluded": True,
+                })
+                continue
 
             runner = {
                 "odds":         str(row.get("Odds", "N/A")),
@@ -327,6 +367,22 @@ def _get_official_selections(conf_threshold: float = 0.55) -> list:
                 print(f"[Brief] NR gate removed {_dropped} non-runner(s) from selections")
         except Exception as _nr_err:
             print(f"[Brief] NR gate warning: {_nr_err}")
+
+        # Persist drift exclusions so the dashboard can show "DRIFTED — excluded"
+        if drift_excluded_log:
+            try:
+                import json as _jdrf
+                _drf_path = os.path.join(
+                    os.path.dirname(__file__), "..", "learning",
+                    "drift_excluded.json",
+                )
+                _today = datetime.now(_zi.ZoneInfo("Europe/London")).strftime("%Y-%m-%d")
+                _drf_payload = {"date": _today, "horses": drift_excluded_log}
+                os.makedirs(os.path.dirname(_drf_path), exist_ok=True)
+                with open(_drf_path, "w") as _drf_f:
+                    _jdrf.dump(_drf_payload, _drf_f, indent=2)
+            except Exception as _drf_err:
+                print(f"[Brief] Drift log write warning: {_drf_err}")
 
         return out
     except Exception as e:
@@ -2091,7 +2147,8 @@ SCHEDULED CRONS (all times BST = UTC+1)
 
 KEY FILES (workspace: /home/user/workspace/racing-engine)
 ──────────────────────────────────────────────────────────
-engine/staking.py          — 3-bet staking engine (v2.0)
+engine/staking.py          — 2-bet fold staking engine (Bet A / Bet B, v2.5.39+)
+engine/oddschecker.py      — 24-bookmaker best odds fetcher (Oddschecker, v2.5.40+)
 engine/odds_model.py       — confidence scoring + hard exclusion filters
 dashboard/app.py           — Streamlit dashboard (Tab 1 staking, Tab 2 runners)
 dashboard/live_data.py     — Sporting Life __NEXT_DATA__ feed parser
