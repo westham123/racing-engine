@@ -47,11 +47,61 @@
 #   4. DUAL SIGNAL: must have 2+ positive signals (form OR tf_stars≥4)
 #      AND (market move OR market odds implied prob ≥ 0.40)
 
+import json
+import os
+
 from config.settings import WEIGHTS
 from engine.form_parser import parse_form
 from engine.going_matcher import score_going_preference, score_going_from_form_string
 from engine.form_scorer import score_trainer_form, score_jockey_form
 from engine.race_times_stride import score_race_pace, RaceTimesStore
+
+# ── Default scoring weights (v2.5.44) ─────────────────────────
+# These are mapped from learning/learned_weights.json at runtime, with
+# fallback to these defaults if the file is missing or malformed.
+# s_tf shares horse_form's quality-signal slot at 0.15 (a reasonable
+# default — tf_stars is a Timeform quality rating, conceptually similar).
+# All six active weights must always sum to 1.0.
+_DEFAULT_SCORING_WEIGHTS = {
+    "s_form":    0.32,
+    "s_tf":      0.15,
+    "s_odds":    0.28,
+    "s_moves":   0.20,
+    "s_trainer": 0.12,
+    "s_jockey":  0.08,
+}
+
+_LEARNED_WEIGHTS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "learning", "learned_weights.json",
+)
+
+
+def _load_scoring_weights() -> dict:
+    """
+    Load active scoring weights from learning/learned_weights.json and map
+    them onto the six signal slots used by calculate_confidence().
+    Always returns a dict whose values sum to 1.0.
+    """
+    try:
+        with open(_LEARNED_WEIGHTS_PATH, "r") as f:
+            learned = json.load(f) or {}
+        mapped = {
+            "s_form":    float(learned.get("horse_form",   _DEFAULT_SCORING_WEIGHTS["s_form"])),
+            "s_tf":      _DEFAULT_SCORING_WEIGHTS["s_tf"],   # tf_stars: quality signal, fixed default
+            "s_odds":    float(learned.get("market_odds",  _DEFAULT_SCORING_WEIGHTS["s_odds"])),
+            "s_moves":   float(learned.get("market_moves", _DEFAULT_SCORING_WEIGHTS["s_moves"])),
+            "s_trainer": float(learned.get("trainer_form", _DEFAULT_SCORING_WEIGHTS["s_trainer"])),
+            "s_jockey":  float(learned.get("jockey_form",  _DEFAULT_SCORING_WEIGHTS["s_jockey"])),
+        }
+    except Exception:
+        mapped = dict(_DEFAULT_SCORING_WEIGHTS)
+
+    # Renormalise so the six active weights always sum to 1.0
+    total = sum(mapped.values())
+    if total <= 0:
+        return dict(_DEFAULT_SCORING_WEIGHTS)
+    return {k: v / total for k, v in mapped.items()}
 
 TOP_TRAVELLERS = [
     "henderson", "mullins", "o'brien", "elliott", "nicholls", "o'neill",
@@ -363,39 +413,21 @@ class OddsModel:
         if runs == 0 and stars == 0:
             return (True, "No form and no TF rating — insufficient data")
 
-        # ── Filter 3: Dual positive signal requirement ────────
-        # Horse must clear at least 2 of the 4 checks below:
-        #   (a) Decent form score (form_score ≥ 0.50)
-        #   (b) TF stars ≥ 4 (Timeform rates well)
-        #   (c) Market shortening (Steam or Move)
-        #   (d) Implied probability ≥ 40% (odds ≤ 3/2 decimal 2.5)
-        positive_signals = 0
+        # ── Filter 3: Weak-on-all-fronts exclusion (v2.5.44) ──
+        # v2.5.44: relaxed from 2-of-4 dual-signal rule. With 4 dead signals
+        # zero-weighted, the prior gate excluded almost every horse. Now we
+        # only exclude horses that are weak on EVERY live signal:
+        #   - form_score < 0.45 (weak/no form)        AND
+        #   - tf_stars None or ≤ 1 (no quality rating) AND
+        #   - no steam/move signal (market not warming)
+        # Horses with any one decent signal pass through to scoring.
         form_score = form_det.get("score", 0.50)
+        weak_form    = form_score < 0.45
+        weak_tf      = (stars is None) or (stars <= 1)
+        no_steam     = ("steam" not in signal) and ("move" not in signal)
 
-        if form_score >= 0.50:
-            positive_signals += 1  # (a) decent form
-
-        if stars >= 4:
-            positive_signals += 1  # (b) TF endorsement
-
-        if "steam" in signal or "move" in signal:
-            positive_signals += 1  # (c) market shortening
-
-        _raw = runner_data.get("current_odds") or runner_data.get("odds", "N/A")
-        try:
-            _o = str(_raw)
-            if "/" in _o:
-                _n, _d = _o.split("/")
-                implied = float(_d) / (float(_n) + float(_d))
-            else:
-                implied = 1.0 / float(_o)
-        except Exception:
-            implied = 0.0
-        if implied >= 0.40:  # 40% implied = odds of 6/4 or shorter
-            positive_signals += 1  # (d) market rates well
-
-        if positive_signals < 2:
-            return (True, f"Only {positive_signals} positive signal(s) — need 2+ (form, TF stars, market move, or short price)")
+        if weak_form and weak_tf and no_steam:
+            return (True, "Weak on all live signals (form < 0.45, no TF rating, no market move)")
 
         return (False, "")
 
@@ -448,14 +480,16 @@ class OddsModel:
         s_trainer = self._score_trainer_form(trainer, tf_stars)
         s_jockey  = self._score_jockey_form(jockey, tf_stars)
 
-        # Active weights — sum to 1.0
+        # Active weights — loaded from learning/learned_weights.json at
+        # runtime (with default fallback). Always renormalised to sum to 1.0.
+        w = _load_scoring_weights()
         raw = (
-            s_form    * 0.35 +
-            s_tf      * 0.20 +
-            s_odds    * 0.15 +
-            s_moves   * 0.15 +
-            s_trainer * 0.08 +
-            s_jockey  * 0.07
+            s_form    * w["s_form"] +
+            s_tf      * w["s_tf"] +
+            s_odds    * w["s_odds"] +
+            s_moves   * w["s_moves"] +
+            s_trainer * w["s_trainer"] +
+            s_jockey  * w["s_jockey"]
         )
 
         # Apply penalty/bonus
