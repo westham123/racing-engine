@@ -13,7 +13,7 @@ import schedule
 import time
 from datetime import datetime
 
-from briefs.daily_brief import DailyBrief
+from briefs.daily_brief import DailyBrief, send_confirmed_selections
 from alerts.monitor import AlertMonitor
 from alerts.market_monitor import MultiSourceMarketMonitor
 from settlement.settle import SettlementEngine
@@ -110,6 +110,15 @@ schedule.every().day.at("06:30").do(morning_reset)
 # Morning brief at 08:00 BST (07:00 UTC)
 schedule.every().day.at("07:00").do(morning_brief)
 
+# v2.5.43: 13:30 BST (12:30 UTC) — Confirmed selections "final word" email
+def _confirmed_selections_job():
+    print(f"\n[Scheduler] ── Confirmed Selections 13:30 BST ({datetime.now().strftime('%H:%M')}) ──")
+    try:
+        send_confirmed_selections()
+    except Exception as _e:
+        print(f"[Scheduler] Confirmed selections error: {_e}")
+schedule.every().day.at("12:30").do(_confirmed_selections_job)
+
 # Rolling updates every 2 hours 10:00–20:00 BST (09:00–19:00 UTC)
 schedule.every().day.at("09:00").do(rolling_update)   # 10:00 BST
 schedule.every().day.at("11:00").do(rolling_update)   # 12:00 BST
@@ -134,6 +143,7 @@ print(f"  Time: {datetime.now().strftime('%A %d %B %Y %H:%M')} BST")
 print("  Schedule:")
 print("    07:30 BST — Daily reset")
 print("    08:00 BST — Morning brief → richardking123@outlook.com")
+print("    13:30 BST — Confirmed selections (final word, 30%-drift drop)")
 print("    10:00, 12:00, 14:00, 16:00, 18:00, 20:00 BST — Rolling updates")
 print("    Every 60s — Alert monitor (steam / drift / non-runners / going)")
 print("    Every 2m  — Settlement engine poll")

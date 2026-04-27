@@ -15,20 +15,22 @@ BETFAIR_PASSWORD = "Pa55word2018!"
 # ── Scope ────────────────────────────────────────────────────
 COUNTRIES = ["GB", "IE"]  # UK and Irish racing only
 
-# ── Signal Weightings (v1.1 — 10 signals, learning loop will adjust) ──
-# Total must sum to 1.0
-# BSP and race_pace start at low weight until live data confirms their value
+# ── Signal Weightings (v2.5.43 — dead signals zero-weighted) ──
+# Total must sum to 1.0. Five signals are confirmed-dead (no live data feed)
+# and have been zero-weighted. Their 0.36 share is redistributed to the live
+# signals, with the largest share moved to market_moves (smart-money signal).
 WEIGHTS = {
-    "market_odds":    0.22,   # Implied prob from bookmaker odds
-    "horse_form":     0.18,   # Recent form string (weighted recency)
-    "track_form":     0.14,   # Course-specific form
-    "going":          0.10,   # Going preference match
-    "trainer_form":   0.09,   # Trainer 14/30-day win rate
-    "jockey_form":    0.09,   # Jockey 14/30-day win rate
-    "market_moves":   0.07,   # Steam/drift signal
-    "bsp_signal":     0.05,   # Betfair BSP vs bookmaker price
-    "jump_index":     0.03,   # Jump ability proxy
-    "race_pace":      0.03,   # Speed rating vs course par
+    "horse_form":     0.32,   # Best single predictor we have
+    "market_odds":    0.28,   # Strong sanity-check signal
+    "market_moves":   0.20,   # Steam/drift — most actionable smart-money signal
+    "trainer_form":   0.12,   # Trainer 14/30-day win rate
+    "jockey_form":    0.08,   # Jockey 14/30-day win rate
+    # Dead signals — zero-weighted until real data feeds exist
+    "track_form":     0.00,   # Needs Racing API
+    "going":          0.00,   # Needs going history per horse
+    "bsp_signal":     0.00,   # Betfair 403 on free key
+    "race_pace":      0.00,   # Not implemented
+    "jump_index":     0.00,   # Not implemented
 }
 
 # ── Staking Rules (permanent) ──────────────────────────────
@@ -39,7 +41,8 @@ SHORT_PRICE_CUTOFF_DECIMAL = 1.67   # 4/6
 SHORT_PRICE_CUTOFF_DISPLAY = "4/6"
 
 # Confidence threshold — only runners above this qualify for any selection
-MIN_CONFIDENCE = 0.60
+# v2.5.43: aligned with live gate in briefs/_get_official_selections (was 0.60)
+MIN_CONFIDENCE = 0.55
 
 # ── Accumulator Settings ─────────────────────────────────────
 MAX_RACES_PER_DAY = 8

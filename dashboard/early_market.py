@@ -276,12 +276,13 @@ def take_opening_snapshot(target_date: str = None) -> dict:
 
 # ── Market Movers ─────────────────────────────────────────────────────────────
 
-def get_market_movers(target_date: str = None, min_move_pct: float = 0.15,
+def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
                       vs: str = "opening") -> list:
     """
     Compare current odds vs baseline snapshot.
     vs: "opening" (08:00 BST snapshot) or "show" (prior-day show prices).
-    Returns horses that have moved >= min_move_pct (default 15%).
+    Returns horses that have moved >= min_move_pct (v2.5.43 default 30%).
+    Outsiders (baseline > 20.0 / 20-1) are filtered as noise.
     Steamers (shortened) = STEAM, Drifters (lengthened) = DRIFT.
 
     FIXED: target_date defaults to TODAY (race day), not tomorrow.
@@ -501,7 +502,7 @@ def get_show_vs_morning_moves(target_date: str = None, min_move_pct: float = 0.1
     return steamers + drifters + nr_holds
 
 
-def get_previous_day_moves(min_move_pct: float = 0.15) -> list:
+def get_previous_day_moves(min_move_pct: float = 0.30) -> list:
     """
     Returns all horses that have moved significantly from yesterday 16:30
     to now. Uses show_price_snapshot as baseline.

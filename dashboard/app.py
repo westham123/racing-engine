@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.42** — fix ML type error; auto_record_day records official selections only; drift auto-drop (>20%)")
+    st.markdown("**Engine v2.5.43** — mobile email redesign; 13:30 confirmed selections; 30% mover threshold; fix dead signal weights")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")

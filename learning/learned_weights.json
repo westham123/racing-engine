@@ -1,9 +1,12 @@
 {
-  "market_odds": 0.20,
-  "horse_form": 0.20,
-  "track_form": 0.15,
-  "going": 0.10,
-  "trainer_form": 0.15,
+  "horse_form": 0.32,
+  "market_odds": 0.28,
+  "market_moves": 0.20,
+  "trainer_form": 0.12,
   "jockey_form": 0.08,
-  "market_moves": 0.12
+  "track_form": 0.00,
+  "going": 0.00,
+  "bsp_signal": 0.00,
+  "race_pace": 0.00,
+  "jump_index": 0.00
 }

@@ -68,7 +68,7 @@ def _get_overnight_moves(today: str = None) -> list:
             get_previous_day_moves,
         )
         refresh_show_snapshot_if_empty()
-        movers = get_previous_day_moves(min_move_pct=0.15)
+        movers = get_previous_day_moves(min_move_pct=0.30)
         if not movers or (isinstance(movers[0], dict) and "error" in movers[0]):
             return []
         return movers
@@ -1313,37 +1313,327 @@ def _morning_html(selections: list) -> str:
     return html
 
 
+_MORNING_PRICES_FILE = os.path.join(
+    os.path.dirname(__file__), "..", "learning", "morning_prices.json"
+)
+
+
+def _going_badge_colour(g: str) -> tuple:
+    """Return (background, text) hex colours for a going string."""
+    g = (g or "").lower()
+    if "heavy" in g:                     return ("#4a90d9", "#ffffff")
+    if "good to soft" in g:              return ("#7cb9e8", "#333333")
+    if "soft" in g and "good" not in g:  return ("#4a90d9", "#ffffff")
+    if "good to firm" in g:              return ("#e8a33d", "#333333")
+    if ("firm" in g and "good" not in g) or "hard" in g:
+        return ("#d9534f", "#ffffff")
+    if "good" in g:                      return ("#2d7a3a", "#ffffff")
+    if "standard" in g or "fast" in g or "all weather" in g:
+        return ("#888888", "#ffffff")
+    return ("#888888", "#ffffff")
+
+
+def _race_going(sel: dict) -> str:
+    """Pull going from a selection/race dict — try multiple field names."""
+    for k in ("going", "goingDescription", "ground"):
+        v = sel.get(k)
+        if v and str(v).strip() and str(v).strip().lower() != "tbc":
+            return str(v).strip()
+    return "Going TBC"
+
+
+def _store_morning_prices(selections: list) -> None:
+    """Write today's selection prices to learning/morning_prices.json. Silent on failure."""
+    try:
+        import json as _json
+        today_str = datetime.now(_LONDON).strftime("%Y-%m-%d")
+        payload = {
+            "date":       today_str,
+            "timestamp":  f"{_now_bst()} BST",
+            "selections": {},
+        }
+        for s in selections:
+            horse = s.get("horse", "")
+            if not horse:
+                continue
+            payload["selections"][horse] = {
+                "decimal":        float(s.get("best_odds_decimal") or s.get("decimal") or 0),
+                "fractional":     s.get("best_odds_fractional") or s.get("odds") or "N/A",
+                "best_bookmaker": s.get("best_bookmaker") or "",
+                "course":         s.get("course", ""),
+                "time":           s.get("time", ""),
+            }
+        os.makedirs(os.path.dirname(_MORNING_PRICES_FILE), exist_ok=True)
+        with open(_MORNING_PRICES_FILE, "w") as f:
+            _json.dump(payload, f, indent=2)
+    except Exception as e:
+        print(f"[Brief] Morning prices store failed (silent): {e}")
+
+
+def _load_morning_prices() -> dict:
+    """Return today's morning_prices payload or {} if missing/stale."""
+    try:
+        import json as _json
+        if not os.path.exists(_MORNING_PRICES_FILE):
+            return {}
+        with open(_MORNING_PRICES_FILE) as f:
+            data = _json.load(f)
+        today_str = datetime.now(_LONDON).strftime("%Y-%m-%d")
+        if data.get("date") != today_str:
+            return {}
+        return data
+    except Exception:
+        return {}
+
+
+def _movers_section_30(movers: list) -> str:
+    """Mobile-first 30%+ movers section. Caps at 5 steamers + 5 drifters."""
+    big = [m for m in movers
+           if m.get("direction") in ("STEAM", "DRIFT")
+           and float(m.get("move_pct", 0)) >= 30.0
+           and float(m.get("baseline_dec", 0) or 0) <= 20.0]
+    if not big:
+        return '<p style="color:#888;font-size:14px;margin:0;">No 30%+ moves on today\'s racing.</p>'
+
+    steamers = sorted([m for m in big if m["direction"] == "STEAM"],
+                      key=lambda x: x["move_pct"], reverse=True)[:5]
+    drifters = sorted([m for m in big if m["direction"] == "DRIFT"],
+                      key=lambda x: x["move_pct"], reverse=True)[:5]
+    rows = []
+    for grp, label, col, arrow in [
+        (steamers, "STEAMING", "#2d7a3a", "↓"),
+        (drifters, "DRIFTING", "#d9534f", "↑"),
+    ]:
+        for m in grp:
+            sign = "-" if grp is steamers else "+"
+            rows.append(
+                f'<div style="background:#1c1f2e;border-radius:6px;padding:10px 12px;'
+                f'margin-bottom:8px;border-left:3px solid {col};">'
+                f'<div style="font-size:12px;color:#aaa;text-transform:uppercase;'
+                f'letter-spacing:0.5px;">{m.get("course","")} {m.get("time","")}</div>'
+                f'<div style="font-size:15px;font-weight:bold;color:#fff;margin:2px 0;">'
+                f'{m.get("horse","")}</div>'
+                f'<div style="font-size:13px;color:#e0e0e0;">'
+                f'{m.get("baseline_odds","?")} → {m.get("current_odds","?")} '
+                f'<span style="color:{col};font-weight:bold;">{arrow} {label} '
+                f'({sign}{int(m["move_pct"])}%)</span></div>'
+                f'</div>'
+            )
+    return "".join(rows)
+
+
+def _going_strip_html(going: list) -> str:
+    """Compact horizontal strip of going badges, one per course."""
+    if not going:
+        return ('<p style="color:#888;font-size:14px;margin:0;">'
+                'Going data not yet available.</p>')
+    pills = []
+    for m in going:
+        bg, fg = _going_badge_colour(m.get("going", ""))
+        pills.append(
+            f'<span style="display:inline-block;background:{bg};color:{fg};'
+            f'font-size:13px;font-weight:bold;padding:6px 12px;border-radius:14px;'
+            f'margin:3px 4px 3px 0;letter-spacing:0.3px;">'
+            f'{m.get("course","").upper()} · {m.get("going","TBC")}</span>'
+        )
+    return f'<div style="line-height:2.0;">{"".join(pills)}</div>'
+
+
+def _fold_card_mobile(bet: dict, label: str, accent: str, deadline: str) -> str:
+    """Card-per-fold for the mobile email — replaces the wide _fold_bets_block table."""
+    if not bet:
+        return ""
+    horses = bet.get("horses", [])
+    dec    = bet.get("combined_decimal", 0) or 0
+    legs   = []
+    for h in horses:
+        yg = ""
+        if bool(h.get("yg_risk", False)):
+            yg = (' <span style="display:inline-block;background:#e8a33d;color:#1a1a1a;'
+                  'font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;'
+                  'margin-left:4px;">⚠ FIELD RISK</span>')
+        best_odds = h.get("best_odds_fractional") or h.get("curr_odds") or h.get("odds", "N/A")
+        best_bk   = h.get("best_bookmaker") or ""
+        legs.append(
+            f'<div style="padding:8px 0;border-bottom:1px solid #2a2a2a;">'
+            f'<div style="font-size:12px;color:#aaa;">'
+            f'{h.get("time","")} {h.get("course","")}</div>'
+            f'<div style="font-size:16px;font-weight:bold;color:#fff;text-transform:uppercase;'
+            f'margin:2px 0;">{h.get("horse","")}{yg}</div>'
+            f'<div style="font-size:13px;color:#e0e0e0;">'
+            f'{best_odds}'
+            f'{f" @ {best_bk}" if best_bk else ""}</div>'
+            f'</div>'
+        )
+    legs_html = "".join(legs)
+
+    n_legs = len(horses)
+    fold_lbl = f"{n_legs}-FOLD ACCUMULATOR" if n_legs > 1 else "SINGLE BET"
+    return (
+        f'<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+        f'margin-bottom:14px;border-left:5px solid {accent};">'
+        f'<div style="font-size:11px;color:{accent};font-weight:bold;letter-spacing:1px;'
+        f'text-transform:uppercase;margin-bottom:4px;">{label}</div>'
+        f'<div style="font-size:18px;font-weight:bold;color:#fff;margin-bottom:8px;">'
+        f'{fold_lbl} — {dec:.2f}x</div>'
+        f'{legs_html}'
+        f'<div style="font-size:12px;color:#e8a33d;margin-top:10px;font-weight:bold;">'
+        f'Place before {deadline}</div>'
+        f'</div>'
+    )
+
+
+def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None) -> str:
+    """One card per official selection — mobile-first 600px max-width layout."""
+    horse   = (s.get("horse", "") or "").strip()
+    course  = s.get("course", "")
+    t_time  = s.get("time", "")
+    going   = _race_going(s)
+    bg, fg  = _going_badge_colour(going)
+
+    dec     = float(s.get("decimal", 0) or 0)
+    conf    = int(float(s.get("confidence", 0) or 0) * 100)
+    role    = s.get("role", "VALUE")
+    role_col = "#0b5394" if role == "BANKER" else "#6a1b9a"
+
+    best_frac = s.get("best_odds_fractional") or s.get("odds") or "N/A"
+    best_bk   = s.get("best_bookmaker") or ""
+
+    is_fav    = bool(s.get("is_fav", False))
+    fav_price = float(s.get("fav_price", 0) or 0)
+    fav_name  = (s.get("fav_name", "") or "").strip()
+
+    if is_fav:
+        fav_line = '<div style="font-size:13px;color:#2d7a3a;margin:4px 0;"><b>Fav:</b> ✓ YES (market favourite)</div>'
+    elif fav_price and fav_name:
+        gap_pct = (fav_price / dec - 1.0) * 100 if dec > 0 else 0
+        fav_line = (
+            f'<div style="font-size:13px;color:#e65100;margin:4px 0;">'
+            f'<b>Fav:</b> ✗ {fav_name} @ {fav_price:.2f}x ({gap_pct:+.0f}% gap)</div>'
+        )
+    else:
+        fav_line = ''
+
+    snap_key = f"{horse.lower()}|{course.lower().strip()}|{t_time.strip()}"
+    snap_dec = float(snapshot.get(snap_key, 0) or 0)
+    move_line = '<div style="font-size:13px;color:#666;margin:4px 0;"><b>Move:</b> — (stable)</div>'
+    if snap_dec > 0 and dec > 0:
+        delta = ((dec - snap_dec) / snap_dec) * 100.0
+        if delta <= -15.0:
+            move_line = (f'<div style="font-size:13px;color:#2d7a3a;margin:4px 0;">'
+                         f'<b>Move:</b> ↓ {snap_dec:.2f}x → {dec:.2f}x STEAMING ({delta:.0f}%)</div>')
+        elif delta >= 15.0:
+            move_line = (f'<div style="font-size:13px;color:#d9534f;margin:4px 0;">'
+                         f'<b>Move:</b> ↑ {snap_dec:.2f}x → {dec:.2f}x DRIFTING (+{delta:.0f}%)</div>')
+
+    yg_line = ''
+    if bool(s.get("yg_risk", False)):
+        yg_line = ('<div style="background:#fff3cd;color:#7a5c00;font-size:12px;'
+                   'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
+                   '⚠ Yorkshire Glory risk — large field</div>')
+
+    morning_line = ''
+    if morning_prices:
+        mp = (morning_prices.get("selections") or {}).get(horse, {})
+        m_frac = mp.get("fractional")
+        m_dec  = float(mp.get("decimal") or 0)
+        if m_frac and m_dec > 0:
+            change = ""
+            if dec > 0:
+                d = (dec - m_dec) / m_dec * 100
+                if d <= -8.0:
+                    change = f' <span style="color:#2d7a3a;font-weight:bold;">SHORTENING ↑ ({d:+.0f}%)</span>'
+                elif d >= 8.0:
+                    change = f' <span style="color:#d9534f;font-weight:bold;">DRIFTED ↓ (+{d:.0f}%)</span>'
+            morning_line = (
+                f'<div style="font-size:12px;color:#888;margin:4px 0;">'
+                f'Morning: {m_frac} → Now: {best_frac}'
+                f'{f" @ {best_bk}" if best_bk else ""}{change}</div>'
+            )
+
+    return (
+        f'<div style="background:#ffffff;color:#1a1a1a;border:1px solid #d8d8d8;'
+        f'border-radius:8px;padding:14px 16px;margin-bottom:12px;'
+        f'font-family:Arial,Helvetica,sans-serif;line-height:1.5;max-width:600px;">'
+        f'<div style="font-size:13px;color:#555;margin-bottom:6px;">'
+        f'{t_time} {course.upper()} '
+        f'<span style="display:inline-block;background:{bg};color:{fg};'
+        f'font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;'
+        f'margin-left:4px;">{going}</span></div>'
+        f'<div style="font-size:20px;font-weight:bold;text-transform:uppercase;'
+        f'color:#1a1a1a;margin:4px 0 8px;letter-spacing:0.5px;">{horse}</div>'
+        f'<div style="font-size:14px;color:#1a1a1a;margin:4px 0;">'
+        f'<b>Best:</b> {best_frac}'
+        f'{f" @ {best_bk}" if best_bk else ""}</div>'
+        f'<div style="font-size:13px;margin:4px 0;color:#1a1a1a;">'
+        f'<b>Conf:</b> {conf}% '
+        f'<span style="display:inline-block;background:{role_col};color:#fff;'
+        f'font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;'
+        f'margin-left:4px;letter-spacing:0.5px;">{role}</span></div>'
+        f'{fav_line}'
+        f'{move_line}'
+        f'{morning_line}'
+        f'{yg_line}'
+        f'</div>'
+    )
+
+
+def _mobile_email_shell(title: str, header_color: str, label_text: str,
+                        body_html: str, footer_note: str) -> str:
+    """Mobile-first email shell — 600px max width, light card layout on dark backdrop."""
+    version = _get_version()
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#0f1117;
+             font-family:Arial,Helvetica,sans-serif;color:#e0e0e0;
+             font-size:16px;line-height:1.5;">
+<div style="max-width:600px;margin:0 auto;padding:12px;">
+
+  <!-- Header -->
+  <div style="background:{header_color};color:#ffffff;border-radius:10px;
+              padding:16px 18px;margin-bottom:12px;">
+    <div style="font-size:11px;font-weight:bold;letter-spacing:1px;
+                text-transform:uppercase;opacity:0.85;">{label_text}</div>
+    <div style="font-size:18px;font-weight:bold;margin-top:2px;">{title}</div>
+    <div style="font-size:13px;opacity:0.85;margin-top:4px;">
+      {_date_bst()} &nbsp;|&nbsp; {_now_bst()} BST
+    </div>
+  </div>
+
+  {body_html}
+
+  <!-- Footer -->
+  <div style="text-align:center;color:#666;font-size:12px;padding:14px;line-height:1.6;">
+    {footer_note}<br>
+    Racing Engine {version} &nbsp;|&nbsp;
+    <a href="https://racing-engine-dash.streamlit.app" style="color:#01696F;">Dashboard (PIN: 1012)</a>
+  </div>
+
+</div></body></html>"""
+
+
 def build_morning_brief(budget: float = 100.0) -> str:
+    """v2.5.43 mobile-first card-per-horse design. Sent at 08:00 BST."""
     selections = _get_official_selections()
     movers     = _get_overnight_moves()
     going      = _get_going()
-    staking    = _calc_staking(selections, budget)
+    snapshot   = _load_show_price_snapshot()
 
     body = ""
 
-    # 1. Going — first, sets the context for every selection
-    body += _section(
-        f"Today's Going — {len(going)} Meetings",
-        _going_section_html(going),
-        "#2a2a2a"
+    # 1. Going strip — one pill per course
+    body += (
+        '<div style="background:#1c1f2e;border-radius:10px;padding:12px 14px;'
+        'margin-bottom:12px;border-top:2px solid #1a472a;">'
+        '<div style="font-size:11px;font-weight:bold;color:#aaa;letter-spacing:1px;'
+        'text-transform:uppercase;margin-bottom:8px;">Today\'s Going</div>'
+        f'{_going_strip_html(going)}'
+        '</div>'
     )
 
-    # 2. Overnight market moves — key intelligence before selections
-    body += _section(
-        f"Overnight Market Moves ({len([m for m in movers if m['direction']=='STEAM'])} shorteners, "
-        f"{len([m for m in movers if m['direction']=='DRIFT'])} drifters)",
-        _moves_section_html(movers),
-        "#437A22" if any(m["direction"] == "STEAM" for m in movers) else "#2a2a2a"
-    )
-
-    # 3. Race-by-race intelligence layout
-    body += _section(
-        f"Today's Official Selections ({len(selections)})",
-        _morning_html(selections),
-        "#01696F"
-    )
-
-    # 4. Staking plan — v2.5.39 2-bet fold structure (Bet A / Bet B)
+    # 2. BET A & BET B (top of email — most actionable)
     if selections:
         try:
             from engine.staking import get_fold_bets as _get_fold_bets
@@ -1351,50 +1641,199 @@ def build_morning_brief(budget: float = 100.0) -> str:
         except Exception as _fb_err:
             print(f"[Brief] Fold-bets failed: {_fb_err}")
             _folds = {"bet_a": None, "bet_b": None}
-        body += _section("Staking Plan — Bet A / Bet B", _fold_bets_block(_folds), "#437A22")
 
-    # 4b. Best Accumulator Options — EV-ranked combinations (additive)
+        if _folds.get("bet_a"):
+            body += _fold_card_mobile(_folds["bet_a"], "TODAY'S CORE BET",
+                                      "#2d7a3a", "13:00 BST")
+        if _folds.get("bet_b"):
+            body += _fold_card_mobile(_folds["bet_b"], "EXTENDED BET",
+                                      "#01696F", "13:00 BST")
+
+    # 3. Selection cards
     if selections:
-        try:
-            from engine.staking import rank_accumulator_combinations as _rank_accas
-            _best_combos = _rank_accas(selections, top_n=5)
-        except Exception as _ba_err:
-            print(f"[Brief] Best-acca ranking failed: {_ba_err}")
-            _best_combos = []
-        body += _section(
-            "🎯 Best Accumulator Options",
-            _best_acca_block(_best_combos),
-            "#437A22"
+        body += (
+            '<div style="font-size:13px;font-weight:bold;color:#aaa;letter-spacing:1px;'
+            'text-transform:uppercase;padding:8px 4px;margin-top:6px;">'
+            f'Selections ({len(selections)})</div>'
         )
+        for s in selections:
+            body += _selection_card_mobile(s, snapshot)
 
-    # 5. Active filters — concise one-liner
-    body += _section(
-        "Active Filters",
-        '<p style="font-size:12px;color:#888;margin:0;line-height:1.8;">'
-        'Confidence: <strong style="color:#e0e0e0;">55%</strong> &nbsp;|&nbsp; '
-        'Handicap: <strong style="color:#e0e0e0;">65%</strong> &nbsp;|&nbsp; '
-        'Price cut-off: <strong style="color:#e0e0e0;">4/6</strong> &nbsp;|&nbsp; '
-        'Large fields: <strong style="color:#e0e0e0;">&ge;16 excluded</strong> &nbsp;|&nbsp; '
-        'Dual signal required'
-        '</p>',
-        "#2a2a2a"
+    # 4. Significant 30%+ market movers
+    body += (
+        '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+        'margin:14px 0 12px;border-top:2px solid #e8a33d;">'
+        '<div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;'
+        'text-transform:uppercase;margin-bottom:10px;">'
+        'Significant Moves Today (30%+)</div>'
+        f'{_movers_section_30(movers)}'
+        '</div>'
     )
 
     if not selections:
-        body += _section(
-            "Status",
-            '<p style="color:#964219;font-size:13px;margin:0;">No qualifying selections at this time — '
-            'markets are live but no horses have cleared all filters yet. '
-            'Check dashboard from 10:30 BST for developing selections.</p>',
-            "#964219"
+        body += (
+            '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+            'margin-bottom:12px;border-left:4px solid #964219;">'
+            '<div style="font-size:14px;color:#e0e0e0;">No qualifying selections at this time. '
+            'Markets are live but no horses have cleared all filters yet. '
+            'Check dashboard from 10:30 BST for developing selections.</div>'
+            '</div>'
         )
 
-    return _email_shell(
-        title       = "Morning Brief — Today's Selections",
-        label_color = "#01696F",
-        label_text  = "Morning Brief",
-        body_html   = body
+    # ── Persist morning prices for the 13:30 confirmed-selections compare ──
+    try:
+        _store_morning_prices(selections)
+    except Exception as e:
+        print(f"[Brief] Morning prices not stored: {e}")
+
+    return _mobile_email_shell(
+        title       = "Today's Selections",
+        header_color = "#1a472a",
+        label_text  = "Racing Engine | Morning Brief",
+        body_html   = body,
+        footer_note = "Updated: 08:00 BST &middot; Next update: 13:30 BST",
     )
+
+
+# ── Email Type 1b: Confirmed Selections (13:30 BST) ────────────
+def build_confirmed_selections() -> str:
+    """v2.5.43 13:30 BST 'final word' email — confirms selections 30 mins
+    before afternoon racing. Drops anything that has drifted 30%+ since 08:00.
+    """
+    selections     = _get_official_selections()
+    morning_prices = _load_morning_prices()
+    snapshot       = _load_show_price_snapshot()
+    going          = _get_going()
+
+    morning_sel_map = (morning_prices.get("selections") or {})
+    morning_courses = {
+        v.get("course", ""): None for v in morning_sel_map.values()
+    }
+
+    # Drop anything that drifted 30%+ since morning baseline
+    confirmed = []
+    removed   = []
+    for s in selections:
+        horse  = s.get("horse", "")
+        m      = morning_sel_map.get(horse, {})
+        m_dec  = float(m.get("decimal") or 0)
+        c_dec  = float(s.get("decimal") or 0)
+        going_now = _race_going(s)
+        if going_now == "Going TBC":
+            removed.append({"horse": horse, "reason": "going still TBC"})
+            continue
+        if m_dec > 0 and c_dec > 0:
+            drift_pct = (c_dec - m_dec) / m_dec * 100.0
+            if drift_pct >= 30.0:
+                removed.append({"horse": horse, "reason": f"drifted {drift_pct:.0f}% since 08:00"})
+                continue
+        confirmed.append(s)
+
+    # Going changes since morning
+    going_changes = []
+    try:
+        for m in going:
+            course_name = m.get("course", "")
+            curr_going  = m.get("going", "")
+            for hname, hd in morning_sel_map.items():
+                if hd.get("course", "") == course_name:
+                    # we don't store morning going on the selection — best effort
+                    break
+    except Exception:
+        going_changes = []
+
+    body = ""
+
+    # 1. Urgency banner
+    body += (
+        '<div style="background:#e8a33d;color:#1a1a1a;border-radius:10px;'
+        'padding:14px 16px;margin-bottom:12px;text-align:center;">'
+        '<div style="font-size:18px;font-weight:bold;letter-spacing:0.5px;">'
+        'PLACE BETS NOW</div>'
+        '<div style="font-size:13px;margin-top:4px;">'
+        'First afternoon race 14:00 BST &middot; BOG available at most bookmakers'
+        '</div></div>'
+    )
+
+    # 2. Changes since morning
+    changes_html = ""
+    if removed:
+        for r in removed:
+            changes_html += (
+                f'<div style="font-size:14px;color:#d9534f;margin:4px 0;">'
+                f'❌ REMOVED: {r["horse"]} — {r["reason"]}</div>'
+            )
+    changes_html += (
+        f'<div style="font-size:14px;color:#2d7a3a;margin:4px 0;">'
+        f'✅ UNCHANGED: {len(confirmed)} selection{"s" if len(confirmed)!=1 else ""} confirmed</div>'
+    )
+    body += (
+        '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+        'margin-bottom:12px;border-top:2px solid #01696F;">'
+        '<div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;'
+        'text-transform:uppercase;margin-bottom:8px;">'
+        'Changes Since 08:00</div>'
+        f'{changes_html}'
+        '</div>'
+    )
+
+    # 3. BET A + BET B (current prices)
+    if confirmed:
+        try:
+            from engine.staking import get_fold_bets as _get_fold_bets
+            _folds = _get_fold_bets(confirmed)
+        except Exception as _fb_err:
+            print(f"[Confirmed] Fold-bets failed: {_fb_err}")
+            _folds = {"bet_a": None, "bet_b": None}
+
+        if _folds.get("bet_a"):
+            body += _fold_card_mobile(_folds["bet_a"], "CONFIRMED CORE BET",
+                                      "#2d7a3a", "first race off")
+        if _folds.get("bet_b"):
+            body += _fold_card_mobile(_folds["bet_b"], "CONFIRMED EXTENDED BET",
+                                      "#01696F", "first race off")
+
+    # 4. Selection cards (with morning vs current price)
+    if confirmed:
+        body += (
+            '<div style="font-size:13px;font-weight:bold;color:#aaa;letter-spacing:1px;'
+            'text-transform:uppercase;padding:8px 4px;margin-top:6px;">'
+            f'Confirmed selections ({len(confirmed)})</div>'
+        )
+        for s in confirmed:
+            body += _selection_card_mobile(s, snapshot, morning_prices)
+    else:
+        body += (
+            '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+            'margin-bottom:12px;border-left:4px solid #964219;">'
+            '<div style="font-size:14px;color:#e0e0e0;">No confirmed selections remaining. '
+            'All morning picks have either drifted 30%+ or still have unconfirmed going.</div>'
+            '</div>'
+        )
+
+    return _mobile_email_shell(
+        title       = "Confirmed Selections",
+        header_color = "#e8a33d",
+        label_text  = "Racing Engine | 13:30 BST",
+        body_html   = body,
+        footer_note = "This is your final advised bet list. "
+                      "Next email: Evening Summary ~21:00 BST",
+    )
+
+
+def send_confirmed_selections() -> bool:
+    """Called by the 13:30 BST cron. Sends the 'final word' confirmed list."""
+    try:
+        html = build_confirmed_selections()
+    except Exception as e:
+        print(f"[Confirmed] Build failed: {e}")
+        return False
+    subject = f"Racing Engine — Confirmed Selections | {_date_bst()}"
+    try:
+        return send_email(subject, html)
+    except Exception as e:
+        print(f"[Confirmed] Send failed: {e}")
+        return False
 
 
 # ── Email Type 2: Result Alert ─────────────────────────────────
