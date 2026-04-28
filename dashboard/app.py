@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.48** — split market rule (2nd fav within 20% excluded from Bet A); fix operator brief crons/bugs/threshold")
+    st.markdown("**Engine v2.5.49** — fix fav detection: use Oddschecker consensus as source of truth")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")

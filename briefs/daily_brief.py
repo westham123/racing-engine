@@ -111,14 +111,24 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             _morning_prices = {}
 
         # ── Favourite gap lookup ─────────────────────────────────────────────
-        # Build race-level shortest price lookup before iterating.
-        # Excludes selections running against a dominant market leader (>35% gap).
-        # Reviewed 27 Apr 2026, threshold confirmed.
+        # v2.5.49 — Oddschecker consensus is the source of truth for fav.
+        # The Sporting Life feed is partial/stale and gave wrong fav calls
+        # (Pershalla, Mount Ruapehu, Timber Twelve). We now fetch Oddschecker
+        # once per race; if available, the fav is the horse with the LOWEST
+        # consensus_decimal across the whole race. Falls back to SL when OC
+        # is unavailable for a given race.
         _FAV_GAP_PCT = 0.35
-        _race_fav_price_brief = {}
-        _race_fav_name_brief  = {}
-        _race_runners_brief   = {}  # race_key -> list of {horse, trainer} dicts
-        _race_all_prices_brief = {}  # race_key -> sorted list of decimal prices
+        _race_fav_price_brief = {}     # race_key -> fav decimal
+        _race_fav_name_brief  = {}     # race_key -> fav horse name
+        _race_runners_brief   = {}     # race_key -> list of {horse, trainer}
+        _race_all_prices_brief = {}    # race_key -> list of decimals
+        _race_oc_data         = {}     # race_key -> {horse_lower: consensus_decimal}
+        _race_oc_source       = {}     # race_key -> "oc" | "sl"
+
+        # SL-based pre-pass — provides fallback when OC is unavailable
+        _sl_fav_price = {}
+        _sl_fav_name  = {}
+        _sl_all_prices = {}
         for _, _fr in df.iterrows():
             _frkey = f"{str(_fr.get('Time',''))}::{str(_fr.get('Course',''))}"
             _frodds = str(_fr.get('Current Odds','') or _fr.get('Odds','N/A')).strip()
@@ -127,14 +137,60 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             except Exception:
                 _frdec = 99.0
             if _frdec > 1.0:
-                if _frkey not in _race_fav_price_brief or _frdec < _race_fav_price_brief[_frkey]:
-                    _race_fav_price_brief[_frkey] = _frdec
-                    _race_fav_name_brief[_frkey]  = str(_fr.get('Horse', ''))
-                _race_all_prices_brief.setdefault(_frkey, []).append(_frdec)
+                if _frkey not in _sl_fav_price or _frdec < _sl_fav_price[_frkey]:
+                    _sl_fav_price[_frkey] = _frdec
+                    _sl_fav_name[_frkey]  = str(_fr.get('Horse', ''))
+                _sl_all_prices.setdefault(_frkey, []).append(_frdec)
             _race_runners_brief.setdefault(_frkey, []).append({
                 "horse":   str(_fr.get("Horse", "")),
                 "trainer": str(_fr.get("Trainer", "")),
             })
+
+        # Fetch Oddschecker per unique race and build OC fav lookup
+        try:
+            from engine.oddschecker import get_oddschecker_odds as _oc_fetch
+        except Exception:
+            _oc_fetch = None
+
+        _race_keys = sorted(_sl_all_prices.keys())
+        for _rk in _race_keys:
+            _t, _c = _rk.split("::", 1)
+            _oc = {}
+            if _oc_fetch:
+                try:
+                    _oc = _oc_fetch(_c, _t) or {}
+                except Exception as _oce:
+                    print(f"[Brief] OC fetch failed {_c} {_t}: {_oce}")
+                    _oc = {}
+            if _oc:
+                # Build {horse_lower: consensus_decimal} map for this race
+                _consensus_map = {}
+                for _hname, _entry in _oc.items():
+                    try:
+                        _cdec = float(_entry.get("consensus_decimal") or 0.0)
+                    except Exception:
+                        _cdec = 0.0
+                    if _cdec > 1.0:
+                        _consensus_map[_hname.strip().lower()] = _cdec
+                if _consensus_map:
+                    _race_oc_data[_rk] = _consensus_map
+                    _prices = sorted(_consensus_map.values())
+                    _fav_name = min(_consensus_map.items(), key=lambda kv: kv[1])[0]
+                    # Recover original-cased name from OC keys
+                    _orig_name = next(
+                        (h for h in _oc.keys() if h.strip().lower() == _fav_name),
+                        _fav_name,
+                    )
+                    _race_fav_price_brief[_rk] = _prices[0]
+                    _race_fav_name_brief[_rk]  = _orig_name
+                    _race_all_prices_brief[_rk] = _prices
+                    _race_oc_source[_rk] = "oc"
+                    continue
+            # Fallback: SL feed
+            _race_fav_price_brief[_rk] = _sl_fav_price.get(_rk, 99.0)
+            _race_fav_name_brief[_rk]  = _sl_fav_name.get(_rk, "")
+            _race_all_prices_brief[_rk] = sorted(_sl_all_prices.get(_rk, []))
+            _race_oc_source[_rk] = "sl"
 
         # Compute 2nd-fav price per race for Yorkshire Glory / dominant-fav logic
         _race_second_fav_price = {}
@@ -160,10 +216,17 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             # Favourite gap check — skip if dominant market leader exists in this race
             _bracekey = f"{t}::{str(row.get('Course',''))}"
             _bfav_dec = _race_fav_price_brief.get(_bracekey, dec)
-            if _bfav_dec < dec:
-                _bgap = (dec - _bfav_dec) / _bfav_dec
+
+            # v2.5.49 — when Oddschecker is available, use the horse's OC
+            # consensus to compare against the OC fav (not SL price vs OC fav).
+            _oc_map = _race_oc_data.get(_bracekey, {})
+            _our_oc_dec = _oc_map.get(str(row.get('Horse','')).strip().lower(), 0.0) if _oc_map else 0.0
+            _our_eff_dec = _our_oc_dec if (_our_oc_dec and _our_oc_dec > 1.0) else dec
+
+            if _bfav_dec < _our_eff_dec:
+                _bgap = (_our_eff_dec - _bfav_dec) / _bfav_dec
                 if _bgap > _FAV_GAP_PCT:
-                    print(f"[Brief] Fav-gap excluded {row.get('Horse','')} @ {dec:.2f}x "
+                    print(f"[Brief] Fav-gap excluded {row.get('Horse','')} @ {_our_eff_dec:.2f}x "
                           f"(fav @ {_bfav_dec:.2f}x, gap {_bgap:.0%})")
                     continue
 
@@ -218,7 +281,8 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             if conf < effective_threshold:
                 continue
 
-            is_fav     = dec <= _bfav_dec + 1e-9
+            # v2.5.49 — use Oddschecker consensus as source of truth for fav.
+            is_fav     = _our_eff_dec <= _bfav_dec + 1e-9
             fav_price  = round(float(_bfav_dec), 2)
             fav_name   = _race_fav_name_brief.get(_bracekey, "")
             _second_fav_dec = _race_second_fav_price.get(_bracekey)
@@ -227,7 +291,7 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             # Gap to 2nd-fav (only meaningful when we ARE the fav).
             # gap_to_2nd = (2nd_price - our_price) / our_price
             if is_fav and second_fav_price > 0:
-                gap_to_2nd = round((second_fav_price - dec) / dec, 4)
+                gap_to_2nd = round((second_fav_price - _our_eff_dec) / _our_eff_dec, 4)
             else:
                 gap_to_2nd = 0.0
 
@@ -240,6 +304,14 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             # Split market (v2.5.48): 2nd fav within 20% of our price — two
             # horses equally backed regardless of field size. Separate from YG.
             split_market = bool(is_fav and second_fav_price > 0 and gap_to_2nd < 0.20)
+
+            # v2.5.49 — HARD GATE: only back market favourites. If our horse
+            # is not the OC market fav, exclude entirely. We rely on the
+            # bookmaker market (OC consensus), not the partial SL feed.
+            if not is_fav:
+                print(f"[Brief] {row.get('Horse','')} excluded — not market fav "
+                      f"(actual fav: {fav_name} @ {fav_price})")
+                continue
 
             # Small-field non-fav exclusion: ≤6 runners and we're not the fav.
             # Market is better informed in small fields; edge is too thin.
