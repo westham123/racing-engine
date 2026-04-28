@@ -814,6 +814,9 @@ def get_fold_bets(selections: list) -> dict:
             conf = 0.0
         if conf < BET_A_CONF:
             return False
+        # v2.5.48 — split market horses are excluded from Bet A entirely
+        if bool(s.get("split_market", False)):
+            return False
         is_fav   = bool(s.get("is_fav", False))
         try:
             gap = float(s.get("gap_to_2nd", 0.0) or 0.0)
@@ -848,6 +851,11 @@ def get_fold_bets(selections: list) -> dict:
                     f"YG_RISK: {s.get('horse','?')} — {rn} runners, "
                     f"gap {float(s.get('gap_to_2nd', 0) or 0):.0%}"
                 )
+            if s.get("split_market"):
+                w.append(
+                    f"SPLIT_MARKET: {s.get('horse','?')} — 2nd fav within 20% "
+                    f"(gap {float(s.get('gap_to_2nd', 0) or 0):.0%})"
+                )
         return w
 
     fold_label = {2: "2-fold double", 3: "3-fold treble",
@@ -864,7 +872,19 @@ def get_fold_bets(selections: list) -> dict:
 
     # Bet B: Bet A horses + next-highest-confidence remaining selection
     # (even YG_RISK). Falls back to nothing if no extra leg available.
-    remaining = [s for s in eligible if s.get("horse") not in core_names]
+    # v2.5.48 — split_market horses only allowed if conf ≥0.60 AND field <8.
+    def _bet_b_eligible(s) -> bool:
+        if not bool(s.get("split_market", False)):
+            return True
+        try:
+            conf = float(s.get("confidence", 0.0) or 0.0)
+        except Exception:
+            conf = 0.0
+        rn = _runners(s)
+        return conf >= 0.60 and rn is not None and rn < 8
+
+    remaining = [s for s in eligible
+                 if s.get("horse") not in core_names and _bet_b_eligible(s)]
     remaining.sort(key=lambda x: -float(x.get("confidence", 0.0) or 0.0))
     optional = remaining[0] if remaining else None
 

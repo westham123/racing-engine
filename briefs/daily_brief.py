@@ -237,6 +237,9 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             is_dominant_fav = bool(is_fav and gap_to_2nd >= 0.50)
             # Yorkshire Glory risk: field ≥10 AND gap to 2nd <50% (even if fav)
             yg_risk = bool(is_fav and _runners >= 10 and gap_to_2nd < 0.50)
+            # Split market (v2.5.48): 2nd fav within 20% of our price — two
+            # horses equally backed regardless of field size. Separate from YG.
+            split_market = bool(is_fav and second_fav_price > 0 and gap_to_2nd < 0.20)
 
             # Small-field non-fav exclusion: ≤6 runners and we're not the fav.
             # Market is better informed in small fields; edge is too thin.
@@ -300,6 +303,7 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "gap_to_2nd":       gap_to_2nd,
                 "is_dominant_fav":  is_dominant_fav,
                 "yg_risk":          yg_risk,
+                "split_market":     split_market,
                 "rival_top_trainer":  _rival_flag.get("rival_top_trainer", False),
                 "rival_trainer_name": _rival_flag.get("rival_trainer_name", ""),
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
@@ -665,10 +669,17 @@ def _fold_bets_block(fold_bets: dict) -> str:
                     f'&#9888; Yorkshire Glory risk ({h.get("runners", 0)} runners, '
                     f'gap {h.get("gap_to_2nd", 0):.0%})</span>'
                 )
+            sm_flag = ""
+            if bool(h.get("split_market", False)):
+                sm_flag = (
+                    ' <span style="color:#d9534f;font-weight:bold;">'
+                    f'&#9888; SPLIT MARKET (2nd fav within '
+                    f'{h.get("gap_to_2nd", 0):.0%})</span>'
+                )
             leg_rows += f"""
           <tr>
             <td style="padding:4px 8px;font-size:12px;color:#aaa;white-space:nowrap;">{h.get('time','')} {h.get('course','')}</td>
-            <td style="padding:4px 8px;font-size:13px;font-weight:bold;">{h.get('horse','')}{yg_flag}</td>
+            <td style="padding:4px 8px;font-size:13px;font-weight:bold;">{h.get('horse','')}{sm_flag}{yg_flag}</td>
             <td style="padding:4px 8px;font-size:12px;color:#aaa;">{h.get('curr_odds', h.get('odds','N/A'))} ({h.get('decimal',0):.2f}x)</td>
             <td style="padding:4px 8px;font-size:12px;color:#aaa;">{int(h.get('runners', 0) or 0)} run</td>
           </tr>"""
@@ -1453,6 +1464,11 @@ def _fold_card_mobile(bet: dict, label: str, accent: str, deadline: str) -> str:
             yg = (' <span style="display:inline-block;background:#e8a33d;color:#1a1a1a;'
                   'font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;'
                   'margin-left:4px;">⚠ FIELD RISK</span>')
+        sm = ""
+        if bool(h.get("split_market", False)):
+            sm = (' <span style="display:inline-block;background:#d9534f;color:#fff;'
+                  'font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;'
+                  'margin-left:4px;">⚠ SPLIT MARKET</span>')
         best_odds = h.get("best_odds_fractional") or h.get("curr_odds") or h.get("odds", "N/A")
         best_bk   = h.get("best_bookmaker") or ""
         legs.append(
@@ -1460,7 +1476,7 @@ def _fold_card_mobile(bet: dict, label: str, accent: str, deadline: str) -> str:
             f'<div style="font-size:12px;color:#aaa;">'
             f'{h.get("time","")} {h.get("course","")}</div>'
             f'<div style="font-size:16px;font-weight:bold;color:#fff;text-transform:uppercase;'
-            f'margin:2px 0;">{h.get("horse","")}{yg}</div>'
+            f'margin:2px 0;">{h.get("horse","")}{sm}{yg}</div>'
             f'<div style="font-size:13px;color:#e0e0e0;">'
             f'{best_odds}'
             f'{f" @ {best_bk}" if best_bk else ""}</div>'
@@ -1532,6 +1548,11 @@ def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None)
         yg_line = ('<div style="background:#fff3cd;color:#7a5c00;font-size:12px;'
                    'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
                    '⚠ Yorkshire Glory risk — large field</div>')
+
+    if bool(s.get("split_market", False)):
+        yg_line += ('<div style="background:#f8d7da;color:#721c24;font-size:12px;'
+                    'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
+                    '⚠ SPLIT MARKET — 2nd favourite within 20% of our price</div>')
 
     morning_line = ''
     if morning_prices:
@@ -2483,7 +2504,7 @@ def send_operator_brief():
         import subprocess
         git_log = subprocess.check_output(
             ["git", "-C", os.path.join(os.path.dirname(__file__), ".."),
-             "log", "--oneline", "-3"],
+             "log", "--oneline", "-5"],
             stderr=subprocess.DEVNULL
         ).decode().strip()
     except Exception:
@@ -2561,7 +2582,7 @@ STAKING RULES (PERMANENT — do not change without user approval)
 ────────────────────────────────────────────────────────────────
 Budget: £100 | Singles: PERMANENTLY REMOVED | Lucky 15: PERMANENTLY REMOVED
 Short price cut-off : 4/6 (1.67 decimal) — hard exclusion from ALL bets
-Confidence threshold: 55% minimum (handicaps: 65%)
+Confidence threshold: 50% minimum (handicaps: 60%) — calibration threshold, review after 2 weeks
 One horse per race  : highest confidence only
 
 2-BET FOLD STRUCTURE (live from v2.5.39, 24 April 2026):
@@ -2596,11 +2617,13 @@ Additional exclusion rules:
 
 SCHEDULED CRONS (all times BST = UTC+1)
 ────────────────────────────────────────
-[4eac6ab1] 10:00 daily — Morning racing brief → richardking123@outlook.com
-[operator] 08:00 daily — THIS EMAIL → richardking123@outlook.com
-[c58b4236] 15:30 daily — Show price snapshot (tomorrow's card baseline)
-[de70bd36] Hourly 15:09–06:09 — Market movers (silent if nothing ≥15%)
-[385f97ff] 21:00 daily — Evening results summary → richardking123@outlook.com
+[3fb7f776] 09:00 daily  — Operator Brief → richardking123@outlook.com
+[4eac6ab1] 10:00 daily  — Morning Brief → richardking123@outlook.com
+[a54556fb] 13:30 daily  — Confirmed Selections → richardking123@outlook.com
+[909fe390] 14:30 daily  — Late Pre-Race Alerts (15:00–18:30 BST)
+[c58b4236] 15:30 daily  — Show Price Baseline snapshot
+[de70bd36] Hourly 16:09–07:09 — Market Movers (silent if nothing ≥30%)
+[385f97ff] 21:00 daily  — Evening Summary → richardking123@outlook.com
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2660,14 +2683,19 @@ Betfair    : richardking123@outlook.com / Pa55word2018!
 
 KNOWN BUGS & NEXT BUILDS (in priority order)
 ──────────────────────────────────────────────
-1. DRIFT AUTO-DROP
-   Horses drifting >20% from morning price should be auto-excluded.
-   Currently flagged in Tab 2 only — not acted on.
-   Build time: ~30 mins.
+1. SPLIT MARKET DETECTION (v2.5.48)
+   When 2nd fav is within 20% of our horse's price, market is genuinely split.
+   These horses are now flagged SPLIT_MARKET in the engine and excluded from Bet A.
+   Monitor: check evening summary to see if exclusions are correct.
 
-2. FAVOURITE CHECK THRESHOLD REVIEW
-   35% gap exclusion is live. Review after 1 week of data.
-   Scheduled review: Friday 24 April 2026.
+2. LEARNING DATA THIN
+   Only 65 records from Apr 21 (one course). Need 2+ weeks of live data
+   before weight adjustments are statistically meaningful.
+   Action: none needed — accumulates automatically via auto_record_day().
+
+3. MARKET MOVERS THRESHOLD
+   Changed to 30% on 27 Apr (v2.5.43). Monitor for first week to confirm
+   threshold is catching meaningful moves without noise.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -2684,6 +2712,8 @@ LESSONS LEARNED (do not repeat these mistakes)
 • bookmakerOdds array has live price; current_odds field is stale.
 • Snapshot date bug: snapshots were saving for tomorrow — fixed.
 • 200/1 outsiders were appearing in market movers — now capped at 20x baseline.
+• Fountain House 28 Apr — flagged dominant fav but Willitgoahead (G.Elliott) equally backed at 13/5.
+  Split market rule added v2.5.48: if 2nd fav within 20% of our price, exclude from Bet A.
 
 Racing Engine {version} | Phase 1 Personal Research Tool
 """

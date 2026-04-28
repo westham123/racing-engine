@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.47** — fix evening summary P&L (Bet A/Bet B); fix bsp_signal learning loop error; relax Bet A fold trigger")
+    st.markdown("**Engine v2.5.48** — split market rule (2nd fav within 20% excluded from Bet A); fix operator brief crons/bugs/threshold")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -525,6 +525,7 @@ for _bs in _brief_selections:
         'gap_to_2nd':         float(_bs.get("gap_to_2nd", 0) or 0),
         'is_dominant_fav':    bool(_bs.get("is_dominant_fav", False)),
         'yg_risk':            bool(_bs.get("yg_risk", False)),
+        'split_market':       bool(_bs.get("split_market", False)),
         'curr_odds':          str(_bs.get("curr_odds", _pdisp_odds) or _pdisp_odds),
         # Oddschecker multi-bookie (v2.5.40)
         'best_odds_decimal':    _bs.get("best_odds_decimal"),
@@ -900,7 +901,11 @@ with tab1:
             )
             _rows = []
             for h in horses:
-                _yg = "⚠ YG_RISK" if h.get("yg_risk") else ""
+                _flags = []
+                if h.get("split_market"):
+                    _flags.append("⚠ SPLIT_MARKET")
+                if h.get("yg_risk"):
+                    _flags.append("⚠ YG_RISK")
                 _rows.append({
                     "Time":       h.get("time", ""),
                     "Horse":      h.get("horse", ""),
@@ -910,7 +915,7 @@ with tab1:
                     "Runners":    int(h.get("runners", 0) or 0),
                     "Gap→2nd":    f"{float(h.get('gap_to_2nd', 0)):.0%}",
                     "Confidence": f"{float(h.get('confidence', 0)):.1%}",
-                    "Flag":       _yg,
+                    "Flag":       " ".join(_flags),
                 })
             st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
             _r10 = dec * 10.0
@@ -1002,6 +1007,14 @@ with tab2:
             except Exception:
                 return 0
 
+        def _flags_cell(sel):
+            flags = []
+            if sel.get('split_market'):
+                flags.append("⚠ SPLIT_MARKET")
+            if sel.get('yg_risk'):
+                flags.append("⚠ YG_RISK")
+            return " ".join(flags)
+
         df = pd.DataFrame([{
             'Time':        s['time'],
             'Course':      s['course'],
@@ -1015,6 +1028,7 @@ with tab2:
             'Signal':      s.get('signal', 'Stable'),
             'Tier':        s['tier'],
             'EV':          round(s['ev'], 3),
+            'Flags':       _flags_cell(s),
         } for s in _six_pool])
     else:
         df = pd.DataFrame()
