@@ -110,14 +110,11 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
         except Exception:
             _morning_prices = {}
 
-        # ── Favourite gap lookup ─────────────────────────────────────────────
-        # v2.5.49 — Oddschecker consensus is the source of truth for fav.
-        # The Sporting Life feed is partial/stale and gave wrong fav calls
-        # (Pershalla, Mount Ruapehu, Timber Twelve). We now fetch Oddschecker
-        # once per race; if available, the fav is the horse with the LOWEST
-        # consensus_decimal across the whole race. Falls back to SL when OC
-        # is unavailable for a given race.
-        _FAV_GAP_PCT = 0.35
+        # ── Market position lookup (v2.5.50 — info, not filter) ──────────────
+        # Oddschecker consensus is the source of truth for market position.
+        # Fav = lowest consensus_decimal in the race. Falls back to SL feed
+        # when OC is unavailable. Market position is NOT a selection gate —
+        # it's information attached to every selection card.
         _race_fav_price_brief = {}     # race_key -> fav decimal
         _race_fav_name_brief  = {}     # race_key -> fav horse name
         _race_runners_brief   = {}     # race_key -> list of {horse, trainer}
@@ -213,22 +210,14 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             if dec <= 1.67:
                 continue  # 4/6 cut-off
 
-            # Favourite gap check — skip if dominant market leader exists in this race
+            # v2.5.50 — market position is information, not a filter.
+            # We compute the selection's OC consensus price for use as the
+            # "effective" decimal in market-position comparisons below.
             _bracekey = f"{t}::{str(row.get('Course',''))}"
             _bfav_dec = _race_fav_price_brief.get(_bracekey, dec)
-
-            # v2.5.49 — when Oddschecker is available, use the horse's OC
-            # consensus to compare against the OC fav (not SL price vs OC fav).
             _oc_map = _race_oc_data.get(_bracekey, {})
             _our_oc_dec = _oc_map.get(str(row.get('Horse','')).strip().lower(), 0.0) if _oc_map else 0.0
             _our_eff_dec = _our_oc_dec if (_our_oc_dec and _our_oc_dec > 1.0) else dec
-
-            if _bfav_dec < _our_eff_dec:
-                _bgap = (_our_eff_dec - _bfav_dec) / _bfav_dec
-                if _bgap > _FAV_GAP_PCT:
-                    print(f"[Brief] Fav-gap excluded {row.get('Horse','')} @ {_our_eff_dec:.2f}x "
-                          f"(fav @ {_bfav_dec:.2f}x, gap {_bgap:.0%})")
-                    continue
 
             # Drift auto-drop — silent exclusion if current price has drifted
             # >20% out from the morning baseline (show-price snapshot).
@@ -281,15 +270,36 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             if conf < effective_threshold:
                 continue
 
-            # v2.5.49 — use Oddschecker consensus as source of truth for fav.
+            # v2.5.50 — market position computed as INFORMATION attached to
+            # the selection. None of these flags exclude the horse — they are
+            # surfaced in the email/app so the user sees market context.
             is_fav     = _our_eff_dec <= _bfav_dec + 1e-9
             fav_price  = round(float(_bfav_dec), 2)
             fav_name   = _race_fav_name_brief.get(_bracekey, "")
             _second_fav_dec = _race_second_fav_price.get(_bracekey)
             second_fav_price = round(float(_second_fav_dec), 2) if _second_fav_dec else 0.0
 
+            # Market position rank by OC consensus (1 = fav). Falls back to SL.
+            _race_prices = _race_all_prices_brief.get(_bracekey, []) or []
+            _sorted_prices = sorted(_race_prices)
+            market_position = 1
+            for _i, _p in enumerate(_sorted_prices, start=1):
+                if abs(_p - _our_eff_dec) < 1e-6:
+                    market_position = _i
+                    break
+            else:
+                # Our price not in the sorted list — count how many are shorter
+                market_position = sum(1 for _p in _sorted_prices if _p < _our_eff_dec) + 1
+            if market_position == 1:
+                market_position_label = "FAV"
+            elif market_position == 2:
+                market_position_label = "2ND FAV"
+            elif market_position == 3:
+                market_position_label = "3RD FAV"
+            else:
+                market_position_label = f"{market_position}TH FAV"
+
             # Gap to 2nd-fav (only meaningful when we ARE the fav).
-            # gap_to_2nd = (2nd_price - our_price) / our_price
             if is_fav and second_fav_price > 0:
                 gap_to_2nd = round((second_fav_price - _our_eff_dec) / _our_eff_dec, 4)
             else:
@@ -297,35 +307,36 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
 
             _runners = int(row.get("Field Size", row.get("Runners", 0)) or 0)
 
-            # Dominant fav: we're the fav AND gap to 2nd ≥50%
-            is_dominant_fav = bool(is_fav and gap_to_2nd >= 0.50)
-            # Yorkshire Glory risk: field ≥10 AND gap to 2nd <50% (even if fav)
-            yg_risk = bool(is_fav and _runners >= 10 and gap_to_2nd < 0.50)
-            # Split market (v2.5.48): 2nd fav within 20% of our price — two
-            # horses equally backed regardless of field size. Separate from YG.
+            # Dominant rival: any horse priced at < 60% of our consensus price
+            # (i.e. they are 40%+ shorter than us — major market edge against us).
+            dominant_rival = False
+            dominant_rival_name = ""
+            dominant_rival_price = 0.0
+            if _our_eff_dec > 1.0:
+                _threshold = _our_eff_dec * 0.60
+                for _hname_lc, _hdec in (_oc_map or {}).items():
+                    if _hdec < _threshold and _hname_lc != str(row.get('Horse','')).strip().lower():
+                        if (not dominant_rival) or _hdec < dominant_rival_price:
+                            dominant_rival = True
+                            dominant_rival_price = round(float(_hdec), 2)
+                            # Recover original-cased name from any source available
+                            dominant_rival_name = _hname_lc.title()
+                # If we're not the fav and fav < 0.60 * our price, fav is the rival
+                if (not dominant_rival) and (not is_fav) and fav_price > 0 \
+                        and fav_price < _threshold:
+                    dominant_rival = True
+                    dominant_rival_name = fav_name
+                    dominant_rival_price = fav_price
+
+            # Yorkshire Glory risk: open competitive field — field >= 10 AND
+            # the actual market leader is bigger than 4.0 (no dominant fav).
+            yg_risk = bool(_runners >= 10 and fav_price > 4.0)
+
+            # Split market: we ARE the fav but 2nd fav is within 20% of our price.
             split_market = bool(is_fav and second_fav_price > 0 and gap_to_2nd < 0.20)
 
-            # v2.5.49 — HARD GATE: only back market favourites. If our horse
-            # is not the OC market fav, exclude entirely. We rely on the
-            # bookmaker market (OC consensus), not the partial SL feed.
-            if not is_fav:
-                print(f"[Brief] {row.get('Horse','')} excluded — not market fav "
-                      f"(actual fav: {fav_name} @ {fav_price})")
-                continue
-
-            # Small-field non-fav exclusion: ≤6 runners and we're not the fav.
-            # Market is better informed in small fields; edge is too thin.
-            if _runners and _runners <= 6 and not is_fav:
-                print(f"[Brief] Small-field non-fav excluded: {row.get('Horse','')} "
-                      f"({_runners} runners, not fav)")
-                continue
-
-            # Large-field weak non-fav exclusion: ≥11 runners, not fav, <60% conf.
-            # Competitive field without market support or strong conviction.
-            if _runners >= 11 and not is_fav and conf < 0.60:
-                print(f"[Brief] Large-field weak non-fav excluded: {row.get('Horse','')} "
-                      f"({_runners} runners, {conf:.0%} conf, not fav)")
-                continue
+            # is_dominant_fav retained for backwards compat with downstream code
+            is_dominant_fav = bool(is_fav and gap_to_2nd >= 0.50)
 
             # Low acca value: thin field OR odds-on price (≤1.85) — v2.5.35
             _low_thin_field = (_runners > 0 and _runners <= 4)
@@ -376,6 +387,14 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "is_dominant_fav":  is_dominant_fav,
                 "yg_risk":          yg_risk,
                 "split_market":     split_market,
+                # v2.5.50 — market position information
+                "market_position":       market_position,
+                "market_position_label": market_position_label,
+                "actual_fav_name":       fav_name,
+                "actual_fav_price":      fav_price,
+                "dominant_rival":        dominant_rival,
+                "dominant_rival_name":   dominant_rival_name,
+                "dominant_rival_price":  dominant_rival_price,
                 "rival_top_trainer":  _rival_flag.get("rival_top_trainer", False),
                 "rival_trainer_name": _rival_flag.get("rival_trainer_name", ""),
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),

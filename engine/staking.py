@@ -753,21 +753,15 @@ def rank_accumulator_combinations(
 
 def get_fold_bets(selections: list) -> dict:
     """
-    v2.5.47 — 2-bet fold structure (relaxed gating).
+    v2.5.50 — form-first fold structure.
 
-    Bet A = Core fold — dominant-fav anchors:
-        Includes any selection where is_dominant_fav=True
-        OR (is_fav=True AND gap_to_2nd >= 0.50).
-        Confidence threshold: >= 0.50 (matches active engine threshold).
-        Field-size: only excluded when explicitly >= 16 runners. Missing/None
-        field-size does NOT exclude the leg.
-        Minimum legs: 2. If only 1 (or 0) qualifies, Bet A is None.
-        Cap at 4 legs (top-4 by confidence).
+    Bet A (core fold): confidence >= 0.55 AND NOT dominant_rival AND NOT yg_risk.
+    Bet B (extended):  confidence >= 0.50 — may include dominant_rival or
+                       yg_risk horses, flagged in warnings.
 
-    Bet B = Bet A + next-highest-confidence remaining selection, even if YG_RISK.
-
-    Selections must clear the 4/6 price cut-off (decimal > 1.67) — this is the
-    only hard exclusion besides low_value_acca.
+    Hard exclusions (both bets): decimal <= 1.67 (4/6 cut-off), low_value_acca,
+    field_size >= 16. Minimum 2 legs to form a fold; if only 1 horse qualifies
+    for Bet A, Bet A is None and the surplus may still appear in Bet B.
 
     Returns:
         {
@@ -779,10 +773,10 @@ def get_fold_bets(selections: list) -> dict:
     if not selections:
         return result
 
-    BET_A_CONF = 0.50
+    BET_A_CONF = 0.55
+    BET_B_CONF = 0.50
 
     def _runners(s):
-        # Returns int runner count or None when truly absent (don't coerce to 0).
         for k in ("runners", "field_size"):
             if k in s and s.get(k) not in (None, "", 0):
                 try:
@@ -791,7 +785,6 @@ def get_fold_bets(selections: list) -> dict:
                     pass
         return None
 
-    # Hard exclude: 4/6 cut-off, low_value_acca, and field_size explicitly ≥16
     eligible = []
     for s in selections:
         try:
@@ -807,34 +800,26 @@ def get_fold_bets(selections: list) -> dict:
             continue
         eligible.append(s)
 
+    def _conf(s):
+        try:
+            return float(s.get("confidence", 0.0) or 0.0)
+        except Exception:
+            return 0.0
+
     def _qualifies_a(s) -> bool:
-        try:
-            conf = float(s.get("confidence", 0.0) or 0.0)
-        except Exception:
-            conf = 0.0
-        if conf < BET_A_CONF:
+        if _conf(s) < BET_A_CONF:
             return False
-        # v2.5.48 — split market horses are excluded from Bet A entirely
-        if bool(s.get("split_market", False)):
+        if bool(s.get("dominant_rival", False)):
             return False
-        is_fav   = bool(s.get("is_fav", False))
-        try:
-            gap = float(s.get("gap_to_2nd", 0.0) or 0.0)
-        except Exception:
-            gap = 0.0
-        is_dom = bool(s.get("is_dominant_fav", False)) or (is_fav and gap >= 0.50)
-        return is_dom
+        if bool(s.get("yg_risk", False)):
+            return False
+        return True
+
+    def _qualifies_b(s) -> bool:
+        return _conf(s) >= BET_B_CONF
 
     core = [s for s in eligible if _qualifies_a(s)]
-    core.sort(key=lambda x: -float(x.get("confidence", 0.0) or 0.0))
-
-    # Bet A requires at least 2 legs to form a fold
-    if len(core) < 2:
-        return result
-
-    bet_a_horses = core[:4]
-    core_names = {s.get("horse") for s in bet_a_horses}
-    legs_a = len(bet_a_horses)
+    core.sort(key=lambda x: -_conf(x))
 
     def _combined(pool):
         d = 1.0
@@ -845,61 +830,82 @@ def get_fold_bets(selections: list) -> dict:
     def _warnings(pool):
         w = []
         for s in pool:
+            if s.get("dominant_rival"):
+                w.append(
+                    f"DOMINANT RIVAL: {s.get('horse','?')} — "
+                    f"{s.get('dominant_rival_name','?')} @ "
+                    f"{float(s.get('dominant_rival_price', 0) or 0):.2f}x"
+                )
             if s.get("yg_risk"):
                 rn = _runners(s) or s.get("runners", 0)
                 w.append(
-                    f"YG_RISK: {s.get('horse','?')} — {rn} runners, "
-                    f"gap {float(s.get('gap_to_2nd', 0) or 0):.0%}"
+                    f"YG_RISK: {s.get('horse','?')} — open field ({rn} runners, "
+                    f"fav @ {float(s.get('actual_fav_price', 0) or 0):.2f}x)"
                 )
             if s.get("split_market"):
                 w.append(
-                    f"SPLIT_MARKET: {s.get('horse','?')} — 2nd fav within 20% "
-                    f"(gap {float(s.get('gap_to_2nd', 0) or 0):.0%})"
+                    f"SPLIT_MARKET: {s.get('horse','?')} — 2nd fav within 20%"
                 )
         return w
 
-    fold_label = {2: "2-fold double", 3: "3-fold treble",
-                  4: "4-fold acca"}.get(legs_a, f"{legs_a}-fold acca")
-
-    bet_a_pool = sorted(bet_a_horses, key=lambda x: x.get("time", ""))
-    result["bet_a"] = {
-        "horses":            bet_a_pool,
-        "combined_decimal":  _combined(bet_a_pool),
-        "label":             f"Core {fold_label}",
-        "legs":              legs_a,
-        "warnings":          _warnings(bet_a_pool),
-    }
-
-    # Bet B: Bet A horses + next-highest-confidence remaining selection
-    # (even YG_RISK). Falls back to nothing if no extra leg available.
-    # v2.5.48 — split_market horses only allowed if conf ≥0.60 AND field <8.
-    def _bet_b_eligible(s) -> bool:
-        if not bool(s.get("split_market", False)):
-            return True
-        try:
-            conf = float(s.get("confidence", 0.0) or 0.0)
-        except Exception:
-            conf = 0.0
-        rn = _runners(s)
-        return conf >= 0.60 and rn is not None and rn < 8
-
-    remaining = [s for s in eligible
-                 if s.get("horse") not in core_names and _bet_b_eligible(s)]
-    remaining.sort(key=lambda x: -float(x.get("confidence", 0.0) or 0.0))
-    optional = remaining[0] if remaining else None
-
-    if optional is not None:
-        bet_b_pool = sorted(bet_a_horses + [optional], key=lambda x: x.get("time", ""))
-        legs_b = len(bet_b_pool)
-        b_label = {2: "2-fold double", 3: "3-fold treble", 4: "4-fold acca",
-                   5: "5-fold acca"}.get(legs_b, f"{legs_b}-fold acca")
-        result["bet_b"] = {
-            "horses":            bet_b_pool,
-            "combined_decimal":  _combined(bet_b_pool),
-            "label":             f"Extended {b_label}",
-            "legs":              legs_b,
-            "warnings":          _warnings(bet_b_pool),
+    if len(core) >= 2:
+        bet_a_horses = core[:4]
+        legs_a = len(bet_a_horses)
+        fold_label = {2: "2-fold double", 3: "3-fold treble",
+                      4: "4-fold acca"}.get(legs_a, f"{legs_a}-fold acca")
+        bet_a_pool = sorted(bet_a_horses, key=lambda x: x.get("time", ""))
+        result["bet_a"] = {
+            "horses":            bet_a_pool,
+            "combined_decimal":  _combined(bet_a_pool),
+            "label":             f"Core {fold_label}",
+            "legs":              legs_a,
+            "warnings":          _warnings(bet_a_pool),
         }
+        core_names = {s.get("horse") for s in bet_a_horses}
+    else:
+        core_names = set()
+
+    # Bet B: Bet A core + next highest-confidence eligible (>= 0.50), may
+    # include dominant_rival/yg_risk (flagged). Falls back to "Bet B as
+    # standalone fold" if Bet A doesn't exist but ≥2 horses clear 0.50.
+    bet_b_extras = [s for s in eligible
+                    if s.get("horse") not in core_names and _qualifies_b(s)]
+    bet_b_extras.sort(key=lambda x: -_conf(x))
+
+    if result["bet_a"] is not None:
+        if bet_b_extras:
+            optional = bet_b_extras[0]
+            bet_b_pool = sorted(
+                [s for s in result["bet_a"]["horses"]] + [optional],
+                key=lambda x: x.get("time", ""),
+            )
+            legs_b = len(bet_b_pool)
+            b_label = {2: "2-fold double", 3: "3-fold treble", 4: "4-fold acca",
+                       5: "5-fold acca"}.get(legs_b, f"{legs_b}-fold acca")
+            result["bet_b"] = {
+                "horses":            bet_b_pool,
+                "combined_decimal":  _combined(bet_b_pool),
+                "label":             f"Extended {b_label}",
+                "legs":              legs_b,
+                "warnings":          _warnings(bet_b_pool),
+            }
+    else:
+        # Bet A unavailable. Build a standalone Bet B from highest-conf
+        # selections clearing 0.50, capped at 4 legs.
+        b_pool_sorted = sorted([s for s in eligible if _qualifies_b(s)],
+                               key=lambda x: -_conf(x))[:4]
+        if len(b_pool_sorted) >= 2:
+            bet_b_pool = sorted(b_pool_sorted, key=lambda x: x.get("time", ""))
+            legs_b = len(bet_b_pool)
+            b_label = {2: "2-fold double", 3: "3-fold treble", 4: "4-fold acca",
+                       5: "5-fold acca"}.get(legs_b, f"{legs_b}-fold acca")
+            result["bet_b"] = {
+                "horses":            bet_b_pool,
+                "combined_decimal":  _combined(bet_b_pool),
+                "label":             f"Extended {b_label}",
+                "legs":              legs_b,
+                "warnings":          _warnings(bet_b_pool),
+            }
 
     return result
 
