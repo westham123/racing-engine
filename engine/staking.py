@@ -925,7 +925,7 @@ def get_fold_bets(selections: list) -> dict:
     Bet B (extended):  confidence >= 0.50 — may include dominant_rival or
                        yg_risk horses, flagged in warnings.
 
-    Hard exclusions (both bets): decimal <= 1.67 (4/6 cut-off), low_value_acca,
+    Hard exclusions (both bets): decimal < 2.0 (evens cut-off), low_value_acca,
     field_size >= 16. Minimum 2 legs to form a fold; if only 1 horse qualifies
     for Bet A, Bet A is None and the surplus may still appear in Bet B.
 
@@ -957,7 +957,7 @@ def get_fold_bets(selections: list) -> dict:
             dec = float(s.get("decimal") or 0.0)
         except Exception:
             continue
-        if dec <= 1.67:
+        if dec < 2.0:  # v2.5.53 — evens floor (was 1.67 / 4/6)
             continue
         if s.get("low_value_acca", False):
             continue

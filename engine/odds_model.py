@@ -51,6 +51,11 @@ import json
 import os
 
 from config.settings import WEIGHTS
+
+# v2.5.53 — minimum decimal price for any selection. Raised from 1.67 (4/6)
+# to 2.0 (evens) after sub-evens singles consistently underperformed in
+# backtests. Any horse with decimal SP < MIN_DECIMAL_ODDS is hard-excluded.
+MIN_DECIMAL_ODDS = 2.0
 from engine.form_parser import parse_form
 from engine.going_matcher import score_going_preference, score_going_from_form_string
 from engine.form_scorer import score_trainer_form, score_jockey_form

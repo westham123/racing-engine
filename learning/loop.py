@@ -93,7 +93,7 @@ class LearningLoop:
     def auto_record_day(self) -> int:
         """
         Record only OFFICIAL selections for today — those that cleared
-        BOTH the confidence threshold AND the 4/6 price cut-off via
+        BOTH the confidence threshold AND the evens price cut-off via
         _get_official_selections() in briefs/daily_brief.py.
 
         Previously this recorded every runner in every race (~268/day),

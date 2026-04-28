@@ -80,7 +80,7 @@ def _get_overnight_moves(today: str = None) -> list:
 def _get_official_selections(conf_threshold: float = 0.50) -> list:
     # Calibration threshold — review after 2 weeks of live data
     """
-    Returns only official selections: cleared threshold + 4/6 cut-off
+    Returns only official selections: cleared threshold + evens cut-off
     on the live engine. No fallback — returns empty list if feed is down.
 
     Drift auto-drop (v2.5.42): horses whose current price has drifted
@@ -207,8 +207,8 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             except Exception:
                 dec = 2.0
 
-            if dec <= 1.67:
-                continue  # 4/6 cut-off
+            if dec < 2.0:
+                continue  # v2.5.53 evens cut-off (was 4/6 / 1.67)
 
             # v2.5.50 — market position is information, not a filter.
             # We compute the selection's OC consensus price for use as the
@@ -2657,7 +2657,7 @@ SYSTEM RULES (CRITICAL — AI must follow at all times)
 DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 ──────────────────────────────────────────────────────────────
 • OFFICIAL SELECTION: a horse is official ONLY if it cleared BOTH
-  the confidence threshold AND the 4/6 price cut-off. No exceptions.
+  the confidence threshold AND the evens (2.0) price cut-off. No exceptions.
 • NO HARDCODED / SAMPLE DATA: all selections must come from the
   live Sporting Life feed. Never display example or fallback horses.
 • NON-RUNNERS: must be stripped at EVERY output point — app Tab 1,
@@ -2672,14 +2672,14 @@ DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 STAKING RULES (PERMANENT — do not change without user approval)
 ────────────────────────────────────────────────────────────────
 Budget: £100 | Singles: PERMANENTLY REMOVED | Lucky 15: PERMANENTLY REMOVED
-Short price cut-off : 4/6 (1.67 decimal) — hard exclusion from ALL bets
+Short price cut-off : evens (2.0 decimal) — hard exclusion from ALL bets (v2.5.53, was 4/6)
 Confidence threshold: 50% minimum (handicaps: 60%) — calibration threshold, review after 2 weeks
 One horse per race  : highest confidence only
 
 2-BET FOLD STRUCTURE (live from v2.5.39, 24 April 2026):
   BET A — Core Fold — STRONG selections only
            Strong = dominant fav (gap to 2nd ≥50%) AND field <10 runners
-           No short-price singles (4/6 or shorter excluded)
+           No short-price singles (sub-evens / 2.0 or shorter excluded)
            Cap at 4 legs, picked by confidence
 
   BET B — Extended Fold — Core + best optional selection
