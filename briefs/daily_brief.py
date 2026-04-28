@@ -1882,65 +1882,63 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     Full day P&L once all races have run.
     results: list of dicts with horse/result/sp keys (matched against selections).
     selections: today's official selections list.
+
+    v2.5.47 — uses Bet A / Bet B fold structure (matches morning brief & dashboard).
     """
-    from itertools import combinations as _combs
+    # Build the fold bets from today's selections (single source of truth)
+    try:
+        from engine.staking import get_fold_bets
+        folds = get_fold_bets(selections) or {}
+    except Exception:
+        folds = {}
+    bet_a = folds.get("bet_a")
+    bet_b = folds.get("bet_b")
 
-    # Match results to selections
-    sel_names = {s["horse"].lower(): s for s in selections}
-    matched   = []
-    for r in results:
-        sel = sel_names.get(r.get("winner","").lower())
-        # Also check by horse name in selections
-        for s in selections:
-            if s["horse"].lower() == r.get("winner","").lower() or \
-               r.get("race","") in (s["time"] + " " + s["course"]):
-                matched.append({**s, "result": "WON",  "sp": r.get("sp","")})
-                break
+    def _won_horse(name: str) -> bool:
+        n = (name or "").lower().strip()
+        return any((r.get("winner", "") or "").lower().strip() == n for r in results)
 
-    winners = [s for s in selections if any(
-        r.get("winner","").lower() == s["horse"].lower() for r in results
-    )]
+    winners = [s for s in selections if _won_horse(s.get("horse", ""))]
     losers  = [s for s in selections if s not in winners]
 
-    # P&L
-    acc_stake = budget * 0.60 if len(selections) >= 4 else budget
-    l15_stake = budget * 0.40 if len(selections) >= 4 else 0
-    stake_per = l15_stake / 15 if l15_stake else 0
+    # ── Bet A / Bet B P&L ──
+    bet_a_stake  = round(budget * 0.60, 2) if bet_a else 0.0
+    bet_b_stake  = round(budget * 0.40, 2) if bet_b else 0.0
 
-    all_won = len(losers) == 0
-    acc_return = 0.0
-    if all_won and winners:
-        dec = 1.0
-        for w in winners:
-            dec *= w["decimal"]
-        acc_return = round(acc_stake * dec, 2)
+    def _eval_fold(bet, stake):
+        """Returns (return_amount, won_bool, failed_legs_list)."""
+        if not bet or stake <= 0:
+            return 0.0, False, []
+        horses = bet.get("horses", []) or []
+        failed = [h for h in horses if not _won_horse(h.get("horse", ""))]
+        if failed:
+            return 0.0, False, failed
+        dec = float(bet.get("combined_decimal", 1.0) or 1.0)
+        return round(stake * dec, 2), True, []
 
-    # Cover accumulator and value double returns
-    l15_return = 0.0
-    if len(winners) >= 1 and l15_stake > 0:
-        w_decs = [w["decimal"] for w in winners]
-        for n in range(1, len(w_decs)+1):
-            for combo in _combs(w_decs, n):
-                prod = 1.0
-                for d in combo: prod *= d
-                l15_return += stake_per * prod
-        l15_return = round(l15_return, 2)
+    bet_a_return, bet_a_won, bet_a_failed = _eval_fold(bet_a, bet_a_stake)
+    bet_b_return, bet_b_won, bet_b_failed = _eval_fold(bet_b, bet_b_stake)
 
-    net = round((acc_return + l15_return) - budget, 2)
+    total_staked = bet_a_stake + bet_b_stake
+    net          = round((bet_a_return + bet_b_return) - total_staked, 2)
 
     # Results table
     def results_rows():
         rows = ""
         for s in selections:
-            won = any(r.get("winner","").lower() == s["horse"].lower() for r in results)
+            won = _won_horse(s.get("horse", ""))
             result_str = "WON" if won else "LOST"
             col = "#437A22" if won else "#A13544"
-            sp_str = next((r.get("sp","") for r in results
-                          if r.get("winner","").lower() == s["horse"].lower()), "—")
+            sp_str = next(
+                (r.get("sp", "") for r in results
+                 if (r.get("winner", "") or "").lower().strip()
+                    == (s.get("horse", "") or "").lower().strip()),
+                "—",
+            )
             rows += f"""<tr>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s['time']} {s['course']}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s['curr_odds']}</td>
+              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s.get('time','')} {s.get('course','')}</td>
+              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s.get('horse','')}</td>
+              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s.get('curr_odds','')}</td>
               <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{sp_str}</td>
               <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{col};">{result_str}</td>
             </tr>"""
@@ -1960,6 +1958,33 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     net_col = "#437A22" if net >= 0 else "#A13544"
     net_str = f"+£{net:.2f}" if net >= 0 else f"-£{abs(net):.2f}"
 
+    def _fold_row_html(bet, stake, ret, won, failed, label):
+        if not bet or stake <= 0:
+            cell = "N/A — no qualifying fold today"
+            colour = "#888"
+        elif won:
+            cell = (
+                f"<span style='color:#437A22;font-weight:bold;'>WON</span> "
+                f"— £{ret:,.2f} return on £{stake:.2f} stake "
+                f"({bet.get('combined_decimal', 0):.2f}x)"
+            )
+            colour = "#e0e0e0"
+        else:
+            failed_names = ", ".join(h.get("horse", "?") for h in failed) or "leg(s) failed"
+            cell = (
+                f"<span style='color:#A13544;font-weight:bold;'>LOST</span> "
+                f"— £{stake:.2f} stake ({failed_names} lost)"
+            )
+            colour = "#e0e0e0"
+        legs = bet.get("legs", 0) if bet else 0
+        head = f"{label} ({legs}-fold)" if bet else f"{label}"
+        return (
+            f"<tr>"
+            f"<td style='padding:6px 0;color:#888;font-size:13px;'>{head}</td>"
+            f"<td style='padding:6px 0;font-size:13px;color:{colour};'>{cell}</td>"
+            f"</tr>"
+        )
+
     pl_block = f"""
     <table style="width:100%;border-collapse:collapse;">
       <tr>
@@ -1967,17 +1992,11 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
         <td style="padding:6px 0;font-size:13px;">£{budget:.2f}</td>
       </tr>
       <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Accumulator</td>
-        <td style="padding:6px 0;font-size:13px;">
-          {'WON — £'+str(acc_return) if all_won and acc_return else 'LOST — £'+str(acc_stake)+' stake'}
-        </td>
+        <td style="padding:6px 0;color:#888;font-size:13px;">Total Staked</td>
+        <td style="padding:6px 0;font-size:13px;">£{total_staked:.2f}</td>
       </tr>
-      <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Lucky 15</td>
-        <td style="padding:6px 0;font-size:13px;">
-          {'£'+str(l15_return)+' returned ('+str(len(winners))+' winners)' if l15_return else 'N/A'}
-        </td>
-      </tr>
+      {_fold_row_html(bet_a, bet_a_stake, bet_a_return, bet_a_won, bet_a_failed, "BET A")}
+      {_fold_row_html(bet_b, bet_b_stake, bet_b_return, bet_b_won, bet_b_failed, "BET B")}
       <tr style="border-top:1px solid #333;">
         <td style="padding:8px 0;font-size:14px;font-weight:bold;">Net P&amp;L</td>
         <td style="padding:8px 0;font-size:16px;font-weight:bold;color:{net_col};">{net_str}</td>

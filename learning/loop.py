@@ -44,14 +44,17 @@ WEIGHTS_PATH         = os.path.join(os.path.dirname(__file__), "learned_weights.
 PERFORMANCE_PATH     = os.path.join(os.path.dirname(__file__), "performance.json")
 
 DEFAULT_WEIGHTS = {
-    "market_odds":  0.25,
-    "horse_form":   0.20,
-    "track_form":   0.15,
-    "going":        0.10,
-    "trainer_form": 0.10,
-    "jockey_form":  0.10,
-    "market_moves": 0.10,
+    "market_odds":  0.30,
+    "horse_form":   0.25,
+    "trainer_form": 0.15,
+    "jockey_form":  0.15,
+    "market_moves": 0.15,
 }
+
+# v2.5.47 — signals removed from active scoring; kept here so old records
+# don't trigger KeyError when adjust_weightings() iterates. Never iterated
+# directly; we only ever read keys actually present in the saved signals dict.
+DROPPED_SIGNAL_KEYS = ("bsp_signal", "track_form", "going", "race_pace", "jump_index")
 
 
 # ── JSON helpers ──────────────────────────────────────────────
@@ -402,7 +405,20 @@ class LearningLoop:
             print(f"[LearningLoop] {len(settled)}/20 settled races — skipping adjustment")
             return self.learned_weights
 
-        signal_names = list(DEFAULT_WEIGHTS.keys())
+        # Iterate ONLY over signal keys actually present in records. Old records
+        # may carry dropped keys (bsp_signal/track_form/going/race_pace/jump_index);
+        # new records may lack them. Using .get() everywhere prevents KeyError.
+        present_keys = set()
+        for rec in settled:
+            sigs = rec.get("signals") or {}
+            if isinstance(sigs, dict):
+                present_keys.update(sigs.keys())
+        # Restrict to keys that are also in our active default weight set.
+        signal_names = [k for k in DEFAULT_WEIGHTS.keys() if k in present_keys]
+        if not signal_names:
+            print("[LearningLoop] No active signal keys present in records — skipping")
+            return self.learned_weights
+
         win_sums  = {s: 0.0 for s in signal_names}
         loss_sums = {s: 0.0 for s in signal_names}
 
@@ -437,7 +453,15 @@ class LearningLoop:
 
         # Cast learned weights through float() — any value re-read from JSON
         # may surface as a string and break the renormalise arithmetic.
-        new_weights = {k: float(v or 0.0) for k, v in self.learned_weights.items()}
+        # Strip any dropped/legacy signal keys (bsp_signal/track_form/etc).
+        new_weights = {
+            k: float(v or 0.0)
+            for k, v in self.learned_weights.items()
+            if k not in DROPPED_SIGNAL_KEYS
+        }
+        # Backfill any DEFAULT_WEIGHTS keys missing from the saved file.
+        for _k, _v in DEFAULT_WEIGHTS.items():
+            new_weights.setdefault(_k, float(_v))
         NUDGE = 0.01
         MIN_W = 0.01
         MAX_W = 0.40
@@ -461,7 +485,7 @@ class LearningLoop:
         new_weights = {k: round(v / total, 4) for k, v in new_weights.items()}
 
         for sig, w in new_weights.items():
-            old_w  = self.learned_weights.get(sig, DEFAULT_WEIGHTS[sig])
+            old_w  = self.learned_weights.get(sig, DEFAULT_WEIGHTS.get(sig, 0.0))
             change = w - old_w
             arrow  = "↑" if change > 0.001 else "↓" if change < -0.001 else "—"
             print(f"  {sig:20s}: {w:.3f}  {arrow} {abs(change):.3f}")

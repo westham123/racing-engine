@@ -16,16 +16,19 @@ LOSS_ANALYSIS_PATH = os.path.join(os.path.dirname(__file__), "loss_analysis.json
 WEIGHTS_PATH       = os.path.join(os.path.dirname(__file__), "learned_weights.json")
 
 # Fault → signal mapping
+# v2.5.47 — bsp_signal/going dropped from active scoring; faults that pointed
+# at them now point at market_moves (closest live-market proxy) so weight
+# nudges still land on a signal that exists in DEFAULT_WEIGHTS.
 FAULT_TO_SIGNAL: Dict[str, Optional[str]] = {
-    "GOING_MISMATCH":       "going",
+    "GOING_MISMATCH":       None,
     "MARKET_DRIFT":         "market_moves",
-    "MARKET_STEAM_RIVAL":   "bsp_signal",
+    "MARKET_STEAM_RIVAL":   "market_moves",
     "FORM_REGRESSION":      "horse_form",
     "TRAINER_COLD":         "trainer_form",
     "RACE_TYPE_MISMATCH":   None,
 }
 
-ALL_SIGNALS = ["going", "market_moves", "horse_form", "trainer_form", "bsp_signal", "jockey_form"]
+ALL_SIGNALS = ["market_odds", "market_moves", "horse_form", "trainer_form", "jockey_form"]
 
 FAULT_ORDER = [
     "GOING_MISMATCH",

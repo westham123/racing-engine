@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.45** — fix signal gate; relax dual-signal rule; fix field size threshold; wire learned weights into scoring")
+    st.markdown("**Engine v2.5.47** — fix evening summary P&L (Bet A/Bet B); fix bsp_signal learning loop error; relax Bet A fold trigger")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -521,6 +521,11 @@ for _bs in _brief_selections:
         'race_type':           str(_bs.get("race_type", "") or ""),
         'rival_top_trainer':   bool(_bs.get("rival_top_trainer", False)),
         'rival_trainer_name':  str(_bs.get("rival_trainer_name", "") or ""),
+        # v2.5.47 — fold-bet gating fields (passed through from official sels)
+        'gap_to_2nd':         float(_bs.get("gap_to_2nd", 0) or 0),
+        'is_dominant_fav':    bool(_bs.get("is_dominant_fav", False)),
+        'yg_risk':            bool(_bs.get("yg_risk", False)),
+        'curr_odds':          str(_bs.get("curr_odds", _pdisp_odds) or _pdisp_odds),
         # Oddschecker multi-bookie (v2.5.40)
         'best_odds_decimal':    _bs.get("best_odds_decimal"),
         'best_odds_fractional': _bs.get("best_odds_fractional"),
