@@ -385,7 +385,7 @@ class OddsModel:
         return round(delta, 4)
 
     # ── Filter Layer (v2.5.1) ─────────────────────────────────
-    def should_exclude(self, runner_data: dict) -> tuple:
+    def should_exclude(self, runner_data: dict, race_name: str = None) -> tuple:
         """
         Hard exclusion check — called BEFORE scoring.
         Returns (exclude: bool, reason: str).
@@ -397,6 +397,30 @@ class OddsModel:
         field_size = int(runner_data.get("field_size", 0) or 0)
         form_det   = self._get_form_detail(form_str)
         runs       = form_det.get("runs", 0)
+
+        # ── Filter 0: Group/Listed race exclusion (v2.5.52) ──
+        # Group 1/2/3, Grade 1/2/3, and Listed races are too competitive —
+        # compressed class, multiple well-backed rivals, odds-on favs regularly
+        # beaten. 24 Apr Sandown wiped out the day; exclude these entirely.
+        if race_name is None:
+            race_name = runner_data.get("race_name", "")
+        race_name_lower = (race_name or "").lower()
+        if race_name_lower:
+            import re as _re
+            GROUP_LISTED_PATTERNS = [
+                r'\(gr(?:oup|ade)?\s*[123]\)',
+                r'\(gr\s*[123]\)',
+                r'\(grade\s*[123]\)',
+                r'\(listed\)',
+                r'\(listed race\)',
+                r'grade\s+[123]',
+                r'group\s+[123]',
+                r'\bgr\.?\s*[123]\b',
+                r'\bg[123]\b',
+            ]
+            for pattern in GROUP_LISTED_PATTERNS:
+                if _re.search(pattern, race_name_lower, _re.IGNORECASE):
+                    return (True, "group_listed_race")
 
         # ── Filter 1: Large field ─────────────────────────────
         # 16+ runners = highly unpredictable, exclude entirely

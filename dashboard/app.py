@@ -393,7 +393,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.51** — form-first selection: remove fav filter, market position as info")
+    st.markdown("**Engine v2.5.52** — exclude Group/Listed/Grade races from selection pool")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -559,12 +559,13 @@ if False and _pool_is_live and len(_pool_df) > 0:
             'field_size':   int(_prow.get('Field Size', 0) or 0),
             'race_type':    str(_prow.get('Race Type', '')),
             'race_class':   str(_prow.get('Race Class', '')),
+            'race_name':    str(_prow.get('Race Name', '')),
             'is_handicap':  bool(_prow.get('Is Handicap', False)),
         }
 
         if _pool_model:
             try:
-                _pexcl = _pool_model.should_exclude(_prunner)
+                _pexcl = _pool_model.should_exclude(_prunner, race_name=str(_prow.get('Race Name', '')))
                 _pexclude = _pexcl[0] if isinstance(_pexcl, tuple) else bool(_pexcl)
             except Exception:
                 _pexclude = False

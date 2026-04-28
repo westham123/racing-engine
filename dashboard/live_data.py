@@ -282,7 +282,8 @@ def get_race_runners(slug):
     field_size   = len([r for r in rides if str(r.get("ride_status","")).upper().replace("_","").replace("-","") != "NONRUNNER"])
     race_type    = str(race_summary.get("race_type",  "")).lower()   # flat/hurdle/chase/bumper
     race_class   = str(race_summary.get("race_class", "")).lower()   # class 1-6, group 1-3 etc
-    is_handicap  = any(x in str(race_summary.get("race_name","")).lower()
+    race_name    = str(race_summary.get("race_name", ""))   # full race name (for Group/Listed filter)
+    is_handicap  = any(x in race_name.lower()
                        for x in ["handicap", "hcap", "h'cap"])
     race_dist_f  = race_summary.get("distance_furlongs", 0)  # distance in furlongs
 
@@ -349,6 +350,7 @@ def get_race_runners(slug):
             "field_size":     field_size,
             "race_type":      race_type,
             "race_class":     race_class,
+            "race_name":      race_name,
             "is_handicap":    is_handicap,
             "race_dist_f":    race_dist_f,
         })
@@ -452,6 +454,7 @@ def get_todays_selections():
                         "field_size":  rn.get("field_size", 0),
                         "race_type":   rn.get("race_type", ""),
                         "race_class":  rn.get("race_class", ""),
+                        "race_name":   rn.get("race_name", ""),
                         "is_handicap": rn.get("is_handicap", False),
                         "current_odds": rn.get("current_odds", odds_str),
                     }
@@ -496,6 +499,7 @@ def get_todays_selections():
                     "Field Size":  rn.get("field_size", 0),
                     "Race Type":   rn.get("race_type", ""),
                     "Race Class":  rn.get("race_class", ""),
+                    "Race Name":   rn.get("race_name", ""),
                     "Is Handicap": rn.get("is_handicap", False),
                 })
 
