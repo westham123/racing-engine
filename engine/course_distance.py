@@ -163,15 +163,21 @@ def _win_rate_to_signal(wins: int, runs: int) -> float:
     return 0.50
 
 
+# v2.5.60 — TEMPORARILY DISABLED: Sporting Life form page fetches are too
+# slow in the cron environment and cause pipeline timeouts. Returning neutral
+# (0.50, 0.50) for all horses until a faster data source is wired in.
+# Re-enable by removing this early return and uncommenting the fetch logic below.
+_COURSE_DISTANCE_ENABLED = False
+
+
 def get_course_distance_signals(horse_name: str, course: str, dist_f: float) -> Tuple[float, float]:
     """
     Returns (course_signal, distance_signal) as floats 0.0–1.0.
-
-    On any failure (no horse name, no requests, fetch error, parse error,
-    missing BeautifulSoup) returns the neutral (0.50, 0.50).
-
-    Cached per-session to avoid repeat fetches.
+    Currently returns neutral (0.50, 0.50) — fetch disabled pending faster source.
     """
+    if not _COURSE_DISTANCE_ENABLED:
+        return (0.50, 0.50)
+
     if not horse_name:
         return (0.50, 0.50)
 
