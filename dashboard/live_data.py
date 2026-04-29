@@ -444,6 +444,7 @@ def get_todays_selections():
 
                 if MODEL_AVAILABLE and _odds_model is not None:
                     runner_input = {
+                        "horse": rn.get("horse", ""),
                         "odds": odds_str, "form": rn.get("form", "-"),
                         "going": going, "trainer": rn.get("trainer", ""),
                         "jockey": rn.get("jockey", ""), "signal": signal,
@@ -457,10 +458,26 @@ def get_todays_selections():
                         "race_name":   rn.get("race_name", ""),
                         "is_handicap": rn.get("is_handicap", False),
                         "current_odds": rn.get("current_odds", odds_str),
+                        # v2.5.55 — needed for course/distance signals
+                        "race_dist_f": rn.get("race_dist_f", 0.0),
                     }
                     confidence = _odds_model.calculate_confidence(runner_input)
+                    # v2.5.55 — surface course/distance affinity for display.
+                    # Reuses cached fetch — no extra network call.
+                    try:
+                        from engine.course_distance import (
+                            get_course_distance_signals as _cd_sig,
+                            get_course_distance_detail as _cd_det,
+                        )
+                        _cs, _ds = _cd_sig(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
+                        _cd = _cd_det(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
+                    except Exception:
+                        _cs, _ds = 0.50, 0.50
+                        _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
                 else:
                     confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
+                    _cs, _ds = 0.50, 0.50
+                    _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
 
                 bsp_price   = bsp_result.get("bsp_price")    if bsp_result else None
                 bsp_flag    = bsp_result.get("value_flag")   if bsp_result else ""
@@ -501,6 +518,14 @@ def get_todays_selections():
                     "Race Class":  rn.get("race_class", ""),
                     "Race Name":   rn.get("race_name", ""),
                     "Is Handicap": rn.get("is_handicap", False),
+                    # v2.5.55 — course specialist + distance affinity
+                    "Race Dist F":     rn.get("race_dist_f", 0.0),
+                    "Course Signal":   _cs,
+                    "Distance Signal": _ds,
+                    "Course Wins":     _cd.get("course_wins", 0),
+                    "Course Runs":     _cd.get("course_runs", 0),
+                    "Distance Wins":   _cd.get("dist_wins", 0),
+                    "Distance Runs":   _cd.get("dist_runs", 0),
                 })
 
     # Persist updated snapshot (today's entries only)

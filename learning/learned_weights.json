@@ -1,7 +1,9 @@
 {
-  "horse_form": 0.3173,
-  "market_odds": 0.2788,
-  "market_moves": 0.1923,
-  "trainer_form": 0.125,
-  "jockey_form": 0.0865
+  "horse_form": 0.27,
+  "market_odds": 0.23,
+  "market_moves": 0.17,
+  "trainer_form": 0.12,
+  "jockey_form": 0.08,
+  "course_form": 0.08,
+  "distance_form": 0.05
 }

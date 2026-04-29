@@ -245,6 +245,8 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 continue
 
             runner = {
+                "horse":        str(row.get("Horse", "")),
+                "course":       str(row.get("Course", "")),
                 "odds":         str(row.get("Odds", "N/A")),
                 "current_odds": odds_str,
                 "form":         str(row.get("Form", "-")),
@@ -257,6 +259,7 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "field_size":   int(row.get("Field Size", 0) or 0),
                 "is_handicap":  bool(row.get("Is Handicap", False)),
                 "race_type":    str(row.get("Race Type", "") or "").strip(),
+                "race_dist_f":  float(row.get("Race Dist F", 0) or 0),
             }
 
             # Hard filter layer
@@ -407,6 +410,14 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "best_bookmaker":       row.get("Best Bookmaker", ""),
                 "odds_consensus":       row.get("Odds Consensus"),
                 "bookmaker_count":      row.get("Bookmaker Count"),
+                # v2.5.55 — course specialist + distance affinity
+                "course_signal":   float(row.get("Course Signal", 0.50) or 0.50),
+                "distance_signal": float(row.get("Distance Signal", 0.50) or 0.50),
+                "course_wins":     int(row.get("Course Wins", 0) or 0),
+                "course_runs":     int(row.get("Course Runs", 0) or 0),
+                "distance_wins":   int(row.get("Distance Wins", 0) or 0),
+                "distance_runs":   int(row.get("Distance Runs", 0) or 0),
+                "race_dist_f":     float(row.get("Race Dist F", 0) or 0),
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
@@ -707,6 +718,22 @@ def _sel_table(selections: list, movers: list = None) -> str:
         else:
             oc_tag = ""
 
+        # v2.5.55 — Course specialist + Distance affinity tags
+        _cs   = float(s.get("course_signal",   0.50) or 0.50)
+        _ds   = float(s.get("distance_signal", 0.50) or 0.50)
+        _cw   = int(s.get("course_wins",   0) or 0)
+        _crn  = int(s.get("course_runs",   0) or 0)
+        _dw   = int(s.get("distance_wins", 0) or 0)
+        _drn  = int(s.get("distance_runs", 0) or 0)
+        cd_bits = []
+        if _cs > 0.55:
+            cd_bits.append(f'<span style="color:#4caf50;font-size:11px;">✓ Course ({_cw}/{_crn})</span>')
+        elif _cs < 0.45 and _crn >= 3:
+            cd_bits.append(f'<span style="color:#e65c00;font-size:11px;">⚠ No course form ({_cw}/{_crn})</span>')
+        if _ds > 0.55:
+            cd_bits.append(f'<span style="color:#4caf50;font-size:11px;">✓ Dist ({_dw}/{_drn})</span>')
+        cd_tag = ("<br>" + " &nbsp; ".join(cd_bits)) if cd_bits else ""
+
         # Odds cell — show best decimal when present, falling back to SL current odds
         _best_dec = s.get("best_odds_decimal")
         if _best_dec:
@@ -716,7 +743,7 @@ def _sel_table(selections: list, movers: list = None) -> str:
 
         rows += f"""<tr>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s['time']}<br><span style="font-size:11px;">{s['course']}</span></td>
-          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}{fav_tag}{oc_tag}</td>
+          <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s['horse']}{hcap_tag}{mv_tag}{fav_tag}{oc_tag}{cd_tag}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{odds_cell}</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{conf_col};">{conf_pct}%</td>
           <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:12px;color:{sig_col};">{s['signal']}</td>

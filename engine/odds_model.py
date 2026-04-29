@@ -61,19 +61,39 @@ from engine.going_matcher import score_going_preference, score_going_from_form_s
 from engine.form_scorer import score_trainer_form, score_jockey_form
 from engine.race_times_stride import score_race_pace, RaceTimesStore
 
-# ── Default scoring weights (v2.5.44) ─────────────────────────
+# v2.5.55 — course specialist + distance affinity. Optional fetch via
+# Sporting Life horse pages; failures return neutral (0.50, 0.50) and
+# never block the main pipeline.
+try:
+    from engine.course_distance import (
+        get_course_distance_signals as _get_cd_signals,
+        get_course_distance_detail as _get_cd_detail,
+    )
+    _CD_AVAILABLE = True
+except Exception:
+    _CD_AVAILABLE = False
+    def _get_cd_signals(horse_name, course, dist_f):
+        return (0.50, 0.50)
+    def _get_cd_detail(horse_name, course, dist_f):
+        return {"course_wins": 0, "course_runs": 0, "dist_wins": 0, "dist_runs": 0}
+
+# ── Default scoring weights (v2.5.55) ─────────────────────────
 # These are mapped from learning/learned_weights.json at runtime, with
 # fallback to these defaults if the file is missing or malformed.
 # s_tf shares horse_form's quality-signal slot at 0.15 (a reasonable
 # default — tf_stars is a Timeform quality rating, conceptually similar).
-# All six active weights must always sum to 1.0.
+# v2.5.55 adds s_course (0.08) and s_distance (0.05) — course specialist
+# and distance affinity from horse-level form pages. Other live signals
+# rebalanced proportionally so the active set sums to 1.0.
 _DEFAULT_SCORING_WEIGHTS = {
-    "s_form":    0.32,
-    "s_tf":      0.15,
-    "s_odds":    0.28,
-    "s_moves":   0.20,
-    "s_trainer": 0.12,
-    "s_jockey":  0.08,
+    "s_form":     0.27,
+    "s_tf":       0.15,
+    "s_odds":     0.23,
+    "s_moves":    0.17,
+    "s_trainer":  0.12,
+    "s_jockey":   0.08,
+    "s_course":   0.08,
+    "s_distance": 0.05,
 }
 
 _LEARNED_WEIGHTS_PATH = os.path.join(
@@ -92,12 +112,14 @@ def _load_scoring_weights() -> dict:
         with open(_LEARNED_WEIGHTS_PATH, "r") as f:
             learned = json.load(f) or {}
         mapped = {
-            "s_form":    float(learned.get("horse_form",   _DEFAULT_SCORING_WEIGHTS["s_form"])),
-            "s_tf":      _DEFAULT_SCORING_WEIGHTS["s_tf"],   # tf_stars: quality signal, fixed default
-            "s_odds":    float(learned.get("market_odds",  _DEFAULT_SCORING_WEIGHTS["s_odds"])),
-            "s_moves":   float(learned.get("market_moves", _DEFAULT_SCORING_WEIGHTS["s_moves"])),
-            "s_trainer": float(learned.get("trainer_form", _DEFAULT_SCORING_WEIGHTS["s_trainer"])),
-            "s_jockey":  float(learned.get("jockey_form",  _DEFAULT_SCORING_WEIGHTS["s_jockey"])),
+            "s_form":     float(learned.get("horse_form",     _DEFAULT_SCORING_WEIGHTS["s_form"])),
+            "s_tf":       _DEFAULT_SCORING_WEIGHTS["s_tf"],   # tf_stars: quality signal, fixed default
+            "s_odds":     float(learned.get("market_odds",    _DEFAULT_SCORING_WEIGHTS["s_odds"])),
+            "s_moves":    float(learned.get("market_moves",   _DEFAULT_SCORING_WEIGHTS["s_moves"])),
+            "s_trainer":  float(learned.get("trainer_form",   _DEFAULT_SCORING_WEIGHTS["s_trainer"])),
+            "s_jockey":   float(learned.get("jockey_form",    _DEFAULT_SCORING_WEIGHTS["s_jockey"])),
+            "s_course":   float(learned.get("course_form",    _DEFAULT_SCORING_WEIGHTS["s_course"])),
+            "s_distance": float(learned.get("distance_form",  _DEFAULT_SCORING_WEIGHTS["s_distance"])),
         }
     except Exception:
         mapped = dict(_DEFAULT_SCORING_WEIGHTS)
@@ -260,6 +282,26 @@ class OddsModel:
         Return neutral 0.50 until real results data builds up.
         """
         return 0.50
+
+    # ── Signals 7+8: Course Form (8%) + Distance Form (5%) ────
+    def _score_course_distance(self, runner_data: dict):
+        """
+        Fetch course-specialist and distance-affinity signals from the
+        horse's form page. Wrapped in try/except — any failure returns
+        the neutral (0.50, 0.50) so the main pipeline never blocks.
+        """
+        try:
+            horse = str(runner_data.get("horse", "") or "").strip()
+            course = str(runner_data.get("course", "") or "").strip()
+            try:
+                dist_f = float(runner_data.get("race_dist_f") or 0.0)
+            except Exception:
+                dist_f = 0.0
+            if not horse:
+                return (0.50, 0.50)
+            return _get_cd_signals(horse, course, dist_f)
+        except Exception:
+            return (0.50, 0.50)
 
     # ── Placeholder Signals (all return 0.50) ─────────────────
     def _score_track_form(self, course: str, runner_data: dict) -> float:
@@ -508,6 +550,7 @@ class OddsModel:
         s_moves   = self._score_market_moves(signal, bet_moves)
         s_trainer = self._score_trainer_form(trainer, tf_stars)
         s_jockey  = self._score_jockey_form(jockey, tf_stars)
+        s_course, s_distance = self._score_course_distance(runner_data)
 
         # Active weights — loaded from learning/learned_weights.json at
         # runtime (with default fallback). Always renormalised to sum to 1.0.
@@ -519,12 +562,14 @@ class OddsModel:
         # Note: _score_tf_stars(None) returns 0.45 (not 0.50), so missing
         # tf_stars stays in the active set as a slight negative.
         signal_scores = {
-            "s_form":    s_form,
-            "s_tf":      s_tf,
-            "s_odds":    s_odds,
-            "s_moves":   s_moves,
-            "s_trainer": s_trainer,
-            "s_jockey":  s_jockey,
+            "s_form":     s_form,
+            "s_tf":       s_tf,
+            "s_odds":     s_odds,
+            "s_moves":    s_moves,
+            "s_trainer":  s_trainer,
+            "s_jockey":   s_jockey,
+            "s_course":   s_course,
+            "s_distance": s_distance,
         }
         active = {k: v for k, v in signal_scores.items() if abs(v - 0.50) > 0.01}
         if not active:
@@ -596,6 +641,7 @@ class OddsModel:
         jockey    = runner_data.get("jockey", "")
         form_det  = self._get_form_detail(form_str)
 
+        cd_course, cd_dist = self._score_course_distance(runner_data)
         return {
             "horse_form":   round(self._score_horse_form(form_str), 3),
             "tf_stars":     round(self._score_tf_stars(tf_stars), 3),
@@ -603,6 +649,8 @@ class OddsModel:
             "market_moves": round(self._score_market_moves(signal, bet_moves), 3),
             "trainer_form": round(self._score_trainer_form(trainer, tf_stars), 3),
             "jockey_form":  round(self._score_jockey_form(jockey, tf_stars), 3),
+            "course_form":  round(cd_course, 3),
+            "distance_form": round(cd_dist, 3),
             "trainer_travel": round(self._trainer_travel_signal(trainer), 3),
             "adjustment":   round(self._calculate_adjustments(runner_data, form_det), 3),
             # Placeholder signals — shown as N/A until data available

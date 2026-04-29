@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.54** — unified BET A (Lucky 15 + singles) / BET B (Lucky 31 + singles); accumulator removed")
+    st.markdown("**Engine v2.5.55** — added course specialist (0.08) and distance affinity (0.05) signals to confidence model")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -698,6 +698,14 @@ if False and _pool_is_live and len(_pool_df) > 0:
             'best_bookmaker':       _prow.get("Best Bookmaker", ""),
             'odds_consensus':       _prow.get("Odds Consensus"),
             'bookmaker_count':      _prow.get("Bookmaker Count"),
+            # v2.5.55 — course specialist + distance affinity
+            'course_signal':   float(_prow.get("Course Signal", 0.50) or 0.50),
+            'distance_signal': float(_prow.get("Distance Signal", 0.50) or 0.50),
+            'course_wins':     int(_prow.get("Course Wins", 0) or 0),
+            'course_runs':     int(_prow.get("Course Runs", 0) or 0),
+            'distance_wins':   int(_prow.get("Distance Wins", 0) or 0),
+            'distance_runs':   int(_prow.get("Distance Runs", 0) or 0),
+            'race_dist_f':     float(_prow.get("Race Dist F", 0) or 0),
         })
 
     _six_pool.sort(key=lambda x: x['confidence'], reverse=True)
@@ -848,12 +856,25 @@ with tab1:
             if _s.get("rival_top_trainer"):
                 _rv_nm = (_s.get("rival_trainer_name", "") or "TOP TRAINER").strip()
                 _warn_bits.append(f"⚠ TOP TRAINER IN RACE ({_rv_nm})")
+            # v2.5.55 — course specialist + distance affinity tags
+            _crn  = int(_s.get("course_runs", 0) or 0)
+            _cw   = int(_s.get("course_wins", 0) or 0)
+            _drn  = int(_s.get("distance_runs", 0) or 0)
+            _dw   = int(_s.get("distance_wins", 0) or 0)
+            _dist_f = float(_s.get("race_dist_f", 0) or 0)
+            _course_str = f"{_cw}/{_crn} here" if _crn > 0 else "no runs here"
+            _dist_str   = (
+                f"{_dw}/{_drn} @ {_dist_f:g}f" if _drn > 0
+                else (f"no runs @ {_dist_f:g}f" if _dist_f > 0 else "no dist data")
+            )
             _sel_rows.append({
                 "Time":           _s["time"],
                 "Horse":          _s["horse"],
                 "Course":         _s["course"],
                 "Odds":           _s["odds_str"],
                 "Confidence":     f"{_s['confidence']:.1%}",
+                "Course Form":    _course_str,
+                "Distance Form":  _dist_str,
                 "Overnight Move": _mv_str,
                 "Signal":         _s.get("signal", "Stable"),
                 "Tier":           _s["tier"],
