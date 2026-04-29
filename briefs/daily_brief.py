@@ -2499,8 +2499,11 @@ def send_morning_brief(budget: float = 100.0):
 
 
 def _send_prerace_window(start_hhmm: str, end_hhmm: str, label: str = "") -> int:
-    """Send pre-race alerts for every selection whose race time falls in
-    [start_hhmm, end_hhmm] BST. Returns count of alerts sent."""
+    """Send ONE consolidated pre-race alert email covering all selections
+    whose race time falls in [start_hhmm, end_hhmm] BST.
+    v2.5.61 — was sending one email per horse (19 emails). Now single digest.
+    Returns 1 if email sent, 0 otherwise.
+    """
     try:
         selections = _get_official_selections()
     except Exception as _e:
@@ -2519,19 +2522,67 @@ def _send_prerace_window(start_hhmm: str, end_hhmm: str, label: str = "") -> int
     if lo < 0 or hi < 0:
         return 0
 
-    sent = 0
+    # Filter selections in this window
+    in_window = []
     for s in selections:
         t_min = _parse_hhmm(str(s.get("time", "")))
-        if t_min < 0:
-            continue
-        if lo <= t_min <= hi:
-            try:
-                if send_prerace_alert(s):
-                    sent += 1
-            except Exception as _e:
-                print(f"[PreRace] alert failed for {s.get('horse','?')}: {_e}")
-    print(f"[PreRace] {label}: sent {sent} alert(s) for window {start_hhmm}-{end_hhmm} BST")
-    return sent
+        if t_min >= 0 and lo <= t_min <= hi:
+            in_window.append(s)
+
+    if not in_window:
+        print(f"[PreRace] {label}: no selections in window {start_hhmm}-{end_hhmm} BST")
+        return 0
+
+    # Build ONE consolidated email
+    date_str = _date_bst()
+    subject  = f"Racing Engine — Pre-Race Alerts | {start_hhmm}–{end_hhmm} BST | {date_str}"
+
+    rows = ""
+    for s in sorted(in_window, key=lambda x: x.get("time", "")):
+        horse   = s.get("horse", "?")
+        course  = s.get("course", "?")
+        time_   = s.get("time", "?")
+        odds    = s.get("best_odds") or s.get("decimal_odds") or s.get("odds", "?") 
+        conf    = s.get("confidence", 0)
+        mkt_pos = s.get("market_position_label", "")
+        move    = s.get("market_move", "")
+        dom     = " ⚠️ DOM" if s.get("dominant_rival") else ""
+        yg      = " ⚠️ YG" if s.get("yg_risk") else ""
+        conf_pct = f"{conf*100:.0f}%" if isinstance(conf, float) else str(conf)
+        move_str = f" | {move}" if move else ""
+        rows += f"""
+        <tr>
+          <td style="padding:8px;font-weight:bold">{time_} {course}</td>
+          <td style="padding:8px">{horse}</td>
+          <td style="padding:8px">{odds}</td>
+          <td style="padding:8px">{conf_pct}</td>
+          <td style="padding:8px">{mkt_pos}{move_str}{dom}{yg}</td>
+        </tr>"""
+
+    html = f"""
+    <html><body style="font-family:sans-serif;background:#0d1117;color:#e6edf3;padding:20px">
+    <h2 style="color:#f0a500">Racing Engine — Pre-Race Alerts</h2>
+    <p style="color:#8b949e">{date_str} | {start_hhmm}–{end_hhmm} BST | {len(in_window)} selection(s)</p>
+    <table style="width:100%;border-collapse:collapse;margin-top:16px">
+      <thead>
+        <tr style="background:#161b22;color:#8b949e;font-size:12px">
+          <th style="padding:8px;text-align:left">Race</th>
+          <th style="padding:8px;text-align:left">Horse</th>
+          <th style="padding:8px;text-align:left">Odds</th>
+          <th style="padding:8px;text-align:left">Conf</th>
+          <th style="padding:8px;text-align:left">Market</th>
+        </tr>
+      </thead>
+      <tbody>{rows}</tbody>
+    </table>
+    <p style="color:#8b949e;margin-top:24px;font-size:12px">
+      Dashboard: <a href="https://racing-engine-dash.streamlit.app" style="color:#58a6ff">racing-engine-dash.streamlit.app</a> (PIN: 1012)
+    </p>
+    </body></html>"""
+
+    ok = send_email(subject, html)
+    print(f"[PreRace] {label}: sent consolidated alert ({len(in_window)} horses) — {'OK' if ok else 'FAILED'}")
+    return 1 if ok else 0
 
 
 def send_afternoon_prerace_alerts():
