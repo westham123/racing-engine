@@ -2499,8 +2499,14 @@ def _send_prerace_window(start_hhmm: str, end_hhmm: str, label: str = "") -> int
 
 
 def send_afternoon_prerace_alerts():
-    """Called by a 12:30 BST cron. Pre-race alerts for races 13:00-15:00 BST."""
-    return _send_prerace_window("13:00", "15:00", label="afternoon")
+    """DEPRECATED — replaced by send_late_prerace_alerts() via cron 909fe390 at 13:30 BST.
+    Cron 48f28f46 (12:30 BST duplicate) has been decommissioned.
+    This function exits silently to prevent duplicate alert emails."""
+    import logging
+    logging.getLogger(__name__).info(
+        "send_afternoon_prerace_alerts() called by decommissioned cron 48f28f46 — exiting silently."
+    )
+    return 0  # silent exit — do not send emails
 
 
 def send_late_prerace_alerts():
