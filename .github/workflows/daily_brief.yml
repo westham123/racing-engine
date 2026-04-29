@@ -1,70 +1,26 @@
-name: Racing Engine — Daily Brief & Updates
+name: Racing Engine — Daily Brief & Updates [DISABLED]
+
+# DISABLED 29 Apr 2026 — all email sending now handled by Perplexity crons
+# Replaced by: 3fb7f776 (operator), 4eac6ab1 (morning), a54556fb (confirmed),
+#              909fe390 (late alerts), 385f97ff (evening summary)
+# This workflow was sending stale ghost emails daily — do not re-enable.
 
 on:
-  schedule:
-    # 8:00 AM BST = 7:00 AM UTC (BST is UTC+1)
-    - cron: '0 7 * * *'
-    # 2-hourly updates during racing hours: 10am, 12pm, 2pm, 4pm, 6pm, 8pm BST
-    # = 9am, 11am, 1pm, 3pm, 5pm, 7pm UTC
-    - cron: '0 9 * * *'
-    - cron: '0 11 * * *'
-    - cron: '0 13 * * *'
-    - cron: '0 15 * * *'
-    - cron: '0 17 * * *'
-    - cron: '0 19 * * *'
-
-  # Allow manual trigger from GitHub Actions tab
+  # All schedules removed — workflow_dispatch kept for emergency manual use only
   workflow_dispatch:
     inputs:
       brief_type:
-        description: 'Brief type to send'
+        description: 'Manual trigger only — all auto-sends disabled'
         required: false
-        default: 'morning'
-        type: choice
-        options:
-          - morning
-          - update
-          - test
+        default: 'test'
 
 jobs:
-  send_brief:
+  disabled:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install dependencies
+      - name: Workflow disabled
         run: |
-          pip install requests beautifulsoup4 pandas numpy
-
-      - name: Determine brief type by schedule time
-        id: brief_type
-        run: |
-          HOUR=$(date -u +%H)
-          MINUTE=$(date -u +%M)
-          INPUT_TYPE="${{ github.event.inputs.brief_type }}"
-          if [ "$INPUT_TYPE" = "test" ]; then
-            echo "type=test" >> $GITHUB_OUTPUT
-          elif [ "$INPUT_TYPE" = "update" ]; then
-            echo "type=update" >> $GITHUB_OUTPUT
-          elif [ "$HOUR" = "07" ]; then
-            echo "type=morning" >> $GITHUB_OUTPUT
-          else
-            echo "type=update" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Send Racing Engine brief
-        env:
-          SENDER_EMAIL: ${{ secrets.SENDER_EMAIL }}
-          SENDER_APP_PASSWORD: ${{ secrets.SENDER_APP_PASSWORD }}
-          RECIPIENT_EMAIL: ${{ secrets.RECIPIENT_EMAIL }}
-          BRIEF_TYPE: ${{ steps.brief_type.outputs.type }}
-        run: |
-          python scripts/send_brief.py
+          echo "This GitHub Actions workflow has been disabled as of 29 Apr 2026."
+          echo "All email sending is now handled by Perplexity scheduled tasks."
+          echo "Do not re-enable without checking with the operator first."
+          exit 0
