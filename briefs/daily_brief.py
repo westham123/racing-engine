@@ -1542,53 +1542,63 @@ def _going_strip_html(going: list) -> str:
     return f'<div style="line-height:2.0;">{"".join(pills)}</div>'
 
 
-def _fold_card_mobile(bet: dict, label: str, accent: str, deadline: str) -> str:
-    """Card-per-fold for the mobile email — replaces the wide _fold_bets_block table."""
-    if not bet:
+def _bet_card_mobile(bet: dict, label: str, accent: str, deadline: str) -> str:
+    """v2.5.54 — card-per-bet for the mobile email.
+
+    Renders a BET A or BET B block with Lucky 15/31 stake, singles stake, and
+    a list of horses (decimal odds + course/time)."""
+    if not bet or bet.get("skipped"):
         return ""
-    horses = bet.get("horses", [])
-    dec    = bet.get("combined_decimal", 0) or 0
-    legs   = []
-    for h in horses:
-        yg = ""
-        if bool(h.get("yg_risk", False)):
-            yg = (' <span style="display:inline-block;background:#e8a33d;color:#1a1a1a;'
-                  'font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;'
-                  'margin-left:4px;">⚠ FIELD RISK</span>')
-        sm = ""
-        if bool(h.get("split_market", False)):
-            sm = (' <span style="display:inline-block;background:#d9534f;color:#fff;'
-                  'font-size:10px;font-weight:bold;padding:1px 6px;border-radius:8px;'
-                  'margin-left:4px;">⚠ SPLIT MARKET</span>')
-        best_odds = h.get("best_odds_fractional") or h.get("curr_odds") or h.get("odds", "N/A")
-        best_bk   = h.get("best_bookmaker") or ""
+    selections = bet.get("selections") or []
+    if not selections:
+        return ""
+    lucky      = bet.get("lucky_bet") or {}
+    singles    = bet.get("singles")   or {}
+    total      = bet.get("total_stake", 0.0)
+    lucky_lbl  = lucky.get("label", "Lucky")
+    lucky_st   = lucky.get("stake", 0.0)
+    lucky_lines = lucky.get("lines", 0)
+    lucky_ret  = lucky.get("potential_return", 0.0)
+    singles_st = singles.get("stake", 0.0)
+    singles_each = singles_st / max(len(selections), 1)
+
+    legs = []
+    for s in selections:
         legs.append(
             f'<div style="padding:8px 0;border-bottom:1px solid #2a2a2a;">'
             f'<div style="font-size:12px;color:#aaa;">'
-            f'{h.get("time","")} {h.get("course","")}</div>'
-            f'<div style="font-size:16px;font-weight:bold;color:#fff;text-transform:uppercase;'
-            f'margin:2px 0;">{h.get("horse","")}{sm}{yg}</div>'
+            f'{s.get("time","")} {s.get("course","")}</div>'
+            f'<div style="font-size:16px;font-weight:bold;color:#fff;'
+            f'text-transform:uppercase;margin:2px 0;">{s.get("name","")}</div>'
             f'<div style="font-size:13px;color:#e0e0e0;">'
-            f'{best_odds}'
-            f'{f" @ {best_bk}" if best_bk else ""}</div>'
+            f'{float(s.get("decimal_odds", 0) or 0):.2f}x &middot; '
+            f'conf {float(s.get("confidence", 0) or 0):.0%}</div>'
             f'</div>'
         )
     legs_html = "".join(legs)
 
-    n_legs = len(horses)
-    fold_lbl = f"{n_legs}-FOLD ACCUMULATOR" if n_legs > 1 else "SINGLE BET"
     return (
         f'<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
         f'margin-bottom:14px;border-left:5px solid {accent};">'
         f'<div style="font-size:11px;color:{accent};font-weight:bold;letter-spacing:1px;'
         f'text-transform:uppercase;margin-bottom:4px;">{label}</div>'
-        f'<div style="font-size:18px;font-weight:bold;color:#fff;margin-bottom:8px;">'
-        f'{fold_lbl} — {dec:.2f}x</div>'
+        f'<div style="font-size:18px;font-weight:bold;color:#fff;margin-bottom:6px;">'
+        f'{bet.get("tier","").replace("_"," ")} — {len(selections)} selections '
+        f'&middot; £{total:.2f} total</div>'
+        f'<div style="font-size:13px;color:#e0e0e0;margin-bottom:10px;">'
+        f'<b>{lucky_lbl}:</b> £{lucky_st:.2f} across {lucky_lines} lines '
+        f'(potential return £{lucky_ret:,.2f})<br>'
+        f'<b>Singles:</b> £{singles_st:.2f} (£{singles_each:.2f} per horse)'
+        f'</div>'
         f'{legs_html}'
         f'<div style="font-size:12px;color:#e8a33d;margin-top:10px;font-weight:bold;">'
         f'Place before {deadline}</div>'
         f'</div>'
     )
+
+
+# v2.5.54 — back-compat alias used elsewhere in the file.
+_fold_card_mobile = _bet_card_mobile
 
 
 def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None) -> str:
@@ -1749,18 +1759,27 @@ def build_morning_brief(budget: float = 100.0) -> str:
     # 2. BET A & BET B (top of email — most actionable)
     if selections:
         try:
-            from engine.staking import get_fold_bets as _get_fold_bets
-            _folds = _get_fold_bets(selections)
+            from engine.staking import get_daily_bets as _get_daily_bets
+            _bets = _get_daily_bets(selections)
         except Exception as _fb_err:
-            print(f"[Brief] Fold-bets failed: {_fb_err}")
-            _folds = {"bet_a": None, "bet_b": None}
+            print(f"[Brief] Daily bets failed: {_fb_err}")
+            _bets = {"bet_a": {"skipped": True}, "bet_b": {"skipped": True}}
 
-        if _folds.get("bet_a"):
-            body += _fold_card_mobile(_folds["bet_a"], "TODAY'S CORE BET",
-                                      "#2d7a3a", "13:00 BST")
-        if _folds.get("bet_b"):
-            body += _fold_card_mobile(_folds["bet_b"], "EXTENDED BET",
-                                      "#01696F", "13:00 BST")
+        _ba = _bets.get("bet_a") or {}
+        _bb = _bets.get("bet_b") or {}
+        if not _ba.get("skipped"):
+            body += _bet_card_mobile(_ba, "BET A — CORE (Lucky 15 + Singles)",
+                                     "#2d7a3a", "13:00 BST")
+        if not _bb.get("skipped"):
+            body += _bet_card_mobile(_bb, "BET B — MID (Lucky 31 + Singles)",
+                                     "#01696F", "13:00 BST")
+        else:
+            body += (
+                '<div style="background:#1c1f2e;border-radius:10px;padding:10px 14px;'
+                'margin-bottom:14px;color:#aaa;font-size:13px;">'
+                'BET B requires 5+ selections — not enough qualifiers today.'
+                '</div>'
+            )
 
     # 3. Selection cards
     if selections:
@@ -1893,18 +1912,27 @@ def build_confirmed_selections() -> str:
     # 3. BET A + BET B (current prices)
     if confirmed:
         try:
-            from engine.staking import get_fold_bets as _get_fold_bets
-            _folds = _get_fold_bets(confirmed)
+            from engine.staking import get_daily_bets as _get_daily_bets
+            _bets = _get_daily_bets(confirmed)
         except Exception as _fb_err:
-            print(f"[Confirmed] Fold-bets failed: {_fb_err}")
-            _folds = {"bet_a": None, "bet_b": None}
+            print(f"[Confirmed] Daily bets failed: {_fb_err}")
+            _bets = {"bet_a": {"skipped": True}, "bet_b": {"skipped": True}}
 
-        if _folds.get("bet_a"):
-            body += _fold_card_mobile(_folds["bet_a"], "CONFIRMED CORE BET",
-                                      "#2d7a3a", "first race off")
-        if _folds.get("bet_b"):
-            body += _fold_card_mobile(_folds["bet_b"], "CONFIRMED EXTENDED BET",
-                                      "#01696F", "first race off")
+        _ba = _bets.get("bet_a") or {}
+        _bb = _bets.get("bet_b") or {}
+        if not _ba.get("skipped"):
+            body += _bet_card_mobile(_ba, "CONFIRMED BET A (Lucky 15 + Singles)",
+                                     "#2d7a3a", "first race off")
+        if not _bb.get("skipped"):
+            body += _bet_card_mobile(_bb, "CONFIRMED BET B (Lucky 31 + Singles)",
+                                     "#01696F", "first race off")
+        else:
+            body += (
+                '<div style="background:#1c1f2e;border-radius:10px;padding:10px 14px;'
+                'margin-bottom:14px;color:#aaa;font-size:13px;">'
+                'BET B requires 5+ selections — not enough qualifiers today.'
+                '</div>'
+            )
 
     # 4. Selection cards (with morning vs current price)
     if confirmed:
@@ -1995,16 +2023,16 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     results: list of dicts with horse/result/sp keys (matched against selections).
     selections: today's official selections list.
 
-    v2.5.47 — uses Bet A / Bet B fold structure (matches morning brief & dashboard).
+    v2.5.54 — Bet A (Lucky 15 + singles) and Bet B (Lucky 31 + singles).
+    Each bet: £50 total. No accumulator. P&L computed from per-line winners.
     """
-    # Build the fold bets from today's selections (single source of truth)
     try:
-        from engine.staking import get_fold_bets
-        folds = get_fold_bets(selections) or {}
+        from engine.staking import get_daily_bets
+        daily = get_daily_bets(selections) or {}
     except Exception:
-        folds = {}
-    bet_a = folds.get("bet_a")
-    bet_b = folds.get("bet_b")
+        daily = {}
+    bet_a = daily.get("bet_a") if not (daily.get("bet_a") or {}).get("skipped") else None
+    bet_b = daily.get("bet_b") if not (daily.get("bet_b") or {}).get("skipped") else None
 
     def _won_horse(name: str) -> bool:
         n = (name or "").lower().strip()
@@ -2013,25 +2041,53 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     winners = [s for s in selections if _won_horse(s.get("horse", ""))]
     losers  = [s for s in selections if s not in winners]
 
-    # ── Bet A / Bet B P&L ──
-    bet_a_stake  = round(budget * 0.60, 2) if bet_a else 0.0
-    bet_b_stake  = round(budget * 0.40, 2) if bet_b else 0.0
+    def _eval_bet(bet):
+        """Return (return_amount, total_stake, won_lines, total_lines, failed_horses)."""
+        if not bet:
+            return 0.0, 0.0, 0, 0, []
+        sels  = bet.get("selections") or []
+        lucky = bet.get("lucky_bet") or {}
+        sgls  = bet.get("singles")   or {}
+        n     = len(sels)
 
-    def _eval_fold(bet, stake):
-        """Returns (return_amount, won_bool, failed_legs_list)."""
-        if not bet or stake <= 0:
-            return 0.0, False, []
-        horses = bet.get("horses", []) or []
-        failed = [h for h in horses if not _won_horse(h.get("horse", ""))]
-        if failed:
-            return 0.0, False, failed
-        dec = float(bet.get("combined_decimal", 1.0) or 1.0)
-        return round(stake * dec, 2), True, []
+        win_flags = [_won_horse(s.get("name", "")) for s in sels]
+        decs      = [float(s.get("decimal_odds", 0) or 0) for s in sels]
 
-    bet_a_return, bet_a_won, bet_a_failed = _eval_fold(bet_a, bet_a_stake)
-    bet_b_return, bet_b_won, bet_b_failed = _eval_fold(bet_b, bet_b_stake)
+        # Lucky perm: enumerate every k-combination 1..n; winning lines pay.
+        from itertools import combinations as _c
+        line_stake = float(lucky.get("stake_per_line", 0.0) or 0.0)
+        lucky_ret  = 0.0
+        won_lines  = 0
+        total_lines = 0
+        for k in range(1, n + 1):
+            for combo in _c(range(n), k):
+                total_lines += 1
+                if all(win_flags[i] for i in combo):
+                    won_lines += 1
+                    combined = 1.0
+                    for i in combo:
+                        combined *= decs[i]
+                    lucky_ret += line_stake * combined
 
-    total_staked = bet_a_stake + bet_b_stake
+        # Singles
+        single_stake_each = (sgls.get("stake", 0.0) / n) if n else 0.0
+        singles_ret = sum(
+            single_stake_each * decs[i]
+            for i in range(n) if win_flags[i]
+        )
+
+        total_ret    = round(lucky_ret + singles_ret, 2)
+        total_stake  = round(float(lucky.get("stake", 0.0)) + float(sgls.get("stake", 0.0)), 2)
+        failed       = [s for s, w in zip(sels, win_flags) if not w]
+        return total_ret, total_stake, won_lines, total_lines, failed
+
+    bet_a_return, bet_a_stake, bet_a_won_lines, bet_a_total_lines, bet_a_failed = _eval_bet(bet_a)
+    bet_b_return, bet_b_stake, bet_b_won_lines, bet_b_total_lines, bet_b_failed = _eval_bet(bet_b)
+
+    bet_a_won = bool(bet_a) and bet_a_return > 0
+    bet_b_won = bool(bet_b) and bet_b_return > 0
+
+    total_staked = round(bet_a_stake + bet_b_stake, 2)
     net          = round((bet_a_return + bet_b_return) - total_staked, 2)
 
     # Results table
@@ -2070,26 +2126,26 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     net_col = "#437A22" if net >= 0 else "#A13544"
     net_str = f"+£{net:.2f}" if net >= 0 else f"-£{abs(net):.2f}"
 
-    def _fold_row_html(bet, stake, ret, won, failed, label):
+    def _bet_row_html(bet, stake, ret, won_lines, total_lines, failed, label):
         if not bet or stake <= 0:
-            cell = "N/A — no qualifying fold today"
+            extra_msg = "BET B requires 5+ selections" if label == "BET B" else "no qualifying selections"
+            cell = f"N/A — {extra_msg}"
             colour = "#888"
-        elif won:
-            cell = (
-                f"<span style='color:#437A22;font-weight:bold;'>WON</span> "
-                f"— £{ret:,.2f} return on £{stake:.2f} stake "
-                f"({bet.get('combined_decimal', 0):.2f}x)"
-            )
-            colour = "#e0e0e0"
         else:
-            failed_names = ", ".join(h.get("horse", "?") for h in failed) or "leg(s) failed"
+            net_b = round(ret - stake, 2)
+            colour_main = "#437A22" if net_b >= 0 else "#A13544"
+            tier = bet.get("tier", "")
+            n    = len(bet.get("selections") or [])
+            lucky_lbl = (bet.get("lucky_bet") or {}).get("label", "Lucky")
+            failed_names = ", ".join(h.get("name", "?") for h in failed) or "—"
             cell = (
-                f"<span style='color:#A13544;font-weight:bold;'>LOST</span> "
-                f"— £{stake:.2f} stake ({failed_names} lost)"
+                f"<span style='color:{colour_main};font-weight:bold;'>"
+                f"£{ret:,.2f} return</span> on £{stake:.2f} stake "
+                f"&middot; {lucky_lbl} {won_lines}/{total_lines} lines won "
+                f"&middot; losers: {failed_names}"
             )
             colour = "#e0e0e0"
-        legs = bet.get("legs", 0) if bet else 0
-        head = f"{label} ({legs}-fold)" if bet else f"{label}"
+        head = f"{label} ({len(bet.get('selections') or [])} sel)" if bet else label
         return (
             f"<tr>"
             f"<td style='padding:6px 0;color:#888;font-size:13px;'>{head}</td>"
@@ -2107,8 +2163,8 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
         <td style="padding:6px 0;color:#888;font-size:13px;">Total Staked</td>
         <td style="padding:6px 0;font-size:13px;">£{total_staked:.2f}</td>
       </tr>
-      {_fold_row_html(bet_a, bet_a_stake, bet_a_return, bet_a_won, bet_a_failed, "BET A")}
-      {_fold_row_html(bet_b, bet_b_stake, bet_b_return, bet_b_won, bet_b_failed, "BET B")}
+      {_bet_row_html(bet_a, bet_a_stake, bet_a_return, bet_a_won_lines, bet_a_total_lines, bet_a_failed, "BET A")}
+      {_bet_row_html(bet_b, bet_b_stake, bet_b_return, bet_b_won_lines, bet_b_total_lines, bet_b_failed, "BET B")}
       <tr style="border-top:1px solid #333;">
         <td style="padding:8px 0;font-size:14px;font-weight:bold;">Net P&amp;L</td>
         <td style="padding:8px 0;font-size:16px;font-weight:bold;color:{net_col};">{net_str}</td>
@@ -2671,26 +2727,22 @@ DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 
 STAKING RULES (PERMANENT — do not change without user approval)
 ────────────────────────────────────────────────────────────────
-Budget: £100 | Singles: PERMANENTLY REMOVED | Lucky 15: PERMANENTLY REMOVED
-Short price cut-off : evens (2.0 decimal) — hard exclusion from ALL bets (v2.5.53, was 4/6)
-Confidence threshold: 50% minimum (handicaps: 60%) — calibration threshold, review after 2 weeks
-One horse per race  : highest confidence only
+Budget: £50 per bet (£100 total if both BET A and BET B active)
+Short price cut-off: evens (2.0 decimal) — hard exclusion
+Confidence threshold: 50% minimum (handicaps: 60%)
+One horse per race: highest confidence only
+Group/Listed/Grade races: excluded entirely
 
-2-BET FOLD STRUCTURE (live from v2.5.39, 24 April 2026):
-  BET A — Core Fold — STRONG selections only
-           Strong = dominant fav (gap to 2nd ≥50%) AND field <10 runners
-           No short-price singles (sub-evens / 2.0 or shorter excluded)
-           Cap at 4 legs, picked by confidence
+BET A (CORE) — top 4 selections by confidence
+  Lucky 15: £20 stake across 15 combination bets (4 horses)
+  Singles: £30 stake (£7.50 per horse)
+  Total: £50
 
-  BET B — Extended Fold — Core + best optional selection
-           Optional may include YG_RISK horses (field ≥10 runners, gap <50%)
-           YG_RISK horses flagged with Yorkshire Glory warning
-           If no valid 5th selection, BET B = BET A (not duplicated)
-
-Yorkshire Glory Rule:
-  If field ≥10 runners AND gap from our horse to 2nd fav <50%:
-  → Exclude from BET A (core fold)
-  → May appear in BET B with ⚠ YG_RISK warning only
+BET B (MID) — top 5 selections by confidence
+  Lucky 31: £20 stake across 31 combination bets (5 horses)
+  Singles: £30 stake (£6.00 per horse)
+  Total: £50
+  Only active when 5+ selections qualify
 
 Oddschecker multi-bookmaker odds (v2.5.40):
   Best available price shown across 24 bookmakers

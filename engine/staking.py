@@ -32,165 +32,168 @@
 from itertools import combinations as _combs
 
 
-# ── v2.5.51 — three-tier staking system ──────────────────────────────────────
-# CORE   : top 4 selections — Lucky 15 (£20) + 4-fold (£10) + 4 singles (£20)
-# MID    : top 5 selections — Lucky 31 (£15) + 5-fold (£10) + 5 singles (£25)
-# GREEDY : top 6 selections — Lucky 63 (£15) + 6-fold (£5)  + 6 singles (£30)
-# COMBINED runs all three simultaneously (£150 daily).
-#
-# Backtest 21–27 Apr 2026 (see staking_tiers_report.md):
-#   CORE   net -£134.49 / £350 (-38.4% ROI)
-#   MID    net  -£64.12 / £300 (-21.4% ROI)
-#   GREEDY net  -£97.87 / £300 (-32.6% ROI)
-#   COMBINED net -£296.48 / £950 (-31.2% ROI)
-# Default mode = "CORE" (highest stake-per-line on perms; minimal stake erosion).
-STAKING_MODE = "CORE"
+# ── v2.5.54 — unified Bet A / Bet B staking ───────────────────────────────────
+# BET A = Core = top 4 by confidence — Lucky 15 (£20) + 4 singles (£30) = £50.
+# BET B = Mid  = top 5 by confidence — Lucky 31 (£20) + 5 singles (£30) = £50.
+# Accumulators removed entirely. Each bet is independent at £50; combined £100.
+# Lucky 15  = 15 lines (4 singles + 6 doubles + 4 trebles + 1 four-fold).
+# Lucky 31  = 31 lines (5 singles + 10 doubles + 10 trebles + 5 four-folds + 1 five-fold).
+STAKING_MODE = "BET_A"
 
-_TIER_CONFIG = {
-    "CORE":   {"n": 4, "lucky_label": "Lucky 15",
-               "lucky_stake": 20.0, "acca_stake": 10.0, "single_stake": 5.0},
-    "MID":    {"n": 5, "lucky_label": "Lucky 31",
-               "lucky_stake": 15.0, "acca_stake": 10.0, "single_stake": 5.0},
-    "GREEDY": {"n": 6, "lucky_label": "Lucky 63",
-               "lucky_stake": 15.0, "acca_stake":  5.0, "single_stake": 5.0},
+_BET_CONFIG = {
+    "BET_A": {"n": 4, "lucky_label": "Lucky 15",
+              "lucky_stake": 20.0, "singles_total": 30.0},
+    "BET_B": {"n": 5, "lucky_label": "Lucky 31",
+              "lucky_stake": 20.0, "singles_total": 30.0},
 }
 
 
-def _build_tier(tier_name: str, selections: list) -> dict:
-    cfg = _TIER_CONFIG[tier_name]
-    pool = list(selections)[: cfg["n"]]
+def _decimal_of(s: dict) -> float:
+    return float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0)
 
-    if len(pool) < cfg["n"]:
+
+def _build_bet(tier_key: str, selections: list) -> dict:
+    cfg = _BET_CONFIG[tier_key]
+    n   = cfg["n"]
+    pool = list(selections)[:n]
+
+    if len(pool) < n:
         return {
-            "tier":             tier_name,
-            "selections_used":  pool,
-            "n_required":       cfg["n"],
-            "n_available":      len(pool),
-            "skipped":          True,
-            "reason":           f"Need {cfg['n']} selections, got {len(pool)}.",
-            "singles":          [],
-            "lucky_bets":       [],
-            "accumulator":      None,
-            "total_stake":      0.0,
-            "breakdown":        {"singles": 0.0, "lucky": 0.0, "acca": 0.0},
+            "tier":                  tier_key,
+            "selections":            [],
+            "lucky_bet":             None,
+            "singles":               None,
+            "total_stake":           0.0,
+            "requires_n_selections": n,
+            "skipped":               True,
+            "reason":                f"Need {n} selections, got {len(pool)}.",
         }
 
-    # Singles
-    singles = [{
-        "horse":   s.get("horse"),
-        "course":  s.get("course"),
-        "time":    s.get("time"),
-        "decimal": float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0),
-        "stake":   cfg["single_stake"],
+    selections_out = [{
+        "name":         s.get("horse") or s.get("name"),
+        "decimal_odds": _decimal_of(s),
+        "confidence":   float(s.get("confidence", 0.0) or 0.0),
+        "course":       s.get("course", ""),
+        "time":         s.get("time", ""),
     } for s in pool]
-    singles_stake = round(sum(s["stake"] for s in singles), 2)
 
-    # Lucky permutations: enumerate every k-combination from 1..n
-    n = cfg["n"]
+    # Lucky perm — enumerate every k-combination from 1..n; equal stake per line.
     total_lines = sum(1 for k in range(1, n + 1) for _ in _combs(range(n), k))
-    line_stake = round(cfg["lucky_stake"] / total_lines, 4)
+    line_stake  = round(cfg["lucky_stake"] / total_lines, 4)
 
-    lucky_bets = []
+    lucky_potential_return = 0.0
     for k in range(1, n + 1):
-        for combo in _combs(pool, k):
+        for combo in _combs(selections_out, k):
             combined_dec = 1.0
-            for s in combo:
-                combined_dec *= float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0)
-            lucky_bets.append({
-                "legs":         k,
-                "horses":       [s.get("horse") for s in combo],
-                "stake":        line_stake,
-                "combined_dec": round(combined_dec, 4),
-            })
+            for c in combo:
+                combined_dec *= float(c["decimal_odds"] or 0.0)
+            lucky_potential_return += line_stake * combined_dec
+    lucky_potential_return = round(lucky_potential_return, 2)
 
-    # n-fold accumulator
-    acc_dec = 1.0
-    for s in pool:
-        acc_dec *= float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0)
-    accumulator = {
-        "legs":         n,
-        "horses":       [s.get("horse") for s in pool],
-        "stake":        cfg["acca_stake"],
-        "combined_dec": round(acc_dec, 4),
-        "label":        f"{n}-fold accumulator",
+    lucky_bet = {
+        "type":             "L15" if n == 4 else "L31",
+        "label":            cfg["lucky_label"],
+        "stake":            cfg["lucky_stake"],
+        "lines":            total_lines,
+        "stake_per_line":   line_stake,
+        "potential_return": lucky_potential_return,
     }
 
-    total_stake = round(
-        singles_stake + cfg["lucky_stake"] + cfg["acca_stake"], 2
-    )
+    stake_each = round(cfg["singles_total"] / n, 2)
+    singles_horses = [{
+        "name":             c["name"],
+        "stake_each":       stake_each,
+        "odds":             c["decimal_odds"],
+        "potential_return": round(stake_each * float(c["decimal_odds"] or 0.0), 2),
+    } for c in selections_out]
+    singles = {
+        "stake":  cfg["singles_total"],
+        "horses": singles_horses,
+    }
+
+    total_stake = round(cfg["lucky_stake"] + cfg["singles_total"], 2)
     return {
-        "tier":             tier_name,
-        "selections_used":  pool,
-        "n_required":       n,
-        "n_available":      n,
-        "skipped":          False,
-        "singles":          singles,
-        "lucky_bets":       lucky_bets,
-        "lucky_label":      cfg["lucky_label"],
-        "lucky_lines":      total_lines,
-        "lucky_stake_total": cfg["lucky_stake"],
-        "lucky_stake_per_line": line_stake,
-        "accumulator":      accumulator,
-        "total_stake":      total_stake,
-        "breakdown":        {
-            "singles": singles_stake,
-            "lucky":   cfg["lucky_stake"],
-            "acca":    cfg["acca_stake"],
-        },
+        "tier":                  tier_key,
+        "selections":            selections_out,
+        "lucky_bet":             lucky_bet,
+        "singles":               singles,
+        "total_stake":           total_stake,
+        "requires_n_selections": n,
+        "skipped":               False,
     }
 
 
+def get_bet_a(selections: list) -> dict:
+    """BET A — Core fold — top 4 selections. Lucky 15 + singles, £50 total."""
+    return _build_bet("BET_A", selections)
+
+
+def get_bet_b(selections: list) -> dict:
+    """BET B — Mid fold — top 5 selections. Lucky 31 + singles, £50 total."""
+    return _build_bet("BET_B", selections)
+
+
+def get_daily_bets(selections: list) -> dict:
+    """Return both BET A and BET B from a ranked selection list.
+
+    - <4 selections: BET A includes everything available (skipped flag set);
+      BET B skipped.
+    - exactly 4: BET A runs; BET B skipped.
+    - 5+ selections: both run.
+    """
+    bet_a = get_bet_a(selections)
+    bet_b = get_bet_b(selections)
+    total = (bet_a["total_stake"] if not bet_a.get("skipped") else 0.0) \
+          + (bet_b["total_stake"] if not bet_b.get("skipped") else 0.0)
+    return {
+        "bet_a":           bet_a,
+        "bet_b":           bet_b,
+        "total_stake":     round(total, 2),
+        "n_selections":    len(selections or []),
+    }
+
+
+# ── DEPRECATED tier helpers — kept for back-compat. Use get_bet_a / get_bet_b.
 def get_core_bets(selections: list) -> dict:
-    """CORE tier — top 4 selections, Lucky 15 + 4-fold acca + 4 singles, £50 daily."""
-    return _build_tier("CORE", selections)
+    """DEPRECATED (v2.5.54) — use get_bet_a()."""
+    return get_bet_a(selections)
 
 
 def get_mid_bets(selections: list) -> dict:
-    """MID tier — top 5 selections, Lucky 31 + 5-fold acca + 5 singles, £50 daily."""
-    return _build_tier("MID", selections)
+    """DEPRECATED (v2.5.54) — use get_bet_b()."""
+    return get_bet_b(selections)
 
 
 def get_greedy_bets(selections: list) -> dict:
-    """GREEDY tier — top 6 selections, Lucky 63 + 6-fold acca + 6 singles, £50 daily."""
-    return _build_tier("GREEDY", selections)
+    """DEPRECATED (v2.5.54) — Greedy/Lucky 63 tier removed entirely."""
+    return {
+        "tier":                  "DEPRECATED",
+        "selections":            [],
+        "lucky_bet":             None,
+        "singles":               None,
+        "total_stake":           0.0,
+        "requires_n_selections": 0,
+        "skipped":               True,
+        "reason":                "Greedy tier removed in v2.5.54.",
+    }
 
 
 def get_combined_bets(selections: list) -> dict:
-    """COMBINED — run CORE, MID and GREEDY simultaneously (£150 daily total)."""
-    core   = get_core_bets(selections)
-    mid    = get_mid_bets(selections)
-    greedy = get_greedy_bets(selections)
+    """DEPRECATED (v2.5.54) — use get_daily_bets()."""
+    daily = get_daily_bets(selections)
     return {
         "tier":            "COMBINED",
-        "selections_used": list(selections)[:6],
-        "tiers":           {"CORE": core, "MID": mid, "GREEDY": greedy},
-        "total_stake":     round(core["total_stake"]
-                                 + mid["total_stake"]
-                                 + greedy["total_stake"], 2),
-        "breakdown":       {
-            "singles": round(core["breakdown"]["singles"]
-                             + mid["breakdown"]["singles"]
-                             + greedy["breakdown"]["singles"], 2),
-            "lucky":   round(core["breakdown"]["lucky"]
-                             + mid["breakdown"]["lucky"]
-                             + greedy["breakdown"]["lucky"], 2),
-            "acca":    round(core["breakdown"]["acca"]
-                             + mid["breakdown"]["acca"]
-                             + greedy["breakdown"]["acca"], 2),
-        },
-        "skipped_tiers":   [name for name, t in
-                            (("CORE", core), ("MID", mid), ("GREEDY", greedy))
-                            if t["skipped"]],
+        "tiers":           {"BET_A": daily["bet_a"], "BET_B": daily["bet_b"]},
+        "total_stake":     daily["total_stake"],
     }
 
 
 def get_tier_bets(selections: list, mode: str | None = None) -> dict:
-    """Dispatch to the configured tier (defaults to STAKING_MODE)."""
+    """Dispatch to BET A / BET B (or both via DAILY)."""
     m = (mode or STAKING_MODE).upper()
-    if m == "CORE":     return get_core_bets(selections)
-    if m == "MID":      return get_mid_bets(selections)
-    if m == "GREEDY":   return get_greedy_bets(selections)
-    if m == "COMBINED": return get_combined_bets(selections)
+    if m in ("BET_A", "CORE"):  return get_bet_a(selections)
+    if m in ("BET_B", "MID"):   return get_bet_b(selections)
+    if m in ("DAILY", "COMBINED"): return get_daily_bets(selections)
     raise ValueError(f"Unknown staking mode: {mode!r}")
 
 
@@ -915,8 +918,7 @@ def rank_accumulator_combinations(
 
 def get_fold_bets(selections: list) -> dict:
     """
-    DEPRECATED (v2.5.51): superseded by the three-tier system —
-    use get_core_bets / get_mid_bets / get_greedy_bets / get_combined_bets.
+    DEPRECATED (v2.5.54) — use get_bet_a() / get_bet_b() / get_daily_bets().
     Retained for backwards compatibility with the existing brief pipeline.
 
     v2.5.50 — form-first fold structure.

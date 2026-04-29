@@ -376,8 +376,9 @@ with st.sidebar:
     st.session_state["conf_threshold"] = _conf_threshold
 
     st.markdown("---")
-    st.caption("3-Bet plan: BET 1 (60%) + BET 2 (25%) + BET 3 (15%)")
-    st.caption("Singles, Doubles, Lucky 15 permanently removed.")
+    st.caption("BET A — Lucky 15 + singles (£50, top 4)")
+    st.caption("BET B — Lucky 31 + singles (£50, top 5)")
+    st.caption("Accumulator removed in v2.5.54.")
 
     st.markdown("---")
     st.markdown("**Coverage**")
@@ -393,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.52** — exclude Group/Listed/Grade races from selection pool")
+    st.markdown("**Engine v2.5.54** — unified BET A (Lucky 15 + singles) / BET B (Lucky 31 + singles); accumulator removed")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -863,95 +864,91 @@ with tab1:
         st.markdown("---")
 
         # ══════════════════════════════════════════════════════════════
-        # STAKING ENGINE v2.5.39 — 2-Bet Fold Structure
-        # Bet A: Core 4-fold — dominant favs only (gap to 2nd ≥50%, field <10)
-        # Bet B: Extended 5-fold — Bet A + one optional leg (may be YG_RISK)
-        # Backtest: 3-bet structure lost -£700 over 7 days; 4-5 leg folds optimal
+        # STAKING ENGINE v2.5.54 — Bet A (Lucky 15 + singles) / Bet B (Lucky 31 + singles)
+        # No accumulator. Each bet £50 (£100 total when both active).
         # ══════════════════════════════════════════════════════════════
-        from engine.staking import get_fold_bets as _get_fold_bets
+        from engine.staking import get_daily_bets as _get_daily_bets
 
-        _folds = _get_fold_bets(_six_pool)
-        _bet_a = _folds.get("bet_a")
-        _bet_b = _folds.get("bet_b")
+        _bets  = _get_daily_bets(_six_pool)
+        _bet_a = _bets.get("bet_a") or {}
+        _bet_b = _bets.get("bet_b") or {}
+        _bet_a_active = not _bet_a.get("skipped")
+        _bet_b_active = not _bet_b.get("skipped")
 
-        st.markdown("#### 💳 Today's Staking Plan — Bet A / Bet B")
+        st.markdown("#### 💳 Today's Staking Plan — BET A / BET B")
 
-        if not _bet_a and not _bet_b:
+        if not _bet_a_active and not _bet_b_active:
             st.warning(
-                "**No qualifying fold bets today.** Fewer than 4 dominant-fav selections "
-                "(gap to 2nd ≥50%, field <10). Engine abstains."
+                "**No qualifying bets today.** BET A requires 4 selections; "
+                "BET B requires 5+. Engine abstains."
             )
         else:
             st.success(
-                f"**2-Bet Fold Structure (v2.5.39)** — "
-                f"Bet A: {'✅' if _bet_a else '—'} | "
-                f"Bet B: {'✅' if _bet_b else '—'}"
+                f"**v2.5.54 unified BET A / BET B** — "
+                f"BET A: {'✅' if _bet_a_active else '—'} | "
+                f"BET B: {'✅' if _bet_b_active else '— (5+ selections required)'}"
             )
 
-        def _render_fold_card(bet, colour, bet_key):
-            if not bet:
-                st.caption(f"{bet_key} unavailable today.")
+        def _render_bet_card(bet, colour, bet_key):
+            if not bet or bet.get("skipped"):
+                if bet_key == "BET B":
+                    st.caption("BET B not available today — requires 5+ selections.")
+                else:
+                    st.caption(f"{bet_key} unavailable today.")
                 return
-            horses = bet["horses"]
-            dec    = bet["combined_decimal"]
+            sels   = bet.get("selections") or []
+            lucky  = bet.get("lucky_bet")  or {}
+            sgls   = bet.get("singles")    or {}
+            total  = bet.get("total_stake", 0.0)
 
             st.markdown(
-                f"##### <span style='color:{colour}'>{bet_key} — {bet['label']}</span> "
-                f"&nbsp;&nbsp; **{dec:.2f}x combined**",
+                f"##### <span style='color:{colour}'>{bet_key} — "
+                f"{lucky.get('label', '')} + Singles</span> "
+                f"&nbsp;&nbsp; **£{total:.2f} total**",
                 unsafe_allow_html=True,
             )
             _rows = []
-            for h in horses:
-                _flags = []
-                if h.get("split_market"):
-                    _flags.append("⚠ SPLIT_MARKET")
-                if h.get("yg_risk"):
-                    _flags.append("⚠ YG_RISK")
+            stake_each = (sgls.get("stake", 0.0) / max(len(sels), 1))
+            for s in sels:
+                dec = float(s.get("decimal_odds", 0) or 0)
                 _rows.append({
-                    "Time":       h.get("time", ""),
-                    "Horse":      h.get("horse", ""),
-                    "Course":     h.get("course", ""),
-                    "Odds":       h.get("curr_odds", h.get("odds", "N/A")),
-                    "Decimal":    f"{float(h.get('decimal', 0)):.2f}x",
-                    "Runners":    int(h.get("runners", 0) or 0),
-                    "Gap→2nd":    f"{float(h.get('gap_to_2nd', 0)):.0%}",
-                    "Confidence": f"{float(h.get('confidence', 0)):.1%}",
-                    "Flag":       " ".join(_flags),
+                    "Time":           s.get("time", ""),
+                    "Horse":          s.get("name", ""),
+                    "Course":         s.get("course", ""),
+                    "Decimal":        f"{dec:.2f}x",
+                    "Confidence":     f"{float(s.get('confidence', 0)):.1%}",
+                    "Single Stake":   f"£{stake_each:.2f}",
+                    "Single Return":  f"£{stake_each * dec:.2f}",
                 })
             st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
-            _r10 = dec * 10.0
-            _r20 = dec * 20.0
-            _r50 = dec * 50.0
             st.info(
-                f"Combined **{dec:.2f}x** | "
-                f"£10 → **£{_r10:,.2f}** | "
-                f"£20 → **£{_r20:,.2f}** | "
-                f"£50 → **£{_r50:,.2f}**"
+                f"**{lucky.get('label','Lucky')}:** £{lucky.get('stake', 0):.2f} "
+                f"across {lucky.get('lines', 0)} lines "
+                f"(£{lucky.get('stake_per_line', 0):.4f}/line) | "
+                f"max return if all win: £{lucky.get('potential_return', 0):,.2f}"
+                f"\n\n**Singles:** £{sgls.get('stake', 0):.2f} "
+                f"(£{stake_each:.2f} per horse)"
             )
-            for w in bet.get("warnings", []):
-                st.warning(f"⚠ {w}")
 
-        _render_fold_card(_bet_a, "#00ff88", "Bet A")
+        _render_bet_card(_bet_a, "#00ff88", "BET A")
         st.markdown("")
-        _render_fold_card(_bet_b, "#ffaa00", "Bet B")
+        _render_bet_card(_bet_b, "#ffaa00", "BET B")
 
         with st.expander("Why this structure? (click to expand)"):
             st.markdown("""
-**v2.5.39 — 2-Bet Fold Structure**
+**v2.5.54 — Unified BET A / BET B (no accumulator)**
 
-Backtest (17–23 Apr 2026, 7 days) showed the old 3-bet structure lost £700:
-the main acca had too many legs and never landed. Short-priced favourites
-(4/6–6/4) win 72% of the time — ideal acca anchors.
+- **BET A — CORE:** top 4 selections by confidence.
+  Lucky 15 (£20 across 15 lines) + Singles (£30, £7.50/horse). Total £50.
+- **BET B — MID:** top 5 selections by confidence.
+  Lucky 31 (£20 across 31 lines) + Singles (£30, £6/horse). Total £50.
 
-- **Bet A — Core 4-fold:** only STRONG selections (dominant fav with gap to 2nd ≥50% AND field <10).
-- **Bet B — Extended 5-fold:** Bet A + one optional leg. May include a YG_RISK horse
-  (field ≥10 runners with gap <50%) as the 5th leg only.
+BET B is only active when 5+ selections qualify. The straight n-fold
+accumulator has been removed entirely — Lucky perms already cover the
+all-win line, and singles smooth the variance.
 
-**Yorkshire Glory rule:** YG_RISK horses are excluded from Bet A entirely and may
-only appear in Bet B. Flagged inline with a ⚠ symbol.
-
-**Exclusion rules:** 4/6 cut-off (≤1.67) | low-value acca (odds-on or ≤4 runners) |
-fav gap >35% (non-fav eliminated upstream).
+**Hard exclusions (upstream):** evens (2.0) price floor, Group/Listed/Grade
+races, and the standard confidence threshold.
             """)
 
         st.markdown("---")
