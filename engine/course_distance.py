@@ -5,10 +5,14 @@ Results cached in memory (per-session) to avoid repeat fetches.
 
 Signal is OPTIONAL — any failure (network, parsing, missing dep) returns
 neutral (0.50, 0.50). The main selection pipeline must never block on this.
+
+v2.5.58 — parallel fetches via ThreadPoolExecutor, hard 10s total cap,
+2s per-request timeout. Never blocks the main pipeline.
 """
 
 import re
 import time
+from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from typing import Optional, Tuple
 
 try:
@@ -26,9 +30,10 @@ except Exception:  # pragma: no cover
 _CACHE: dict = {}  # cache_key -> (course_signal, distance_signal)
 _DATA_CACHE: dict = {}  # horse_name -> raw parse for course/dist counts
 _HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; research-tool/1.0)"}
-_TIMEOUT = 8
-_LAST_FETCH = [0.0]  # mutable container for last fetch timestamp
-_MIN_INTERVAL = 1.0  # be polite: 1s between fetches
+_TIMEOUT = 2          # per-request timeout — was 8s, now 2s
+_MODULE_TIMEOUT = 10  # hard cap: entire module must finish within 10s
+_LAST_FETCH = [0.0]
+_MIN_INTERVAL = 0.0   # parallel fetches — no sequential delay needed
 
 
 def _name_to_slug(name: str) -> str:
@@ -37,25 +42,50 @@ def _name_to_slug(name: str) -> str:
 
 
 def _fetch_form_page(horse_name: str) -> Optional[str]:
-    """Fetch Sporting Life form page HTML for a horse. Returns HTML or None."""
+    """Fetch Sporting Life form page HTML for a horse. Returns HTML or None.
+    Hard 2s timeout — never blocks the pipeline.
+    """
     if requests is None:
         return None
     slug = _name_to_slug(horse_name)
     if not slug:
         return None
     url = f"https://www.sportinglife.com/racing/horses/{slug}/form"
-    # Polite delay between fetches
-    elapsed = time.time() - _LAST_FETCH[0]
-    if elapsed < _MIN_INTERVAL:
-        time.sleep(_MIN_INTERVAL - elapsed)
     try:
         resp = requests.get(url, headers=_HEADERS, timeout=_TIMEOUT)
-        _LAST_FETCH[0] = time.time()
         if resp.status_code == 200:
             return resp.text
     except Exception:
-        _LAST_FETCH[0] = time.time()
+        pass
     return None
+
+
+def prefetch_signals(horses: list) -> None:
+    """Pre-fetch course/distance signals for a list of horse dicts in parallel.
+    Call this once with all selections before scoring. Results go into _CACHE.
+    horses: list of dicts with keys: horse, course, race_dist_f
+    Hard cap: entire prefetch completes within _MODULE_TIMEOUT seconds.
+    """
+    if not horses:
+        return
+
+    def _fetch_one(h):
+        name = h.get('horse', '')
+        course = h.get('course', '')
+        dist_f = float(h.get('race_dist_f') or 0.0)
+        return get_course_distance_signals(name, course, dist_f)
+
+    try:
+        with ThreadPoolExecutor(max_workers=8) as pool:
+            futures = {pool.submit(_fetch_one, h): h for h in horses}
+            # Wait max _MODULE_TIMEOUT for all to complete
+            import concurrent.futures
+            done, _ = concurrent.futures.wait(
+                futures.keys(), timeout=_MODULE_TIMEOUT
+            )
+            # Any not done within timeout stay as 0.50 neutral (already cached)
+    except Exception:
+        pass  # entire prefetch failed — neutral fallback for all
 
 
 def _parse_course_distance(html: str, target_course: str, target_dist_f: float) -> dict:

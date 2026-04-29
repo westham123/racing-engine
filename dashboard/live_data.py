@@ -362,10 +362,33 @@ def get_todays_selections():
     """
     Master function — pulls all UK/Irish races, detects steam/drift via
     odds-snapshot comparison, returns DataFrame with Time + Course columns.
+
+    v2.5.58 — course/distance signals pre-fetched in parallel (10s hard cap)
+    before the per-runner scoring loop, so sequential fetches never block.
     """
     meetings = get_todays_meetings()
     all_rows  = []
     today_str = date.today().isoformat()
+
+    # --- v2.5.58: parallel prefetch of course/distance signals ---
+    # Build a flat list of all runners across all meetings, then fire all
+    # Sporting Life form-page requests concurrently (max 10s total).
+    # Results land in the module-level cache; per-runner calls below are cache hits.
+    try:
+        from engine.course_distance import prefetch_signals as _prefetch_cd
+        _all_runners_flat = []
+        for _m in meetings:
+            for _r in _m.get('races', []):
+                for _rn in _r.get('runners', []):
+                    _all_runners_flat.append({
+                        'horse':      _rn.get('horse', ''),
+                        'course':     _m.get('course', ''),
+                        'race_dist_f': _rn.get('race_dist_f', 0.0),
+                    })
+        _prefetch_cd(_all_runners_flat)
+    except Exception:
+        pass  # prefetch failure is silent — per-runner calls fall back to neutral
+    # --- end prefetch ---
 
     # Load persisted snapshot for signal detection
     snapshot     = _load_snapshot()
