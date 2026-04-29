@@ -53,6 +53,32 @@ def _to_decimal(odds_str) -> float:
     except Exception:
         return 2.0
 
+
+def _clean_str_or_none(v):
+    """v2.5.62 — return None for nan/None/empty so emails skip the field cleanly."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    if not s or s.lower() in ("nan", "none", "n/a"):
+        return None
+    return s
+
+
+def _clean_price_or_none(v):
+    """v2.5.62 — return float price or None. nan/None/<2.0 → None (no display)."""
+    if v is None:
+        return None
+    s = str(v).strip().lower()
+    if not s or s in ("nan", "none", "n/a"):
+        return None
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return None
+    if f != f:  # NaN check
+        return None
+    return f
+
 # ── Live Data Helpers ──────────────────────────────────────────
 def _get_overnight_moves(today: str = None) -> list:
     """
@@ -200,15 +226,32 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             t = str(row.get("Time", ""))
 
             curr_str = str(row.get("Current Odds", "")).strip()
-            odds_str = curr_str if curr_str and curr_str not in ("", "N/A", "None", "nan") \
-                       else str(row.get("Odds", "Evs"))
-            try:
-                dec = _to_decimal(odds_str)
-            except Exception:
-                dec = 2.0
+            _odds_raw = str(row.get("Odds", "")).strip()
+            odds_str = curr_str if curr_str and curr_str.lower() not in ("", "n/a", "none", "nan") \
+                       else _odds_raw
 
-            if dec < 2.0:
-                continue  # v2.5.53 evens cut-off (was 4/6 / 1.67)
+            # v2.5.62 — hard price-validation gate. If neither Current Odds nor
+            # Odds gives a usable number, exclude the horse entirely. Previously
+            # _to_decimal() silently defaulted to 2.0 on parse error, which let
+            # L'Evangeliste through with "Best: nan" and into Bet A.
+            _horse_log = str(row.get("Horse", ""))
+            _odds_clean = (odds_str or "").strip().lower()
+            if not _odds_clean or _odds_clean in ("n/a", "none", "nan"):
+                print(f"[Gate] {_horse_log} excluded — invalid price: {odds_str!r}")
+                continue
+            # Parse manually so we never silently default to 2.0
+            try:
+                if "/" in odds_str:
+                    _n, _d = odds_str.split("/")
+                    dec = round((float(_n) + float(_d)) / float(_d), 3)
+                else:
+                    dec = round(float(odds_str), 3)
+            except (TypeError, ValueError):
+                print(f"[Gate] {_horse_log} excluded — unparsable price: {odds_str!r}")
+                continue
+            if not dec or dec < 2.0:
+                # v2.5.53 evens cut-off (was 4/6 / 1.67)
+                continue
 
             # v2.5.50 — market position is information, not a filter.
             # We compute the selection's OC consensus price for use as the
@@ -404,11 +447,12 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
                                 "VALUE"  if dec <= 10.0 else "LONGSHOT"),
-                # Oddschecker multi-bookie fields (v2.5.40) — may be None
-                "best_odds_decimal":    row.get("Best Odds Decimal"),
-                "best_odds_fractional": row.get("Best Odds Fractional"),
-                "best_bookmaker":       row.get("Best Bookmaker", ""),
-                "odds_consensus":       row.get("Odds Consensus"),
+                # Oddschecker multi-bookie fields (v2.5.40) — may be None.
+                # v2.5.62 — scrub nan/None/empty so emails never render "Best: nan".
+                "best_odds_decimal":    _clean_price_or_none(row.get("Best Odds Decimal")),
+                "best_odds_fractional": _clean_str_or_none(row.get("Best Odds Fractional")),
+                "best_bookmaker":       row.get("Best Bookmaker", "") or "",
+                "odds_consensus":       _clean_price_or_none(row.get("Odds Consensus")),
                 "bookmaker_count":      row.get("Bookmaker Count"),
                 # v2.5.55 — course specialist + distance affinity
                 "course_signal":   float(row.get("Course Signal", 0.50) or 0.50),
@@ -1641,7 +1685,15 @@ def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None)
     role    = s.get("role", "VALUE")
     role_col = "#0b5394" if role == "BANKER" else "#6a1b9a"
 
-    best_frac = s.get("best_odds_fractional") or s.get("odds") or "N/A"
+    # v2.5.62 — never render "nan" in the Best: line.
+    _bf_raw = s.get("best_odds_fractional") or s.get("odds")
+    _bf_str = ("" if _bf_raw is None else str(_bf_raw).strip())
+    if not _bf_str or _bf_str.lower() in ("nan", "none", "n/a"):
+        best_frac = "No price"
+        no_price_flag = True
+    else:
+        best_frac = _bf_str
+        no_price_flag = False
     best_bk   = s.get("best_bookmaker") or ""
 
     is_fav    = bool(s.get("is_fav", False))
@@ -1681,6 +1733,23 @@ def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None)
         yg_line += ('<div style="background:#f8d7da;color:#721c24;font-size:12px;'
                     'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
                     '⚠ SPLIT MARKET — 2nd favourite within 20% of our price</div>')
+
+    # v2.5.62 — flag horses we kept in the reference list but excluded from Bet A/B
+    if no_price_flag:
+        yg_line += ('<div style="background:#f8d7da;color:#721c24;font-size:12px;'
+                    'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
+                    '⚠ No price data — excluded from Bet A/B</div>')
+
+    if bool(s.get("dominant_rival", False)):
+        _dr_name  = s.get("dominant_rival_name", "?") or "?"
+        _dr_price = float(s.get("dominant_rival_price", 0) or 0)
+        _our_dec  = float(s.get("decimal", 0) or 0)
+        _dr_gap   = (1.0 - _dr_price / _our_dec) * 100.0 if _our_dec > 0 else 0.0
+        yg_line += (
+            f'<div style="background:#f8d7da;color:#721c24;font-size:12px;'
+            f'padding:6px 8px;border-radius:4px;margin:6px 0;font-weight:bold;">'
+            f'⚠ DOM — {_dr_name} @ {_dr_price:.2f}x ({_dr_gap:+.0f}% shorter)</div>'
+        )
 
     morning_line = ''
     if morning_prices:
@@ -1901,6 +1970,28 @@ def build_confirmed_selections() -> str:
     except Exception:
         going_changes = []
 
+    # v2.5.62 — hard-exclude dominant rivals (gap > 35%) from the Bet A/B pool.
+    # These horses can still appear in the reference list with a DOM flag, but
+    # they should never feed staking. Example: Gold Star Gazing (3.38x) vs
+    # Wezzeer (1.67x) = -50% gap → exclude.
+    def _dom_gap_pct(s):
+        try:
+            our = float(s.get("decimal", 0) or 0)
+            riv = float(s.get("dominant_rival_price", 0) or 0)
+        except (TypeError, ValueError):
+            return 0.0
+        if our <= 0 or riv <= 0:
+            return 0.0
+        return (1.0 - riv / our) * 100.0
+
+    bet_pool = []
+    dom_excluded = []
+    for s in confirmed:
+        if bool(s.get("dominant_rival", False)) and _dom_gap_pct(s) > 35.0:
+            dom_excluded.append(s)
+            continue
+        bet_pool.append(s)
+
     body = ""
 
     # 1. Urgency banner
@@ -1914,33 +2005,21 @@ def build_confirmed_selections() -> str:
         '</div></div>'
     )
 
-    # 2. Changes since morning
-    changes_html = ""
-    if removed:
-        for r in removed:
-            changes_html += (
-                f'<div style="font-size:14px;color:#d9534f;margin:4px 0;">'
-                f'❌ REMOVED: {r["horse"]} — {r["reason"]}</div>'
-            )
-    changes_html += (
-        f'<div style="font-size:14px;color:#2d7a3a;margin:4px 0;">'
-        f'✅ UNCHANGED: {len(confirmed)} selection{"s" if len(confirmed)!=1 else ""} confirmed</div>'
-    )
+    # ── SECTION 1 — ADVISED BETS (prominent, at top) ───────────────────────
+    # Only Bet A (top 4 by confidence) and Bet B (top 5 by confidence) — these
+    # are the only horses to actually back today. Sorted-by-confidence is
+    # enforced inside engine.staking.get_bet_a / get_bet_b (v2.5.62).
     body += (
-        '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
-        'margin-bottom:12px;border-top:2px solid #01696F;">'
-        '<div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;'
-        'text-transform:uppercase;margin-bottom:8px;">'
-        'Changes Since 08:00</div>'
-        f'{changes_html}'
-        '</div>'
+        '<div style="font-size:14px;font-weight:bold;color:#fff;letter-spacing:1px;'
+        'text-transform:uppercase;padding:6px 4px;margin:4px 0 8px;'
+        'border-bottom:2px solid #e8a33d;">'
+        'Advised bets — back these only</div>'
     )
 
-    # 3. BET A + BET B (current prices)
-    if confirmed:
+    if bet_pool:
         try:
             from engine.staking import get_daily_bets as _get_daily_bets
-            _bets = _get_daily_bets(confirmed)
+            _bets = _get_daily_bets(bet_pool)
         except Exception as _fb_err:
             print(f"[Confirmed] Daily bets failed: {_fb_err}")
             _bets = {"bet_a": {"skipped": True}, "bet_b": {"skipped": True}}
@@ -1948,27 +2027,93 @@ def build_confirmed_selections() -> str:
         _ba = _bets.get("bet_a") or {}
         _bb = _bets.get("bet_b") or {}
         if not _ba.get("skipped"):
-            body += _bet_card_mobile(_ba, "CONFIRMED BET A (Lucky 15 + Singles)",
+            body += _bet_card_mobile(_ba, "BET A (Lucky 15 + Singles)",
                                      "#2d7a3a", "first race off")
+        else:
+            body += (
+                '<div style="background:#1c1f2e;border-radius:10px;padding:10px 14px;'
+                'margin-bottom:14px;color:#aaa;font-size:13px;">'
+                'BET A requires 4+ qualifying selections — not enough today.'
+                '</div>'
+            )
         if not _bb.get("skipped"):
-            body += _bet_card_mobile(_bb, "CONFIRMED BET B (Lucky 31 + Singles)",
+            body += _bet_card_mobile(_bb, "BET B (Lucky 31 + Singles)",
                                      "#01696F", "first race off")
         else:
             body += (
                 '<div style="background:#1c1f2e;border-radius:10px;padding:10px 14px;'
                 'margin-bottom:14px;color:#aaa;font-size:13px;">'
-                'BET B requires 5+ selections — not enough qualifiers today.'
+                'BET B requires 5+ qualifying selections — not enough today.'
                 '</div>'
             )
+    else:
+        body += (
+            '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+            'margin-bottom:12px;border-left:4px solid #964219;">'
+            '<div style="font-size:14px;color:#e0e0e0;">No qualifying horses for '
+            'Bet A/B after applying price and dominant-rival filters.</div>'
+            '</div>'
+        )
 
-    # 4. Selection cards (with morning vs current price)
+    # ── SECTION 2 — Changes since 08:00 ────────────────────────────────────
+    changes_html = ""
+    if removed:
+        for r in removed:
+            changes_html += (
+                f'<div style="font-size:14px;color:#d9534f;margin:4px 0;">'
+                f'❌ REMOVED: {r["horse"]} — {r["reason"]}</div>'
+            )
+    if dom_excluded:
+        for s in dom_excluded:
+            _dr_name  = s.get("dominant_rival_name", "?") or "?"
+            _dr_price = float(s.get("dominant_rival_price", 0) or 0)
+            _gap      = _dom_gap_pct(s)
+            changes_html += (
+                f'<div style="font-size:14px;color:#d9534f;margin:4px 0;">'
+                f'❌ EXCLUDED FROM BETS: {s.get("horse","?")} — DOM rival '
+                f'{_dr_name} @ {_dr_price:.2f}x ({_gap:.0f}% gap)</div>'
+            )
+    # Significant price moves vs morning (>20%)
+    move_lines = []
+    for s in confirmed:
+        m_dec = float((morning_sel_map.get(s.get("horse",""), {}) or {}).get("decimal") or 0)
+        c_dec = float(s.get("decimal", 0) or 0)
+        if m_dec > 0 and c_dec > 0:
+            d = (c_dec - m_dec) / m_dec * 100.0
+            if abs(d) >= 20.0:
+                arrow = "↑ drifted" if d > 0 else "↓ steamed"
+                col   = "#d9534f" if d > 0 else "#2d7a3a"
+                move_lines.append(
+                    f'<div style="font-size:14px;color:{col};margin:4px 0;">'
+                    f'{arrow} {s.get("horse","?")} — {m_dec:.2f}x → {c_dec:.2f}x '
+                    f'({d:+.0f}%)</div>'
+                )
+    changes_html += "".join(move_lines)
+    changes_html += (
+        f'<div style="font-size:14px;color:#2d7a3a;margin:4px 0;">'
+        f'✅ {len(bet_pool)} qualifying selection{"s" if len(bet_pool)!=1 else ""} '
+        f'(Bet A/B drawn from these by confidence)</div>'
+    )
+    body += (
+        '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+        'margin-bottom:12px;border-top:2px solid #01696F;">'
+        '<div style="font-size:13px;font-weight:bold;color:#fff;letter-spacing:0.5px;'
+        'text-transform:uppercase;margin-bottom:8px;">'
+        'Changes since 08:00</div>'
+        f'{changes_html}'
+        '</div>'
+    )
+
+    # ── SECTION 3 — Full qualifying list (reference only) ─────────────────
     if confirmed:
         body += (
-            '<div style="font-size:13px;font-weight:bold;color:#aaa;letter-spacing:1px;'
-            'text-transform:uppercase;padding:8px 4px;margin-top:6px;">'
-            f'Confirmed selections ({len(confirmed)})</div>'
+            '<div style="font-size:12px;color:#888;letter-spacing:0.5px;'
+            'padding:8px 4px;margin-top:14px;font-style:italic;">'
+            f'Full qualifying list ({len(confirmed)}) — for reference only. '
+            'Advised bets are above.</div>'
         )
-        for s in confirmed:
+        # Sort reference list by race time so user can scan the card
+        for s in sorted(confirmed, key=lambda x: x.get("time", "")):
             body += _selection_card_mobile(s, snapshot, morning_prices)
     else:
         body += (

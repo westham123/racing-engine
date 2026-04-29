@@ -52,10 +52,37 @@ def _decimal_of(s: dict) -> float:
     return float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0)
 
 
+def _has_valid_price(s: dict) -> bool:
+    """v2.5.62 — exclude horses without a usable decimal price (nan/None/<2.0).
+
+    Bet A/B require a real price for staking maths. Anything that can't be
+    coerced to a float >=2.0 (the evens floor) is dropped before perm building."""
+    raw = (s.get("decimal_odds") if s.get("decimal_odds") is not None
+           else s.get("best_odds_decimal") if s.get("best_odds_decimal") is not None
+           else s.get("decimal"))
+    if raw is None:
+        return False
+    try:
+        sval = str(raw).strip().lower()
+    except Exception:
+        return False
+    if sval in ("", "nan", "none"):
+        return False
+    try:
+        return float(raw) >= 2.0
+    except (TypeError, ValueError):
+        return False
+
+
 def _build_bet(tier_key: str, selections: list) -> dict:
     cfg = _BET_CONFIG[tier_key]
     n   = cfg["n"]
-    pool = list(selections)[:n]
+    # v2.5.62 — drop horses with nan/missing/below-evens prices, then sort by
+    # confidence DESC so the highest-confidence horses fill Bet A/B (was: list
+    # came in sorted by race time, which buried the strongest picks).
+    valid = [s for s in (selections or []) if _has_valid_price(s)]
+    ranked = sorted(valid, key=lambda s: float(s.get("confidence", 0) or 0), reverse=True)
+    pool = ranked[:n]
 
     if len(pool) < n:
         return {
