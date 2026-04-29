@@ -1990,13 +1990,28 @@ def build_confirmed_selections() -> str:
 
 
 def send_confirmed_selections() -> bool:
-    """Called by the 13:30 BST cron. Sends the 'final word' confirmed list."""
-    try:
-        html = build_confirmed_selections()
-    except Exception as e:
-        print(f"[Confirmed] Build failed: {e}")
-        return False
+    """Called by the 13:30 BST cron. Sends the 'final word' confirmed list.
+    v2.5.59 — hard 90s timeout via concurrent.futures; sends plain fallback
+    if build hangs so the cron never times out silently.
+    """
+    import concurrent.futures as _cf
     subject = f"Racing Engine — Confirmed Selections | {_date_bst()}"
+    fallback_body = (
+        f"Confirmed selections failed to generate. "
+        f"Check dashboard for live selections before placing bets.\n"
+        f"Dashboard: https://racing-engine-dash.streamlit.app (PIN: 1012)"
+    )
+    # Run build in a thread with hard 90s cap
+    with _cf.ThreadPoolExecutor(max_workers=1) as pool:
+        future = pool.submit(build_confirmed_selections)
+        try:
+            html = future.result(timeout=90)
+        except _cf.TimeoutError:
+            print("[Confirmed] Build timed out after 90s — sending fallback")
+            return send_email(subject, fallback_body, plain=True)
+        except Exception as e:
+            print(f"[Confirmed] Build failed: {e} — sending fallback")
+            return send_email(subject, fallback_body, plain=True)
     try:
         return send_email(subject, html)
     except Exception as e:
@@ -2378,16 +2393,22 @@ def schedule_prerace_alerts() -> list:
 
 
 # ── Email Sender ───────────────────────────────────────────────
-def send_email(subject: str, html_content: str, recipient: str = RECIPIENT) -> bool:
+def send_email(subject: str, html_content: str, recipient: str = RECIPIENT, plain: bool = False) -> bool:
     if not SENDER_EMAIL or not SENDER_PASSWORD:
         print(f"[Email] No credentials — skipping: {subject}")
         return False
     try:
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = subject
-        msg["From"]    = SENDER_EMAIL
-        msg["To"]      = recipient
-        msg.attach(MIMEText(html_content, "html"))
+        if plain:
+            msg = MIMEText(html_content, "plain")
+            msg["Subject"] = subject
+            msg["From"]    = SENDER_EMAIL
+            msg["To"]      = recipient
+        else:
+            msg = MIMEMultipart("alternative")
+            msg["Subject"] = subject
+            msg["From"]    = SENDER_EMAIL
+            msg["To"]      = recipient
+            msg.attach(MIMEText(html_content, "html"))
         with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
             server.login(SENDER_EMAIL, SENDER_PASSWORD)
             server.sendmail(SENDER_EMAIL, recipient, msg.as_string())
@@ -2445,9 +2466,24 @@ def send_morning_brief(budget: float = 100.0):
     except Exception as _ml_err:
         print(f"[ML] auto_record_day skipped: {_ml_err}")
 
-    html    = build_morning_brief(budget)
+    # Hard 90s timeout on build — sends fallback if hangs
+    import concurrent.futures as _cf
     subject = f"Racing Engine — Morning Brief | {_date_bst()}"
-    ok      = send_email(subject, html)
+    with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
+        _fut = _pool.submit(build_morning_brief, budget)
+        try:
+            html = _fut.result(timeout=90)
+        except _cf.TimeoutError:
+            print("[Brief] build_morning_brief timed out — sending fallback")
+            send_email(subject,
+                "Morning brief timed out. Check dashboard: "
+                "https://racing-engine-dash.streamlit.app (PIN: 1012)",
+                plain=True)
+            return False
+        except Exception as _e:
+            print(f"[Brief] build_morning_brief failed: {_e}")
+            return False
+    ok = send_email(subject, html)
 
     # ── Early-race pre-race alerts ───────────────────────────────
     # Cron granularity is 1h, so we can't fire every 5 minutes. Instead, when
