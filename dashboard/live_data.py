@@ -390,6 +390,36 @@ def get_todays_selections():
         pass  # prefetch failure is silent — per-runner calls fall back to neutral
     # --- end prefetch ---
 
+    # --- v2.5.63: parallel Oddschecker prefetch ---
+    # Fetch all race odds pages concurrently (max 20s) so the per-race loop
+    # hits the cache instead of waiting sequentially. Each request capped at 3s.
+    if OC_AVAILABLE and _get_oc_odds is not None:
+        try:
+            from concurrent.futures import ThreadPoolExecutor, wait as _cf_wait
+            _oc_keys = []
+            for _m in meetings:
+                for _r in _m.get('races', []):
+                    _c = _m.get('course', '')
+                    _t = _r.get('time', '')
+                    if _c and _t:
+                        _oc_keys.append((_c, _t))
+
+            def _fetch_oc(ct):
+                _c, _t = ct
+                k = f"{_c}|{_t}"
+                if k not in _oc_race_cache:
+                    try:
+                        _oc_race_cache[k] = _get_oc_odds(_c, _t, timeout=3) or {}
+                    except Exception:
+                        _oc_race_cache[k] = {}
+
+            with ThreadPoolExecutor(max_workers=12) as _pool:
+                _futs = [_pool.submit(_fetch_oc, ct) for ct in _oc_keys]
+                _cf_wait(_futs, timeout=20)  # hard 20s cap for entire OC prefetch
+        except Exception:
+            pass  # silent fallback — per-race fetch still works
+    # --- end Oddschecker prefetch ---
+
     # Load persisted snapshot for signal detection
     snapshot     = _load_snapshot()
     new_snapshot = {}
@@ -416,7 +446,7 @@ def get_todays_selections():
                     oc_data = _oc_race_cache[oc_cache_key]
                 else:
                     try:
-                        oc_data = _get_oc_odds(course, time) or {}
+                        oc_data = _get_oc_odds(course, time, timeout=3) or {}
                     except Exception:
                         oc_data = {}
                     _oc_race_cache[oc_cache_key] = oc_data

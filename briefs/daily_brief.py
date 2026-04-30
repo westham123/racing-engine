@@ -2150,7 +2150,7 @@ def send_confirmed_selections() -> bool:
     with _cf.ThreadPoolExecutor(max_workers=1) as pool:
         future = pool.submit(build_confirmed_selections)
         try:
-            html = future.result(timeout=90)
+            html = future.result(timeout=180)
         except _cf.TimeoutError:
             print("[Confirmed] Build timed out after 90s — sending fallback")
             return send_email(subject, fallback_body, plain=True)
@@ -2617,7 +2617,7 @@ def send_morning_brief(budget: float = 100.0):
     with _cf.ThreadPoolExecutor(max_workers=1) as _pool:
         _fut = _pool.submit(build_morning_brief, budget)
         try:
-            html = _fut.result(timeout=90)
+            html = _fut.result(timeout=180)
         except _cf.TimeoutError:
             print("[Brief] build_morning_brief timed out — sending fallback")
             send_email(subject,

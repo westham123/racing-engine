@@ -1,0 +1,146 @@
+{
+  "date": "2026-04-30",
+  "timestamp": "10:07 BST",
+  "selections": {
+    "Karakula Dancer": {
+      "decimal": 5.02,
+      "fractional": "401/100",
+      "best_bookmaker": "Matchbook",
+      "course": "Redcar",
+      "time": "14:13"
+    },
+    "Nadia's Boy": {
+      "decimal": NaN,
+      "fractional": NaN,
+      "best_bookmaker": "",
+      "course": "Punchestown",
+      "time": "14:30"
+    },
+    "Fashion People": {
+      "decimal": 1.53,
+      "fractional": "8/15",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Yarmouth",
+      "time": "14:40"
+    },
+    "Diamond Du Berlais": {
+      "decimal": 2.78,
+      "fractional": "7/4",
+      "best_bookmaker": "Matchbook",
+      "course": "Punchestown",
+      "time": "15:05"
+    },
+    "Confide In Me": {
+      "decimal": 3.01,
+      "fractional": "2",
+      "best_bookmaker": "Matchbook",
+      "course": "Redcar",
+      "time": "15:23"
+    },
+    "Beerwah": {
+      "decimal": 3.74,
+      "fractional": "27/10",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Redcar",
+      "time": "15:58"
+    },
+    "Tuscan Point": {
+      "decimal": 1.85,
+      "fractional": "5/6",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Lingfield",
+      "time": "16:05"
+    },
+    "Fierce Fortitude": {
+      "decimal": 4.92,
+      "fractional": "7/2",
+      "best_bookmaker": "Matchbook",
+      "course": "Redcar",
+      "time": "16:30"
+    },
+    "Bergamo Gold": {
+      "decimal": 10.3,
+      "fractional": "93/10",
+      "best_bookmaker": "Matchbook",
+      "course": "Lingfield",
+      "time": "16:35"
+    },
+    "Zighy": {
+      "decimal": 6.88,
+      "fractional": "147/25",
+      "best_bookmaker": "Matchbook",
+      "course": "Yarmouth",
+      "time": "16:57"
+    },
+    "O'gorman": {
+      "decimal": NaN,
+      "fractional": NaN,
+      "best_bookmaker": "",
+      "course": "Kempton",
+      "time": "17:12"
+    },
+    "Wild Thoughts": {
+      "decimal": 1.73,
+      "fractional": "8/11",
+      "best_bookmaker": "WilliamHill",
+      "course": "Kempton",
+      "time": "17:45"
+    },
+    "Teahupoo": {
+      "decimal": 3.16,
+      "fractional": "21/10",
+      "best_bookmaker": "Matchbook",
+      "course": "Punchestown",
+      "time": "18:05"
+    },
+    "Tales Of Wisdom": {
+      "decimal": 5.12,
+      "fractional": "103/25",
+      "best_bookmaker": "Matchbook",
+      "course": "Kempton",
+      "time": "18:15"
+    },
+    "Pure Moon": {
+      "decimal": 1.93,
+      "fractional": "10/11",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Southwell",
+      "time": "18:25"
+    },
+    "Adaboy Mushy": {
+      "decimal": 11.0,
+      "fractional": "10",
+      "best_bookmaker": "Unibet",
+      "course": "Punchestown",
+      "time": "18:35"
+    },
+    "Royal Fanfare": {
+      "decimal": 3.4,
+      "fractional": "12/5",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Kempton",
+      "time": "18:45"
+    },
+    "Jimmy Speaking": {
+      "decimal": 2.65,
+      "fractional": "13/8",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Southwell",
+      "time": "19:00"
+    },
+    "Space Bear": {
+      "decimal": 2.59,
+      "fractional": "6/4",
+      "best_bookmaker": "Matchbook",
+      "course": "Kempton",
+      "time": "19:45"
+    },
+    "Cospicua": {
+      "decimal": 6.68,
+      "fractional": "142/25",
+      "best_bookmaker": "BetfairExchange",
+      "course": "Kempton",
+      "time": "20:15"
+    }
+  }
+}
