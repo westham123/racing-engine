@@ -53,10 +53,9 @@ def _decimal_of(s: dict) -> float:
 
 
 def _has_valid_price(s: dict) -> bool:
-    """v2.5.62 — exclude horses without a usable decimal price (nan/None/<2.0).
-
-    Bet A/B require a real price for staking maths. Anything that can't be
-    coerced to a float >=2.0 (the evens floor) is dropped before perm building."""
+    """v2.5.65 — strict price gate. Reject anything that isn't a real
+    decimal >= 2.0 (the evens floor). Catches Irish-track horses where
+    Oddschecker returns "?", "nan", "Best: nan", or no price at all."""
     raw = (s.get("decimal_odds") if s.get("decimal_odds") is not None
            else s.get("best_odds_decimal") if s.get("best_odds_decimal") is not None
            else s.get("decimal"))
@@ -66,23 +65,68 @@ def _has_valid_price(s: dict) -> bool:
         sval = str(raw).strip().lower()
     except Exception:
         return False
-    if sval in ("", "nan", "none"):
+    # v2.5.65 — reject sentinels including "?", "n/a", "-", "" used by feeds
+    # when no price is available (Punchestown / Irish tracks via Oddschecker).
+    if sval in ("", "nan", "none", "?", "n/a", "na", "-", "null"):
         return False
     try:
-        return float(raw) >= 2.0
+        f = float(raw)
     except (TypeError, ValueError):
         return False
+    # NaN check (float("nan") parses but isn't a usable price)
+    if f != f:  # NaN never equals itself
+        return False
+    return f >= 2.0
+
+
+def _qualifies_for_bet(s: dict, tier_key: str) -> bool:
+    """v2.5.65 — central qualification gate for Bet A/B.
+
+    Bet A: must have valid price, NOT dominant_rival, NOT yg_risk, runners < 16.
+    Bet B: must have valid price, runners < 16 (DOM/yg_risk allowed but flagged).
+
+    These checks belong here (alongside _build_bet) so no caller can bypass
+    them by passing a pool that hasn't been filtered upstream."""
+    if not _has_valid_price(s):
+        return False
+    # 16+ runner exclusion
+    try:
+        rn = s.get("runners") or s.get("field_size") or 0
+        if int(rn) >= 16:
+            return False
+    except (TypeError, ValueError):
+        pass
+    if tier_key == "BET_A":
+        if bool(s.get("dominant_rival", False)):
+            return False
+        if bool(s.get("yg_risk", False)):
+            return False
+    return True
 
 
 def _build_bet(tier_key: str, selections: list) -> dict:
     cfg = _BET_CONFIG[tier_key]
     n   = cfg["n"]
-    # v2.5.62 — drop horses with nan/missing/below-evens prices, then sort by
-    # confidence DESC so the highest-confidence horses fill Bet A/B (was: list
-    # came in sorted by race time, which buried the strongest picks).
-    valid = [s for s in (selections or []) if _has_valid_price(s)]
+    # v2.5.65 — defensive gate: reject DOM/yg_risk for Bet A, invalid prices
+    # for both, and 16+ runner fields. Previously _build_bet only checked
+    # price; DOM-flagged horses (e.g. Tales of Wisdom 2.91x vs Ray Mon Dough
+    # 1.91x, ~34% gap) slipped into Bet A whenever the daily-brief DOM filter
+    # threshold (35%) was just missed. With the gate here, no caller can
+    # bypass it. Then sort by confidence DESC so the strongest fill the slots.
+    valid = [s for s in (selections or []) if _qualifies_for_bet(s, tier_key)]
     ranked = sorted(valid, key=lambda s: float(s.get("confidence", 0) or 0), reverse=True)
     pool = ranked[:n]
+    # v2.5.65 — log signal breakdown for any horse entering Bet A/B for
+    # debugging poor-selection investigations.
+    for _s in pool:
+        try:
+            print(f"[{tier_key}] {_s.get('horse','?')} conf={float(_s.get('confidence',0) or 0):.3f} "
+                  f"dec={float(_s.get('decimal',0) or 0):.2f} "
+                  f"DOM={bool(_s.get('dominant_rival',False))} "
+                  f"YG={bool(_s.get('yg_risk',False))} "
+                  f"runners={_s.get('runners',0)}")
+        except Exception:
+            pass
 
     if len(pool) < n:
         return {

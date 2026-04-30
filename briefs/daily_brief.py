@@ -1970,10 +1970,13 @@ def build_confirmed_selections() -> str:
     except Exception:
         going_changes = []
 
-    # v2.5.62 — hard-exclude dominant rivals (gap > 35%) from the Bet A/B pool.
+    # v2.5.65 — hard-exclude dominant rivals (gap > 25%) from the Bet A/B pool.
     # These horses can still appear in the reference list with a DOM flag, but
-    # they should never feed staking. Example: Gold Star Gazing (3.38x) vs
-    # Wezzeer (1.67x) = -50% gap → exclude.
+    # they should never feed staking. Threshold lowered from 35% to 25% to catch
+    # cases like Tales of Wisdom (2.91x) vs Ray Mon Dough (1.91x) ≈ 34% gap that
+    # were just clearing the old gate. Engine.staking._build_bet now also
+    # rejects ANY DOM-flagged horse from Bet A regardless of gap, so the
+    # numerical threshold here is a belt-and-braces upstream filter.
     def _dom_gap_pct(s):
         try:
             our = float(s.get("decimal", 0) or 0)
@@ -1987,7 +1990,7 @@ def build_confirmed_selections() -> str:
     bet_pool = []
     dom_excluded = []
     for s in confirmed:
-        if bool(s.get("dominant_rival", False)) and _dom_gap_pct(s) > 35.0:
+        if bool(s.get("dominant_rival", False)) and _dom_gap_pct(s) > 25.0:
             dom_excluded.append(s)
             continue
         bet_pool.append(s)

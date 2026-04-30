@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.5.64** — added course specialist (0.08) and distance affinity (0.05) signals to confidence model")
+    st.markdown("**Engine v2.5.65** — Fix DOM flag propagation, strengthen price gate, selection pipeline audit")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
