@@ -358,22 +358,132 @@ def get_race_runners(slug):
     return runners
 
 
+_OC_CONFIDENCE_GATE = 0.48  # v2.5.64 — only races with a runner ≥ this in pass 1 get OC prices
+
+
+def _score_runner(rn, course, going, time, stage, today_str,
+                  snapshot, new_snapshot, bsp_race_data, oddschecker_enabled):
+    """
+    Score a single runner. Returns a row dict (or None if non-runner).
+    When oddschecker_enabled=False, OC fields are left as None and the model
+    runs on Sporting Life prices only — fast path for pass 1.
+    """
+    if rn.get("status") == "NON_RUNNER":
+        return None
+
+    odds_str    = rn.get("odds", "N/A")
+    current_dec = _to_decimal(odds_str)
+
+    horse_key = f"{today_str}::{time}::{course}::{rn['horse'].lower().strip()}"
+    signal    = _detect_signal(horse_key, current_dec, snapshot)
+    if signal == "Stable" and rn.get("signal", "Stable") != "Stable":
+        signal = rn["signal"]
+    if current_dec > 0:
+        new_snapshot[horse_key] = current_dec
+
+    bsp_result = None
+    if bsp_race_data:
+        try:
+            bsp_cli = _get_bsp_client()
+            if bsp_cli:
+                bsp_result = bsp_cli.score_bsp_signal(rn["horse"], odds_str, bsp_race_data)
+        except Exception:
+            pass
+
+    if MODEL_AVAILABLE and _odds_model is not None:
+        runner_input = {
+            "horse": rn.get("horse", ""),
+            "odds": odds_str, "form": rn.get("form", "-"),
+            "going": going, "trainer": rn.get("trainer", ""),
+            "jockey": rn.get("jockey", ""), "signal": signal,
+            "bet_movements": rn.get("bet_movements", []),
+            "tf_stars": rn.get("tf_stars"), "course": course,
+            "bsp_result": bsp_result,
+            "field_size":  rn.get("field_size", 0),
+            "race_type":   rn.get("race_type", ""),
+            "race_class":  rn.get("race_class", ""),
+            "race_name":   rn.get("race_name", ""),
+            "is_handicap": rn.get("is_handicap", False),
+            "current_odds": rn.get("current_odds", odds_str),
+            "race_dist_f": rn.get("race_dist_f", 0.0),
+        }
+        confidence = _odds_model.calculate_confidence(runner_input)
+        try:
+            from engine.course_distance import (
+                get_course_distance_signals as _cd_sig,
+                get_course_distance_detail as _cd_det,
+            )
+            _cs, _ds = _cd_sig(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
+            _cd = _cd_det(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
+        except Exception:
+            _cs, _ds = 0.50, 0.50
+            _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
+    else:
+        confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
+        _cs, _ds = 0.50, 0.50
+        _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
+
+    bsp_price   = bsp_result.get("bsp_price")    if bsp_result else None
+    bsp_flag    = bsp_result.get("value_flag")   if bsp_result else ""
+    bsp_vol     = bsp_result.get("vol_signal")   if bsp_result else ""
+    bsp_matched = bsp_result.get("total_matched")if bsp_result else None
+
+    return {
+        "Time":        time,
+        "Course":      course,
+        "Race":        f"{time} {course}",
+        "Horse":       rn["horse"],
+        "Jockey":      rn["jockey"],
+        "Trainer":     rn["trainer"],
+        "Form":        rn["form"],
+        "Going":       going,
+        "Odds":        odds_str,
+        "Current Odds": rn.get("current_odds", odds_str),
+        "Best Odds Decimal":    rn.get("best_odds_decimal"),
+        "Best Odds Fractional": rn.get("best_odds_fractional"),
+        "Best Bookmaker":       rn.get("best_bookmaker", ""),
+        "Odds Consensus":       rn.get("odds_consensus"),
+        "Bookmaker Count":      rn.get("bookmaker_count"),
+        "Confidence":  confidence,
+        "Signal":      signal,
+        "TF Stars":    rn.get("tf_stars", "-"),
+        "Stage":       stage,
+        "Cloth":       rn.get("cloth", "-"),
+        "Draw":        rn.get("draw", "-"),
+        "Finish":      rn.get("finish_position"),
+        "BSP Price":   bsp_price,
+        "BSP Flag":    bsp_flag,
+        "BSP Volume":  bsp_vol,
+        "BSP Matched": bsp_matched,
+        "Field Size":  rn.get("field_size", 0),
+        "Race Type":   rn.get("race_type", ""),
+        "Race Class":  rn.get("race_class", ""),
+        "Race Name":   rn.get("race_name", ""),
+        "Is Handicap": rn.get("is_handicap", False),
+        "Race Dist F":     rn.get("race_dist_f", 0.0),
+        "Course Signal":   _cs,
+        "Distance Signal": _ds,
+        "Course Wins":     _cd.get("course_wins", 0),
+        "Course Runs":     _cd.get("course_runs", 0),
+        "Distance Wins":   _cd.get("dist_wins", 0),
+        "Distance Runs":   _cd.get("dist_runs", 0),
+    }
+
+
 def get_todays_selections():
     """
     Master function — pulls all UK/Irish races, detects steam/drift via
     odds-snapshot comparison, returns DataFrame with Time + Course columns.
 
-    v2.5.58 — course/distance signals pre-fetched in parallel (10s hard cap)
-    before the per-runner scoring loop, so sequential fetches never block.
+    v2.5.64 — confidence-gated Oddschecker fetch:
+      Pass 1: score every runner using Sporting Life prices only (no OC calls).
+      Identify candidate races where max confidence > 0.48 (~6-10 of ~30+).
+      Pass 2: parallel-fetch OC for candidate races and re-score those runners.
     """
     meetings = get_todays_meetings()
-    all_rows  = []
     today_str = date.today().isoformat()
 
-    # --- v2.5.58: parallel prefetch of course/distance signals ---
-    # Build a flat list of all runners across all meetings, then fire all
-    # Sporting Life form-page requests concurrently (max 10s total).
-    # Results land in the module-level cache; per-runner calls below are cache hits.
+    # --- parallel prefetch of course/distance signals (cheap, do for all) ---
     try:
         from engine.course_distance import prefetch_signals as _prefetch_cd
         _all_runners_flat = []
@@ -387,77 +497,28 @@ def get_todays_selections():
                     })
         _prefetch_cd(_all_runners_flat)
     except Exception:
-        pass  # prefetch failure is silent — per-runner calls fall back to neutral
-    # --- end prefetch ---
+        pass
 
-    # --- v2.5.63: parallel Oddschecker prefetch ---
-    # Fetch all race odds pages concurrently (max 20s) so the per-race loop
-    # hits the cache instead of waiting sequentially. Each request capped at 3s.
-    if OC_AVAILABLE and _get_oc_odds is not None:
-        try:
-            from concurrent.futures import ThreadPoolExecutor, wait as _cf_wait
-            _oc_keys = []
-            for _m in meetings:
-                for _r in _m.get('races', []):
-                    _c = _m.get('course', '')
-                    _t = _r.get('time', '')
-                    if _c and _t:
-                        _oc_keys.append((_c, _t))
-
-            def _fetch_oc(ct):
-                _c, _t = ct
-                k = f"{_c}|{_t}"
-                if k not in _oc_race_cache:
-                    try:
-                        _oc_race_cache[k] = _get_oc_odds(_c, _t, timeout=3) or {}
-                    except Exception:
-                        _oc_race_cache[k] = {}
-
-            with ThreadPoolExecutor(max_workers=12) as _pool:
-                _futs = [_pool.submit(_fetch_oc, ct) for ct in _oc_keys]
-                _cf_wait(_futs, timeout=20)  # hard 20s cap for entire OC prefetch
-        except Exception:
-            pass  # silent fallback — per-race fetch still works
-    # --- end Oddschecker prefetch ---
-
-    # Load persisted snapshot for signal detection
     snapshot     = _load_snapshot()
     new_snapshot = {}
+
+    # ── Pass 1: fetch runners + score with no Oddschecker ─────────────────
+    # Cache (course, time) → race context so pass 2 can re-score in place.
+    race_ctx = {}     # key -> {meeting, race, runners, time, course, going, stage, slug}
+    rows_by_race = {} # key -> list of row dicts
 
     for meeting in meetings:
         course = meeting["course"]
         going  = meeting["going"]
-
         for race in meeting["races"]:
             stage = race.get("stage", "")
-            time  = _utc_to_bst(race.get("time", ""))  # UTC → BST
+            time  = _utc_to_bst(race.get("time", ""))
             slug  = race.get("slug")
             if not slug:
                 continue
 
             runners = get_race_runners(slug)
 
-            # Oddschecker — fetch once per race, augment each runner with best
-            # price across 24+ bookmakers. Silent fallback on any failure.
-            oc_data = {}
-            if OC_AVAILABLE and _get_oc_odds is not None:
-                oc_cache_key = f"{course}|{time}"
-                if oc_cache_key in _oc_race_cache:
-                    oc_data = _oc_race_cache[oc_cache_key]
-                else:
-                    try:
-                        oc_data = _get_oc_odds(course, time, timeout=3) or {}
-                    except Exception:
-                        oc_data = {}
-                    _oc_race_cache[oc_cache_key] = oc_data
-            if oc_data:
-                oc_lower = {k.lower().strip(): v for k, v in oc_data.items()}
-                for _rn in runners:
-                    _entry = oc_lower.get(str(_rn.get("horse", "")).lower().strip())
-                    if _entry and _oc_augment is not None:
-                        _oc_augment(_rn, _entry)
-
-            # BSP — single session attempt (fail-fast)
             bsp_key       = f"{course}|{time}"
             bsp_race_data = _bsp_race_cache.get(bsp_key, "UNCHECKED")
             if bsp_race_data == "UNCHECKED":
@@ -468,118 +529,74 @@ def get_todays_selections():
                     bsp_race_data = None
                 _bsp_race_cache[bsp_key] = bsp_race_data
 
+            key = f"{course}|{time}"
+            race_ctx[key] = {
+                "course": course, "going": going, "time": time, "stage": stage,
+                "runners": runners, "bsp_race_data": bsp_race_data,
+            }
+
+            race_rows = []
             for rn in runners:
                 if rn.get("status") == "NON_RUNNER":
                     print(f"[NR Gate] Stripped {rn.get('horse','?')} — status: NON_RUNNER "
                           f"(race {time} {course})")
-                    continue  # non-runner — skip from selections
+                    continue
+                row = _score_runner(rn, course, going, time, stage, today_str,
+                                    snapshot, new_snapshot, bsp_race_data,
+                                    oddschecker_enabled=False)
+                if row is not None:
+                    race_rows.append(row)
+            rows_by_race[key] = race_rows
 
-                odds_str    = rn.get("odds", "N/A")
-                current_dec = _to_decimal(odds_str)
+    # ── Identify candidate races (any runner ≥ confidence gate) ───────────
+    candidate_keys = [k for k, rows in rows_by_race.items()
+                      if rows and max(r["Confidence"] for r in rows) > _OC_CONFIDENCE_GATE]
 
-                # Signal: snapshot comparison first, then Sporting Life movement
-                horse_key = f"{today_str}::{time}::{course}::{rn['horse'].lower().strip()}"
-                signal    = _detect_signal(horse_key, current_dec, snapshot)
-                if signal == "Stable" and rn.get("signal", "Stable") != "Stable":
-                    signal = rn["signal"]
-                if current_dec > 0:
-                    new_snapshot[horse_key] = current_dec
+    # ── Pass 2: parallel OC fetch for candidate races + re-score ──────────
+    if candidate_keys and OC_AVAILABLE and _get_oc_odds is not None:
+        try:
+            from concurrent.futures import ThreadPoolExecutor, wait as _cf_wait
 
-                # Confidence
-                bsp_result = None
-                if bsp_race_data:
-                    try:
-                        bsp_cli = _get_bsp_client()
-                        if bsp_cli:
-                            bsp_result = bsp_cli.score_bsp_signal(rn["horse"], odds_str, bsp_race_data)
-                    except Exception:
-                        pass
+            def _fetch_oc(key):
+                ctx = race_ctx[key]
+                try:
+                    _oc_race_cache[key] = _get_oc_odds(ctx["course"], ctx["time"], timeout=3) or {}
+                except Exception:
+                    _oc_race_cache[key] = {}
 
-                if MODEL_AVAILABLE and _odds_model is not None:
-                    runner_input = {
-                        "horse": rn.get("horse", ""),
-                        "odds": odds_str, "form": rn.get("form", "-"),
-                        "going": going, "trainer": rn.get("trainer", ""),
-                        "jockey": rn.get("jockey", ""), "signal": signal,
-                        "bet_movements": rn.get("bet_movements", []),
-                        "tf_stars": rn.get("tf_stars"), "course": course,
-                        "bsp_result": bsp_result,
-                        # Filter layer fields
-                        "field_size":  rn.get("field_size", 0),
-                        "race_type":   rn.get("race_type", ""),
-                        "race_class":  rn.get("race_class", ""),
-                        "race_name":   rn.get("race_name", ""),
-                        "is_handicap": rn.get("is_handicap", False),
-                        "current_odds": rn.get("current_odds", odds_str),
-                        # v2.5.55 — needed for course/distance signals
-                        "race_dist_f": rn.get("race_dist_f", 0.0),
-                    }
-                    confidence = _odds_model.calculate_confidence(runner_input)
-                    # v2.5.55 — surface course/distance affinity for display.
-                    # Reuses cached fetch — no extra network call.
-                    try:
-                        from engine.course_distance import (
-                            get_course_distance_signals as _cd_sig,
-                            get_course_distance_detail as _cd_det,
-                        )
-                        _cs, _ds = _cd_sig(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
-                        _cd = _cd_det(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
-                    except Exception:
-                        _cs, _ds = 0.50, 0.50
-                        _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
-                else:
-                    confidence = _estimate_confidence(odds_str, rn.get("tf_stars"), rn.get("rating"))
-                    _cs, _ds = 0.50, 0.50
-                    _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
+            with ThreadPoolExecutor(max_workers=12) as _pool:
+                _futs = [_pool.submit(_fetch_oc, k) for k in candidate_keys
+                         if k not in _oc_race_cache]
+                _cf_wait(_futs, timeout=20)
+        except Exception:
+            pass
 
-                bsp_price   = bsp_result.get("bsp_price")    if bsp_result else None
-                bsp_flag    = bsp_result.get("value_flag")   if bsp_result else ""
-                bsp_vol     = bsp_result.get("vol_signal")   if bsp_result else ""
-                bsp_matched = bsp_result.get("total_matched")if bsp_result else None
+        for key in candidate_keys:
+            ctx = race_ctx[key]
+            oc_data = _oc_race_cache.get(key, {})
+            if not oc_data:
+                continue
+            oc_lower = {k.lower().strip(): v for k, v in oc_data.items()}
+            for rn in ctx["runners"]:
+                _entry = oc_lower.get(str(rn.get("horse", "")).lower().strip())
+                if _entry and _oc_augment is not None:
+                    _oc_augment(rn, _entry)
 
-                all_rows.append({
-                    "Time":        time,
-                    "Course":      course,
-                    "Race":        f"{time} {course}",
-                    "Horse":       rn["horse"],
-                    "Jockey":      rn["jockey"],
-                    "Trainer":     rn["trainer"],
-                    "Form":        rn["form"],
-                    "Going":       going,
-                    "Odds":        odds_str,
-                    "Current Odds": rn.get("current_odds", odds_str),
-                    # Oddschecker multi-bookie fields (None when unavailable)
-                    "Best Odds Decimal":    rn.get("best_odds_decimal"),
-                    "Best Odds Fractional": rn.get("best_odds_fractional"),
-                    "Best Bookmaker":       rn.get("best_bookmaker", ""),
-                    "Odds Consensus":       rn.get("odds_consensus"),
-                    "Bookmaker Count":      rn.get("bookmaker_count"),
-                    "Confidence":  confidence,
-                    "Signal":      signal,
-                    "TF Stars":    rn.get("tf_stars", "-"),
-                    "Stage":       stage,
-                    "Cloth":       rn.get("cloth", "-"),
-                    "Draw":        rn.get("draw", "-"),
-                    "Finish":      rn.get("finish_position"),
-                    "BSP Price":   bsp_price,
-                    "BSP Flag":    bsp_flag,
-                    "BSP Volume":  bsp_vol,
-                    "BSP Matched": bsp_matched,
-                    # Filter layer metadata
-                    "Field Size":  rn.get("field_size", 0),
-                    "Race Type":   rn.get("race_type", ""),
-                    "Race Class":  rn.get("race_class", ""),
-                    "Race Name":   rn.get("race_name", ""),
-                    "Is Handicap": rn.get("is_handicap", False),
-                    # v2.5.55 — course specialist + distance affinity
-                    "Race Dist F":     rn.get("race_dist_f", 0.0),
-                    "Course Signal":   _cs,
-                    "Distance Signal": _ds,
-                    "Course Wins":     _cd.get("course_wins", 0),
-                    "Course Runs":     _cd.get("course_runs", 0),
-                    "Distance Wins":   _cd.get("dist_wins", 0),
-                    "Distance Runs":   _cd.get("dist_runs", 0),
-                })
+            # Re-score this race with OC-augmented runners
+            new_rows = []
+            for rn in ctx["runners"]:
+                if rn.get("status") == "NON_RUNNER":
+                    continue
+                row = _score_runner(rn, ctx["course"], ctx["going"], ctx["time"],
+                                    ctx["stage"], today_str, snapshot, new_snapshot,
+                                    ctx["bsp_race_data"], oddschecker_enabled=True)
+                if row is not None:
+                    new_rows.append(row)
+            rows_by_race[key] = new_rows
+
+    all_rows = []
+    for rows in rows_by_race.values():
+        all_rows.extend(rows)
 
     # Persist updated snapshot (today's entries only)
     if new_snapshot:

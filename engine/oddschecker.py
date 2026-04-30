@@ -7,12 +7,45 @@
 # comma-separated tokens: selection_id_bookie_fractional_decimal_flag
 # where flag == "0" means a price is available, "1" means it is not.
 
+import json
+import os
 import re
 import statistics
+import time
 from typing import Optional
 
 import requests
 from bs4 import BeautifulSoup
+
+# v2.5.64 — disk + in-memory cache for Oddschecker fetches.
+_OC_CACHE_PATH = os.path.join(os.path.dirname(__file__), "..", "learning", "oc_cache.json")
+_OC_CACHE_TTL = 1800   # 30 minutes — fresh-enough for in-day pricing
+_OC_CACHE_MAX_AGE = 14400  # 4 hours — anything older is purged on load
+_OC_MEM_CACHE: dict = {}   # key -> (timestamp, data)
+
+
+def _oc_cache_key(course: str, time_str: str) -> str:
+    return f"{(course or '').lower().strip()}|{(time_str or '').strip()}"
+
+
+def _load_oc_cache() -> dict:
+    try:
+        with open(_OC_CACHE_PATH) as f:
+            cache = json.load(f)
+        now = time.time()
+        return {k: v for k, v in cache.items()
+                if isinstance(v, dict) and now - v.get("ts", 0) < _OC_CACHE_MAX_AGE}
+    except Exception:
+        return {}
+
+
+def _save_oc_cache(cache: dict) -> None:
+    try:
+        os.makedirs(os.path.dirname(_OC_CACHE_PATH), exist_ok=True)
+        with open(_OC_CACHE_PATH, "w") as f:
+            json.dump(cache, f)
+    except Exception:
+        pass
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -115,6 +148,32 @@ def _parse_odds_state(state: str) -> dict:
 
 
 def get_oddschecker_odds(course: str, time_str: str, timeout: int = 8) -> dict:
+    """
+    Cached wrapper around _fetch_oddschecker_odds.
+    Memory cache → disk cache → live fetch. TTL = 30 min.
+    """
+    key = _oc_cache_key(course, time_str)
+    now = time.time()
+
+    mem = _OC_MEM_CACHE.get(key)
+    if mem and now - mem[0] < _OC_CACHE_TTL:
+        return mem[1]
+
+    disk_cache = _load_oc_cache()
+    entry = disk_cache.get(key)
+    if entry and now - entry.get("ts", 0) < _OC_CACHE_TTL:
+        data = entry.get("data", {}) or {}
+        _OC_MEM_CACHE[key] = (now, data)
+        return data
+
+    result = _fetch_oddschecker_odds(course, time_str, timeout) or {}
+    _OC_MEM_CACHE[key] = (now, result)
+    disk_cache[key] = {"ts": now, "data": result}
+    _save_oc_cache(disk_cache)
+    return result
+
+
+def _fetch_oddschecker_odds(course: str, time_str: str, timeout: int = 8) -> dict:
     """
     Fetch live odds from Oddschecker for a specific race.
     Returns {horse_name: {best_decimal, best_fractional, best_bookmakers,
