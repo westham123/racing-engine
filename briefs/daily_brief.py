@@ -2909,8 +2909,16 @@ def send_operator_brief():
     try:
         recs_path     = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
         results_path  = os.path.join(os.path.dirname(__file__), "..", "learning", "results_store.json")
-        recs_count    = len(json.load(open(recs_path))) if os.path.exists(recs_path) else 0
-        results_count = len(json.load(open(results_path))) if os.path.exists(results_path) else 0
+        if os.path.exists(recs_path):
+            _recs = json.load(open(recs_path))
+            recs_count = len(_recs.get("records", [])) if isinstance(_recs, dict) else len(_recs)
+        else:
+            recs_count = 0
+        if os.path.exists(results_path):
+            _res = json.load(open(results_path))
+            results_count = len(_res.get("records", [])) if isinstance(_res, dict) else len(_res)
+        else:
+            results_count = 0
     except Exception:
         recs_count, results_count = 0, 0
 
@@ -2928,8 +2936,12 @@ def send_operator_brief():
     # ── Loose ends from learning/results store ──────────────────
     try:
         settled = json.load(open(os.path.join(os.path.dirname(__file__), "..", "learning", "settled_races.json")))
-        pending_results = [r for r in settled if not r.get("outcome_recorded")]
-        pending_str = str(len(pending_results)) + " races awaiting outcome recording"
+        _races = settled.get("races", []) if isinstance(settled, dict) else settled
+        if not _races:
+            pending_str = "settled_races.json is EMPTY — auto_settle() may not be writing back (see KNOWN BUGS)"
+        else:
+            pending_results = [r for r in _races if not r.get("outcome_recorded")]
+            pending_str = str(len(pending_results)) + " races awaiting outcome recording"
     except Exception:
         pending_str = "unavailable"
 
@@ -3020,7 +3032,7 @@ Oddschecker multi-bookmaker odds (v2.5.40):
 Target: £2,000+ profit, uncapped.
 
 Additional exclusion rules:
-  - Favourite gap: exclude if market fav is >35% shorter in price
+  - Dominant rival: excluded from Bet A if rival >25% shorter in price (any DOM-flagged horse hard-excluded from Bet A regardless)
   - Large fields: 16+ runners excluded entirely
   - Drifters: flagged in Tab 2, auto-drop rule under development
 
@@ -3094,17 +3106,26 @@ Betfair    : richardking123@outlook.com / Pa55word2018!
 
 KNOWN BUGS & NEXT BUILDS (in priority order)
 ──────────────────────────────────────────────
-1. SPLIT MARKET DETECTION (v2.5.48)
+1. LEARNING LOOP — settled_races.json is empty.
+   auto_settle() may not be writing results back correctly after evening
+   summary runs. Investigate before weighting adjustments become meaningful.
+
+2. IRISH TRACK PRICE COVERAGE
+   Oddschecker does not cover Punchestown/Leopardstown — horses from these
+   venues qualify on Sporting Life SP only. No Oddschecker price comparison
+   available.
+
+3. SPLIT MARKET DETECTION (v2.5.48)
    When 2nd fav is within 20% of our horse's price, market is genuinely split.
    These horses are now flagged SPLIT_MARKET in the engine and excluded from Bet A.
    Monitor: check evening summary to see if exclusions are correct.
 
-2. LEARNING DATA THIN
+4. LEARNING DATA THIN
    Only 65 records from Apr 21 (one course). Need 2+ weeks of live data
    before weight adjustments are statistically meaningful.
    Action: none needed — accumulates automatically via auto_record_day().
 
-3. MARKET MOVERS THRESHOLD
+5. MARKET MOVERS THRESHOLD
    Changed to 30% on 27 Apr (v2.5.43). Monitor for first week to confirm
    threshold is catching meaningful moves without noise.
 
