@@ -1,5 +1,7 @@
 # Racing Engine — Live Data Fetcher
-# Version: 2.1 — 21 April 2026
+# Version: 2.6.0 — 1 May 2026
+# v2.6.0: pass previous_results / race_history_stats / rating123 / last_ran_days
+# through to scoring; collect all_ratings_in_race per race for OR-gap signal.
 # Fixes: BSP fail-fast, snapshot-based signal detection, Time+Course columns
 
 import requests
@@ -341,6 +343,13 @@ def get_race_runners(slug):
             "draw":           ride.get("draw_number", "-"),
             "tf_stars":       ride.get("timeform_stars", "-"),
             "rating":         ride.get("rating123", "-"),
+            # v2.6.0 — pass through full feed data for new signals
+            "rating123":          ride.get("rating123"),
+            "previous_results":   horse.get("previous_results", []) or [],
+            "horse_lifetime_stats": ride.get("horse_lifetime_stats", []) or [],
+            "race_history_stats": ride.get("race_history_stats", []) or [],
+            "headgear":           ride.get("headgear", []) or [],
+            "last_ran_days":      horse.get("last_ran_days"),
             # Case-insensitive NR check — normalise to uppercase, strip _ and - so
             # "NONRUNNER", "Non_Runner", "non-runner", "NonRunner" all match.
             "status":         "NON_RUNNER" if str(ride.get("ride_status","")).upper().replace("_","").replace("-","") == "NONRUNNER" else "RUNNER",
@@ -406,15 +415,44 @@ def _score_runner(rn, course, going, time, stage, today_str,
             "is_handicap": rn.get("is_handicap", False),
             "current_odds": rn.get("current_odds", odds_str),
             "race_dist_f": rn.get("race_dist_f", 0.0),
+            # v2.6.0 — feed fields for new scoring signals
+            "previous_results":     rn.get("previous_results", []),
+            "race_history_stats":   rn.get("race_history_stats", []),
+            "horse_lifetime_stats": rn.get("horse_lifetime_stats", []),
+            "rating123":            rn.get("rating123"),
+            "last_ran_days":        rn.get("last_ran_days"),
+            "all_ratings_in_race":  rn.get("all_ratings_in_race", []),
+            "today_str":            today_str,
+            "time":                 time,
         }
         confidence = _odds_model.calculate_confidence(runner_input)
+        # v2.6.0 — course/distance signals now derived from feed's previous_results
+        # (no extra HTTP). _COURSE_DISTANCE_ENABLED gate kept for legacy fallback.
         try:
-            from engine.course_distance import (
-                get_course_distance_signals as _cd_sig,
-                get_course_distance_detail as _cd_det,
-            )
-            _cs, _ds = _cd_sig(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
-            _cd = _cd_det(rn.get("horse",""), course, rn.get("race_dist_f", 0.0))
+            prev_res = rn.get("previous_results", []) or []
+            _cs = _odds_model._score_course_form(course, prev_res)
+            _ds = _odds_model._score_distance_form(rn.get("race_dist_f", 0.0), prev_res)
+            # Build detail counts directly from previous_results
+            _course_runs = [r for r in prev_res
+                            if str(r.get("course_name","")).lower().strip()
+                               == str(course).lower().strip()]
+            _course_wins = sum(1 for r in _course_runs
+                               if str(r.get("position","")).strip() == "1")
+            _today_d = float(rn.get("race_dist_f", 0.0) or 0.0)
+            _dist_runs = []
+            if _today_d > 0:
+                for r in prev_res:
+                    _d = _odds_model._parse_furlongs(r.get("distance",""))
+                    if _d > 0 and abs(_d - _today_d) <= 0.5:
+                        _dist_runs.append(r)
+            _dist_wins = sum(1 for r in _dist_runs
+                             if str(r.get("position","")).strip() == "1")
+            _cd = {
+                "course_wins": _course_wins,
+                "course_runs": len(_course_runs),
+                "dist_wins":   _dist_wins,
+                "dist_runs":   len(_dist_runs),
+            }
         except Exception:
             _cs, _ds = 0.50, 0.50
             _cd = {"course_wins":0,"course_runs":0,"dist_wins":0,"dist_runs":0}
@@ -467,6 +505,12 @@ def _score_runner(rn, course, going, time, stage, today_str,
         "Course Runs":     _cd.get("course_runs", 0),
         "Distance Wins":   _cd.get("dist_wins", 0),
         "Distance Runs":   _cd.get("dist_runs", 0),
+        # v2.6.0 — feed-driven fields carried for downstream "why selected"
+        "Previous Results":   rn.get("previous_results", []),
+        "Race History Stats": rn.get("race_history_stats", []),
+        "Rating123":          rn.get("rating123"),
+        "Last Ran Days":      rn.get("last_ran_days"),
+        "All Ratings In Race": rn.get("all_ratings_in_race", []),
     }
 
 
@@ -518,6 +562,19 @@ def get_todays_selections():
                 continue
 
             runners = get_race_runners(slug)
+
+            # v2.6.0 — collect all rating123 values in this race so the OR-gap
+            # signal can compare each runner's rating to the field max.
+            _all_ratings = []
+            for _rn in runners:
+                _rv = _rn.get("rating123")
+                if _rv not in (None, "", "-"):
+                    try:
+                        _all_ratings.append(int(_rv))
+                    except Exception:
+                        pass
+            for _rn in runners:
+                _rn["all_ratings_in_race"] = _all_ratings
 
             bsp_key       = f"{course}|{time}"
             bsp_race_data = _bsp_race_cache.get(bsp_key, "UNCHECKED")

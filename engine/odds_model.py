@@ -1,6 +1,6 @@
 # Racing Engine — Hybrid Odds Model
-# Version: 2.0 — Rebuilt confidence scoring with real signal weighting + penalty system
-# Date: 21 April 2026
+# Version: 2.6.0 — Activated 6 previously-dead signals from feed data
+# Date: 1 May 2026
 #
 # DESIGN PRINCIPLES:
 #   - Only signals with real data carry meaningful weight
@@ -85,16 +85,23 @@ except Exception:
 # v2.5.55 adds s_course (0.08) and s_distance (0.05) — course specialist
 # and distance affinity from horse-level form pages. Other live signals
 # rebalanced proportionally so the active set sums to 1.0.
+# v2.6.0 — re-balanced weights with 6 previously-dead signals now fed from
+# Sporting Life's `previous_results` field (no extra HTTP).
 _DEFAULT_SCORING_WEIGHTS = {
-    "s_form":     0.27,
-    "s_tf":       0.15,
-    "s_odds":     0.23,
-    "s_moves":    0.17,
-    "s_trainer":  0.12,
-    "s_jockey":   0.08,
-    "s_course":   0.08,
-    "s_distance": 0.05,
+    "s_form":     0.22,   # horse_form (reduced)
+    "s_tf":       0.05,   # tf_stars (kept small — strong signal but narrow)
+    "s_odds":     0.18,   # market_odds (reduced)
+    "s_moves":    0.14,   # market_moves
+    "s_trainer":  0.10,   # trainer_form
+    "s_jockey":   0.07,   # jockey_form
+    "s_going":    0.08,   # going_preference (activated v2.6.0)
+    "s_course":   0.07,   # course_form (re-enabled v2.6.0)
+    "s_distance": 0.05,   # distance_form (re-enabled v2.6.0)
+    "s_or_gap":   0.05,   # official_rating_gap (new v2.6.0)
+    "s_class":    0.03,   # class_consistency (new v2.6.0)
+    "s_fresh":    0.01,   # freshness (new v2.6.0)
 }
+# Note: total ≈ 1.05 — _load_scoring_weights() renormalises to 1.0 anyway.
 
 _LEARNED_WEIGHTS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -118,8 +125,12 @@ def _load_scoring_weights() -> dict:
             "s_moves":    float(learned.get("market_moves",   _DEFAULT_SCORING_WEIGHTS["s_moves"])),
             "s_trainer":  float(learned.get("trainer_form",   _DEFAULT_SCORING_WEIGHTS["s_trainer"])),
             "s_jockey":   float(learned.get("jockey_form",    _DEFAULT_SCORING_WEIGHTS["s_jockey"])),
+            "s_going":    float(learned.get("going_preference", _DEFAULT_SCORING_WEIGHTS["s_going"])),
             "s_course":   float(learned.get("course_form",    _DEFAULT_SCORING_WEIGHTS["s_course"])),
             "s_distance": float(learned.get("distance_form",  _DEFAULT_SCORING_WEIGHTS["s_distance"])),
+            "s_or_gap":   float(learned.get("official_rating_gap", _DEFAULT_SCORING_WEIGHTS["s_or_gap"])),
+            "s_class":    float(learned.get("class_consistency",  _DEFAULT_SCORING_WEIGHTS["s_class"])),
+            "s_fresh":    float(learned.get("freshness",          _DEFAULT_SCORING_WEIGHTS["s_fresh"])),
         }
     except Exception:
         mapped = dict(_DEFAULT_SCORING_WEIGHTS)
@@ -312,8 +323,249 @@ class OddsModel:
             return round(min(track_wins / track_runs, 1.0), 4)
         return 0.50
 
+    # ── v2.6.0 helpers — going / course / distance / OR / class / freshness ─
+
+    @staticmethod
+    def _classify_going(going_str: str) -> str:
+        """Map a going_shortcode or full going string to a coarse group."""
+        if not going_str:
+            return ""
+        s = str(going_str).strip().upper()
+        # Shortcodes first
+        if s in ("F", "GF"):       return "FAST"
+        if s == "G":               return "GOOD"
+        if s in ("GS", "S", "H", "VS", "YS"):  return "SOFT"
+        if s in ("ST", "SL", "SF"):return "AW"
+        # Full string — case-insensitive substring checks
+        sl = s.lower()
+        if "firm" in sl:           return "FAST"
+        if "heavy" in sl or "soft" in sl: return "SOFT"
+        if "standard" in sl or "slow" in sl or "polytrack" in sl or "tapeta" in sl or "all weather" in sl or "all-weather" in sl:
+            return "AW"
+        if "good" in sl:
+            # "Good to Firm" handled above by 'firm', "Good to Soft" by 'soft'
+            return "GOOD"
+        return ""
+
+    def _score_going_preference(self, today_going, previous_results) -> float:
+        """v2.6.0 — replaces neutral stub. Uses previous_results from feed."""
+        if not previous_results:
+            return 0.50
+        today_group = self._classify_going(today_going or "")
+        if not today_group:
+            return 0.50
+        runs = []
+        for r in previous_results:
+            g = r.get("going_shortcode") or r.get("going") or ""
+            if self._classify_going(g) == today_group:
+                runs.append(r)
+        if not runs:
+            return 0.50
+        wins = sum(1 for r in runs
+                   if self._safe_int(r.get("position")) == 1)
+        places = sum(1 for r in runs
+                     if 1 <= (self._safe_int(r.get("position")) or 99) <= 3)
+        n = len(runs)
+        win_rate = wins / n
+        place_rate = places / n
+        if win_rate >= 0.40: return 0.85
+        if win_rate >= 0.25: return 0.70
+        if place_rate >= 0.20: return 0.60
+        if place_rate > 0:    return 0.50
+        return 0.30
+
+    def _score_course_form(self, course, previous_results) -> float:
+        """v2.6.0 — course strike rate from previous_results."""
+        if not previous_results or not course:
+            return 0.50
+        target = str(course).lower().strip()
+        runs = [r for r in previous_results
+                if str(r.get("course_name", "")).lower().strip() == target]
+        if not runs:
+            return 0.50
+        wins = sum(1 for r in runs if self._safe_int(r.get("position")) == 1)
+        places = sum(1 for r in runs
+                     if 1 <= (self._safe_int(r.get("position")) or 99) <= 3)
+        n = len(runs)
+        win_rate = wins / n
+        place_rate = places / n
+        if win_rate >= 0.33: return 0.85
+        if win_rate > 0:     return 0.70
+        if place_rate >= 0.33: return 0.60
+        if place_rate > 0:   return 0.50
+        return 0.30
+
+    @staticmethod
+    def _parse_furlongs(dist_str) -> float:
+        """Parse '1m 2f', '6f', '5f 3y' into furlongs (float)."""
+        if not dist_str:
+            return 0.0
+        s = str(dist_str).lower().strip()
+        try:
+            f = 0.0
+            import re as _re
+            m = _re.search(r'(\d+)\s*m', s)
+            if m: f += int(m.group(1)) * 8
+            fm = _re.search(r'(\d+)\s*f', s)
+            if fm: f += int(fm.group(1))
+            ym = _re.search(r'(\d+)\s*y', s)
+            if ym: f += int(ym.group(1)) / 220.0  # 220 yards per furlong
+            return f
+        except Exception:
+            return 0.0
+
+    def _score_distance_form(self, today_dist_f, previous_results) -> float:
+        """v2.6.0 — distance affinity from previous_results within 0.5f tol."""
+        if not previous_results:
+            return 0.50
+        try:
+            target = float(today_dist_f or 0.0)
+        except Exception:
+            target = 0.0
+        if target <= 0:
+            return 0.50
+        runs = []
+        for r in previous_results:
+            d = self._parse_furlongs(r.get("distance", ""))
+            if d > 0 and abs(d - target) <= 0.5:
+                runs.append(r)
+        if not runs:
+            return 0.50
+        wins = sum(1 for r in runs if self._safe_int(r.get("position")) == 1)
+        places = sum(1 for r in runs
+                     if 1 <= (self._safe_int(r.get("position")) or 99) <= 3)
+        n = len(runs)
+        win_rate = wins / n
+        if win_rate >= 0.33: return 0.80
+        if win_rate > 0:     return 0.65
+        if places > 0:       return 0.55
+        return 0.35
+
+    def _score_official_rating_gap(self, runner_rating, all_ratings_in_race, is_handicap) -> float:
+        """v2.6.0 — OR gap (handicaps only)."""
+        if not is_handicap:
+            return 0.50
+        try:
+            rr = int(runner_rating) if runner_rating not in (None, "", "-") else None
+        except Exception:
+            rr = None
+        if rr is None:
+            return 0.50
+        ratings = []
+        for v in (all_ratings_in_race or []):
+            try:
+                if v in (None, "", "-"):
+                    continue
+                ratings.append(int(v))
+            except Exception:
+                continue
+        if len(ratings) < 2:
+            return 0.50
+        top = max(ratings)
+        if rr == top:           return 0.80
+        gap = top - rr
+        if gap <= 3:            return 0.65
+        if gap <= 7:            return 0.55
+        if gap <= 12:           return 0.45
+        return 0.35
+
+    def _score_class_consistency(self, previous_results, today_class) -> float:
+        """v2.6.0 — class drop = good, class rise = bad. Last 4 runs."""
+        if not previous_results:
+            return 0.50
+        recent = previous_results[:4]
+        prev_classes = []
+        for r in recent:
+            c = str(r.get("race_class", "")).strip()
+            if c.isdigit():
+                prev_classes.append(int(c))
+        if not prev_classes:
+            return 0.50
+        try:
+            today_class_int = int(today_class) if str(today_class).isdigit() else 4
+        except Exception:
+            today_class_int = 4
+        avg_prev = sum(prev_classes) / len(prev_classes)
+        if avg_prev < today_class_int - 1:
+            return 0.75   # dropping in class
+        if avg_prev == today_class_int:
+            return 0.55
+        if avg_prev > today_class_int + 1:
+            return 0.35   # stepping up
+        return 0.50
+
+    @staticmethod
+    def _score_freshness(last_ran_days) -> float:
+        """v2.6.0 — days since last run."""
+        try:
+            d = int(last_ran_days) if last_ran_days is not None else None
+        except Exception:
+            d = None
+        if d is None:           return 0.50
+        if d <= 14:             return 0.65
+        if d <= 28:             return 0.60
+        if d <= 60:             return 0.50
+        if d <= 120:            return 0.40
+        return 0.35
+
+    @staticmethod
+    def _safe_int(v):
+        try:
+            return int(v) if v is not None else None
+        except Exception:
+            return None
+
+    # ── Snapshot-based market move (v2.6.0) ─────────────────────
+    def _score_market_moves_from_snapshot(self, horse_name, course, race_time,
+                                          today_str, current_dec) -> float:
+        """v2.6.0 — compare today's price vs the 15:30 SHOW snapshot.
+        Cached load of the JSON file. Returns 0.50 if no baseline."""
+        try:
+            snap = OddsModel._load_show_snapshot()
+        except Exception:
+            return 0.50
+        if not snap or not horse_name or current_dec <= 0:
+            return 0.50
+        key = f"{today_str}::{race_time}::{course}::{str(horse_name).lower().strip()}"
+        entry = snap.get(key)
+        if not entry:
+            return 0.50
+        try:
+            show_dec = float(entry.get("decimal", 0.0))
+        except Exception:
+            show_dec = 0.0
+        if show_dec <= 0:
+            return 0.50
+        ratio = current_dec / show_dec
+        if ratio < 0.85:        return 0.75   # steamed 15%+
+        if ratio > 1.15:        return 0.30   # drifted 15%+
+        return 0.50
+
+    _SHOW_SNAPSHOT_CACHE = {"loaded": False, "data": {}}
+    _SHOW_SNAPSHOT_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "learning", "show_price_snapshot.json",
+    )
+
+    @classmethod
+    def _load_show_snapshot(cls) -> dict:
+        if cls._SHOW_SNAPSHOT_CACHE["loaded"]:
+            return cls._SHOW_SNAPSHOT_CACHE["data"]
+        try:
+            with open(cls._SHOW_SNAPSHOT_PATH, "r") as f:
+                raw = json.load(f) or {}
+            cls._SHOW_SNAPSHOT_CACHE["data"] = raw.get("horses", {}) or {}
+        except Exception:
+            cls._SHOW_SNAPSHOT_CACHE["data"] = {}
+        cls._SHOW_SNAPSHOT_CACHE["loaded"] = True
+        return cls._SHOW_SNAPSHOT_CACHE["data"]
+
     def _score_going(self, today_going: str, runner_data: dict) -> float:
-        """Going preference — needs horse history. Returns 0.50 neutral."""
+        """v2.6.0 — now reads previous_results from feed (was 0.50 stub)."""
+        prev = runner_data.get("previous_results", []) or []
+        if prev:
+            return self._score_going_preference(today_going, prev)
+        # Legacy fallback
         going_history = runner_data.get("going_history", [])
         if going_history:
             return score_going_preference(today_going, going_history)["score"]
@@ -550,7 +802,40 @@ class OddsModel:
         s_moves   = self._score_market_moves(signal, bet_moves)
         s_trainer = self._score_trainer_form(trainer, tf_stars)
         s_jockey  = self._score_jockey_form(jockey, tf_stars)
-        s_course, s_distance = self._score_course_distance(runner_data)
+
+        # v2.6.0 — feed-driven signals (no extra HTTP calls)
+        prev_results = runner_data.get("previous_results", []) or []
+        going_str    = runner_data.get("going", "") or ""
+        course_name  = runner_data.get("course", "") or ""
+        dist_f       = runner_data.get("race_dist_f", 0.0) or 0.0
+        is_handicap  = bool(runner_data.get("is_handicap", False))
+        race_class   = runner_data.get("race_class", "")
+        rating123    = runner_data.get("rating123")
+        all_ratings  = runner_data.get("all_ratings_in_race", []) or []
+        last_ran_days = runner_data.get("last_ran_days")
+
+        s_going    = self._score_going_preference(going_str, prev_results)
+        s_course   = self._score_course_form(course_name, prev_results)
+        s_distance = self._score_distance_form(dist_f, prev_results)
+        s_or_gap   = self._score_official_rating_gap(rating123, all_ratings, is_handicap)
+        s_class    = self._score_class_consistency(prev_results, race_class)
+        s_fresh    = self._score_freshness(last_ran_days)
+
+        # Snapshot-based market moves layered on top of bet_movements signal:
+        # take whichever is farther from neutral (so a clear snapshot move
+        # wins over a stale 'Stable' tag, but a live Steam still counts).
+        try:
+            today_str = runner_data.get("today_str", "")
+            race_time = runner_data.get("time", "")
+            current_dec = _to_decimal(runner_data.get("current_odds") or odds_str)
+            s_moves_snap = self._score_market_moves_from_snapshot(
+                runner_data.get("horse", ""), course_name, race_time,
+                today_str, current_dec,
+            )
+            if abs(s_moves_snap - 0.50) > abs(s_moves - 0.50):
+                s_moves = s_moves_snap
+        except Exception:
+            pass
 
         # Active weights — loaded from learning/learned_weights.json at
         # runtime (with default fallback). Always renormalised to sum to 1.0.
@@ -568,8 +853,12 @@ class OddsModel:
             "s_moves":    s_moves,
             "s_trainer":  s_trainer,
             "s_jockey":   s_jockey,
+            "s_going":    s_going,
             "s_course":   s_course,
             "s_distance": s_distance,
+            "s_or_gap":   s_or_gap,
+            "s_class":    s_class,
+            "s_fresh":    s_fresh,
         }
         active = {k: v for k, v in signal_scores.items() if abs(v - 0.50) > 0.01}
         if not active:
@@ -641,7 +930,17 @@ class OddsModel:
         jockey    = runner_data.get("jockey", "")
         form_det  = self._get_form_detail(form_str)
 
-        cd_course, cd_dist = self._score_course_distance(runner_data)
+        # v2.6.0 — feed-driven signals
+        prev_results = runner_data.get("previous_results", []) or []
+        going_str    = runner_data.get("going", "") or ""
+        course_name  = runner_data.get("course", "") or ""
+        dist_f       = runner_data.get("race_dist_f", 0.0) or 0.0
+        is_handicap  = bool(runner_data.get("is_handicap", False))
+        race_class   = runner_data.get("race_class", "")
+        rating123    = runner_data.get("rating123")
+        all_ratings  = runner_data.get("all_ratings_in_race", []) or []
+        last_ran_days = runner_data.get("last_ran_days")
+
         return {
             "horse_form":   round(self._score_horse_form(form_str), 3),
             "tf_stars":     round(self._score_tf_stars(tf_stars), 3),
@@ -649,13 +948,16 @@ class OddsModel:
             "market_moves": round(self._score_market_moves(signal, bet_moves), 3),
             "trainer_form": round(self._score_trainer_form(trainer, tf_stars), 3),
             "jockey_form":  round(self._score_jockey_form(jockey, tf_stars), 3),
-            "course_form":  round(cd_course, 3),
-            "distance_form": round(cd_dist, 3),
+            "going":         round(self._score_going_preference(going_str, prev_results), 3),
+            "course_form":   round(self._score_course_form(course_name, prev_results), 3),
+            "distance_form": round(self._score_distance_form(dist_f, prev_results), 3),
+            "or_gap":        round(self._score_official_rating_gap(rating123, all_ratings, is_handicap), 3),
+            "class_consistency": round(self._score_class_consistency(prev_results, race_class), 3),
+            "freshness":     round(self._score_freshness(last_ran_days), 3),
             "trainer_travel": round(self._trainer_travel_signal(trainer), 3),
             "adjustment":   round(self._calculate_adjustments(runner_data, form_det), 3),
             # Placeholder signals — shown as N/A until data available
             "track_form":   "N/A (needs Racing API)",
-            "going":        "N/A (needs going history)",
             "bsp_signal":   "N/A (BSP unavailable)",
             "race_pace":    "N/A (building history)",
         }

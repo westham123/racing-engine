@@ -163,10 +163,11 @@ def _win_rate_to_signal(wins: int, runs: int) -> float:
     return 0.50
 
 
-# v2.5.60 — TEMPORARILY DISABLED: Sporting Life form page fetches are too
-# slow in the cron environment and cause pipeline timeouts. Returning neutral
-# (0.50, 0.50) for all horses until a faster data source is wired in.
-# Re-enable by removing this early return and uncommenting the fetch logic below.
+# v2.6.0 — SUPERSEDED: course/distance signals are now computed in
+# engine/odds_model.py directly from each runner's `previous_results` (already
+# present in the Sporting Life racecard feed). This module's slow per-horse
+# page fetches are bypassed entirely. The flag below stays False so any
+# legacy callers fall back to neutral (0.50, 0.50) without making HTTP calls.
 _COURSE_DISTANCE_ENABLED = False
 
 

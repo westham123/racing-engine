@@ -462,6 +462,12 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "distance_wins":   int(row.get("Distance Wins", 0) or 0),
                 "distance_runs":   int(row.get("Distance Runs", 0) or 0),
                 "race_dist_f":     float(row.get("Race Dist F", 0) or 0),
+                # v2.6.0 — feed fields for "why selected" line in emails
+                "previous_results":     row.get("Previous Results", []) or [],
+                "race_history_stats":   row.get("Race History Stats", []) or [],
+                "rating123":            row.get("Rating123"),
+                "last_ran_days":        row.get("Last Ran Days"),
+                "all_ratings_in_race":  row.get("All Ratings In Race", []) or [],
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
@@ -1276,6 +1282,16 @@ def _signal_breakdown_for(sel: dict) -> dict:
             "going":         sel.get("going", ""),
             "field_size":    int(sel.get("runners", 0) or 0),
             "is_handicap":   bool(sel.get("is_handicap", False)),
+            # v2.6.0 — feed fields needed for the new signals
+            "previous_results":     sel.get("previous_results", []) or [],
+            "race_history_stats":   sel.get("race_history_stats", []) or [],
+            "horse_lifetime_stats": sel.get("horse_lifetime_stats", []) or [],
+            "rating123":            sel.get("rating123"),
+            "all_ratings_in_race":  sel.get("all_ratings_in_race", []) or [],
+            "last_ran_days":        sel.get("last_ran_days"),
+            "race_class":           sel.get("race_class", ""),
+            "race_dist_f":          float(sel.get("race_dist_f", 0) or 0),
+            "course":               sel.get("course", ""),
         }
         return model.get_signal_breakdown(runner)
     except Exception as e:
@@ -1292,18 +1308,25 @@ def _morning_html(selections: list) -> str:
         return '<p style="color:#888;font-size:13px;margin:0;">No qualifying selections at this time.</p>'
 
     snapshot  = _load_show_price_snapshot()
+    # v2.6.0 — added going / course_form / distance_form / or_gap /
+    # class_consistency / freshness now that they're computed from feed data.
     label_map = {
-        "horse_form":   "Recent form",
-        "trainer_form": "Trainer form",
-        "jockey_form":  "Jockey form",
-        "track_form":   "Track record",
-        "going":        "Going",
-        "race_pace":    "Pace angle",
-        "market_moves": "Market move",
-        "tf_stars":     "Timeform rating",
-        "bsp_signal":   "Exchange signal",
-        "market_odds":  "Market price",
-        "adjustment":   "Adjustments",
+        "horse_form":        "Recent form",
+        "trainer_form":      "Trainer form",
+        "jockey_form":       "Jockey form",
+        "track_form":        "Track record",
+        "going":             "Going preference",
+        "course_form":       "Course form",
+        "distance_form":     "Distance form",
+        "or_gap":            "Official rating",
+        "class_consistency": "Class move",
+        "freshness":         "Freshness",
+        "race_pace":         "Pace angle",
+        "market_moves":      "Market move",
+        "tf_stars":          "Timeform rating",
+        "bsp_signal":        "Exchange signal",
+        "market_odds":       "Market price",
+        "adjustment":        "Adjustments",
     }
 
     by_course = {}
@@ -1451,7 +1474,96 @@ def _morning_html(selections: list) -> str:
                         '</div>'
                     )
 
+            # v2.6.0 — "Why selected" line: surface the new feed-driven signals
+            # using specific wording, and only show meaningful ones (>0.65 or <0.40).
             breakdown = _signal_breakdown_for(s)
+            prev_res  = s.get("previous_results", []) or []
+
+            def _count_at_going(prev, today_going):
+                if not prev or not today_going:
+                    return (0, 0)
+                from engine.odds_model import OddsModel as _OM
+                grp = _OM._classify_going(today_going)
+                runs = [r for r in prev
+                        if _OM._classify_going(r.get("going_shortcode") or r.get("going") or "") == grp]
+                wins = sum(1 for r in runs if str(r.get("position","")).strip() == "1")
+                return (wins, len(runs))
+
+            def _count_at_course(prev, course):
+                if not prev or not course:
+                    return (0, 0)
+                target = course.lower().strip()
+                runs = [r for r in prev
+                        if str(r.get("course_name","")).lower().strip() == target]
+                wins = sum(1 for r in runs if str(r.get("position","")).strip() == "1")
+                return (wins, len(runs))
+
+            def _count_at_dist(prev, dist_f):
+                if not prev or not dist_f or dist_f <= 0:
+                    return (0, 0)
+                from engine.odds_model import OddsModel as _OM
+                runs = []
+                for r in prev:
+                    d = _OM._parse_furlongs(r.get("distance",""))
+                    if d > 0 and abs(d - dist_f) <= 0.5:
+                        runs.append(r)
+                wins = sum(1 for r in runs if str(r.get("position","")).strip() == "1")
+                return (wins, len(runs))
+
+            why_lines = []
+
+            g_score = float(breakdown.get("going", 0.5) or 0.5)
+            if g_score >= 0.65:
+                gw, gn = _count_at_going(prev_res, going)
+                if gn > 0:
+                    why_lines.append(f"&#10003; Won on {going} ({gw}/{gn})" if gw else f"&#10003; Suits {going}")
+            elif g_score <= 0.40:
+                why_lines.append(f"&#9888; Untested / poor on {going}")
+
+            c_score = float(breakdown.get("course_form", 0.5) or 0.5)
+            if c_score >= 0.65:
+                cw, cn = _count_at_course(prev_res, s.get("course",""))
+                if cw:
+                    why_lines.append(f"&#10003; Course winner ({cw}/{cn})")
+                elif cn:
+                    why_lines.append(f"&#10003; Course form ({cn} runs)")
+
+            d_score = float(breakdown.get("distance_form", 0.5) or 0.5)
+            if d_score >= 0.65:
+                dw, dn = _count_at_dist(prev_res, float(s.get("race_dist_f", 0) or 0))
+                if dw:
+                    why_lines.append(f"&#10003; Won at this trip ({dw}/{dn})")
+                elif dn:
+                    why_lines.append(f"&#10003; Tried this trip")
+
+            cls_score = float(breakdown.get("class_consistency", 0.5) or 0.5)
+            if cls_score >= 0.65:
+                why_lines.append("&#8595; Dropping in class")
+            elif cls_score <= 0.40:
+                why_lines.append("&#8593; Stepping up in class")
+
+            or_score = float(breakdown.get("or_gap", 0.5) or 0.5)
+            if or_score >= 0.75:
+                why_lines.append("&#10003; Top rated in field")
+            elif or_score >= 0.60:
+                why_lines.append("&#10003; Highly rated")
+
+            f_score = float(breakdown.get("freshness", 0.5) or 0.5)
+            if f_score >= 0.60:
+                why_lines.append("&#10003; Race-fit")
+            elif f_score <= 0.40:
+                why_lines.append("&#9888; Long absence")
+
+            why_lines = why_lines[:3]
+            if why_lines:
+                race_card += (
+                    '<div style="font-size:11px;color:#555;margin-top:8px;">'
+                    f'<span style="color:#888;text-transform:uppercase;letter-spacing:0.5px;">Why selected:</span> '
+                    + " &nbsp;|&nbsp; ".join(why_lines)
+                    + '</div>'
+                )
+
+            # Generic top-3 score breakdown (unchanged) — kept as secondary line
             numeric = []
             for k, v in breakdown.items():
                 if k not in label_map:
@@ -1461,22 +1573,22 @@ def _morning_html(selections: list) -> str:
                     numeric.append((k, fv))
                 except (TypeError, ValueError):
                     continue
-            numeric.sort(key=lambda kv: abs(kv[1]), reverse=True)
-            top3 = numeric[:3]
+            numeric.sort(key=lambda kv: abs(kv[1] - 0.5), reverse=True)
+            top3 = [(k, v) for k, v in numeric if abs(v - 0.5) > 0.05][:3]
             if top3:
                 parts = []
                 for k, v in top3:
-                    if v > 0:
+                    if v > 0.55:
                         icon = "&#9989;"
-                    elif v < 0:
+                    elif v < 0.45:
                         icon = "&#10060;"
                     else:
                         icon = "&#9888;"
                     parts.append(f'{icon} {label_map.get(k, k)}')
                 why_txt = " &nbsp;|&nbsp; ".join(parts)
                 race_card += (
-                    '<div style="font-size:11px;color:#555;margin-top:8px;">'
-                    f'<span style="color:#888;text-transform:uppercase;letter-spacing:0.5px;">Why:</span> '
+                    '<div style="font-size:11px;color:#555;margin-top:4px;">'
+                    f'<span style="color:#888;text-transform:uppercase;letter-spacing:0.5px;">Signals:</span> '
                     f'{why_txt}'
                     '</div>'
                 )
