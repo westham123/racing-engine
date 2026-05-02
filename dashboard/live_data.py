@@ -21,6 +21,25 @@ try:
 except Exception:
     _LONDON = None
 
+def _parse_furlongs_str(dist_str) -> float:
+    """v2.6.2 — Parse '1m 2f', '6f', '5f 10y', '2m 4f' into furlongs (float).
+    Used when Sporting Life returns distance_furlongs=None for a race."""
+    if not dist_str:
+        return 0.0
+    s = str(dist_str).strip().lower()
+    try:
+        f = 0.0
+        m = re.search(r'(\d+)\s*m', s)
+        if m: f += int(m.group(1)) * 8
+        fm = re.search(r'(\d+)\s*f', s)
+        if fm: f += int(fm.group(1))
+        ym = re.search(r'(\d+)\s*y', s)
+        if ym: f += int(ym.group(1)) / 220.0
+        return f
+    except Exception:
+        return 0.0
+
+
 def _utc_to_bst(utc_time_str):
     """Convert a HH:MM UTC string to HH:MM BST (Europe/London). Returns original on failure."""
     if not utc_time_str:
@@ -288,6 +307,15 @@ def get_race_runners(slug):
     is_handicap  = any(x in race_name.lower()
                        for x in ["handicap", "hcap", "h'cap"])
     race_dist_f  = race_summary.get("distance_furlongs", 0)  # distance in furlongs
+    # v2.6.2 — Sporting Life often returns distance_furlongs=None; fall back to
+    # parsing the race-level 'distance' string ("1m 2f", "5f 10y", "2m 4f").
+    try:
+        if not race_dist_f or float(race_dist_f) == 0.0:
+            race_dist_f = _parse_furlongs_str(
+                race_summary.get("distance") or race.get("distance") or ""
+            )
+    except Exception:
+        pass
 
     runners = []
     for ride in rides:

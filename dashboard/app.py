@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.6.1** — Fix v2.6.0 signal passthrough: previous_results / rating123 / etc. now reach the confidence model end-to-end")
+    st.markdown("**Engine v2.6.2** — Fix trainer/jockey results store, distance parsing fallback, OR gap validation (filter star ratings)")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")

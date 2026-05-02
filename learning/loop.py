@@ -265,6 +265,14 @@ class LearningLoop:
                 if not winner:
                     continue
 
+                # v2.6.2 — find winning runner first so we can attach
+                # trainer/jockey to the result record (form_scorer reads them).
+                winning_runner = next(
+                    (r for r in runners
+                     if r.get("horse", "").strip().lower() == winner.strip().lower()),
+                    {},
+                )
+
                 # Store result
                 result_record = {
                     "race_id":    race_id,
@@ -272,14 +280,16 @@ class LearningLoop:
                     "time":       time_,
                     "date":       today,
                     "winner":     winner,
+                    "jockey":     winning_runner.get("jockey", ""),
+                    "trainer":    winning_runner.get("trainer", ""),
                     "settled_at": datetime.now().isoformat(),
                 }
                 self.results["results"].append(result_record)
                 _save(RESULTS_PATH, self.results)
-
-                # Update trainer/jockey form stores
-                winning_runner = next((r for r in runners if r.get("horse") == winner), {})
-                self._update_form_stores(winning_runner, course, today)
+                # v2.6.2 — result_record now carries trainer/jockey, so
+                # form_scorer can count wins directly. _update_form_stores
+                # used to write a parallel entry; that's now redundant and
+                # would double-count for trainer/jockey form rates.
 
                 # Match to open recommendations
                 for rec in self.recommendations["records"]:
@@ -363,7 +373,11 @@ class LearningLoop:
                 if not matched_any:
                     continue
 
-                # Store result
+                # Store result. NB: top_horses payload from the historical
+                # results page does not carry trainer/jockey, so those fields
+                # stay blank for back-fills. Form scorer skips records where
+                # trainer/jockey is empty, so this is safe — going forward,
+                # auto_settle() (live path) does record both.
                 result_record = {
                     "race_id":    race_id,
                     "course":     course,

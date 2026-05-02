@@ -442,26 +442,35 @@ class OddsModel:
         return 0.35
 
     def _score_official_rating_gap(self, runner_rating, all_ratings_in_race, is_handicap) -> float:
-        """v2.6.0 — OR gap (handicaps only)."""
+        """v2.6.0 — OR gap (handicaps only).
+        v2.6.2 — Sporting Life's `rating123` field sometimes returns Timeform
+        star ratings (1-5) instead of BHA Official Ratings (typically 50-115
+        flat, 80-165 jumps). Filter out values <= 5 — they're stars, not OR,
+        and the gap calculation is meaningless on a 1-5 scale.
+        """
         if not is_handicap:
             return 0.50
         try:
             rr = int(runner_rating) if runner_rating not in (None, "", "-") else None
         except Exception:
             rr = None
-        if rr is None:
+        if rr is None or rr <= 5:
             return 0.50
         ratings = []
         for v in (all_ratings_in_race or []):
             try:
                 if v in (None, "", "-"):
                     continue
-                ratings.append(int(v))
+                iv = int(v)
+                if iv > 5:
+                    ratings.append(iv)
             except Exception:
                 continue
         if len(ratings) < 2:
             return 0.50
         top = max(ratings)
+        if top <= 5:
+            return 0.50  # whole field on star scale — not real OR data
         if rr == top:           return 0.80
         gap = top - rr
         if gap <= 3:            return 0.65
@@ -555,6 +564,18 @@ class OddsModel:
             with open(cls._SHOW_SNAPSHOT_PATH, "r") as f:
                 raw = json.load(f) or {}
             cls._SHOW_SNAPSHOT_CACHE["data"] = raw.get("horses", {}) or {}
+            # v2.6.2 — surface staleness so operators notice when snapshot
+            # date drifts from today. market_moves silently returns 0.50 for
+            # every horse if the snapshot is from a different day.
+            try:
+                from datetime import date as _date
+                snap_date = str(raw.get("date", ""))
+                today_str = _date.today().isoformat()
+                if snap_date and snap_date != today_str:
+                    print(f"[OddsModel] WARN show_price_snapshot.json date={snap_date} "
+                          f"!= today {today_str} — market_moves will be neutral")
+            except Exception:
+                pass
         except Exception:
             cls._SHOW_SNAPSHOT_CACHE["data"] = {}
         cls._SHOW_SNAPSHOT_CACHE["loaded"] = True
