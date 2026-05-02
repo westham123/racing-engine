@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.6.0** — Going / course / distance / OR / class / freshness signals now live (computed from feed, no extra HTTP)")
+    st.markdown("**Engine v2.6.1** — Fix v2.6.0 signal passthrough: previous_results / rating123 / etc. now reach the confidence model end-to-end")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -562,6 +562,13 @@ if False and _pool_is_live and len(_pool_df) > 0:
             'race_class':   str(_prow.get('Race Class', '')),
             'race_name':    str(_prow.get('Race Name', '')),
             'is_handicap':  bool(_prow.get('Is Handicap', False)),
+            # v2.6.1 — pass v2.6.0 signal fields to scoring
+            'previous_results':    (_prow.get('Previous Results') if isinstance(_prow.get('Previous Results'), list) else []),
+            'race_history_stats':  (_prow.get('Race History Stats') if isinstance(_prow.get('Race History Stats'), list) else []),
+            'rating123':           _prow.get('Rating123'),
+            'last_ran_days':       _prow.get('Last Ran Days'),
+            'all_ratings_in_race': (_prow.get('All Ratings In Race') if isinstance(_prow.get('All Ratings In Race'), list) else []),
+            'race_dist_f':         float(_prow.get('Race Dist F', 0) or 0),
         }
 
         if _pool_model:

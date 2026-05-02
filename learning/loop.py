@@ -145,6 +145,15 @@ class LearningLoop:
                 "tf_stars": sel.get("tf_stars"),
                 "course":  course,
                 "bet_movements": [],
+                # v2.6.1 — pass v2.6.0 signal fields so breakdown isn't all 0.5
+                "previous_results":    sel.get("previous_results", []) or [],
+                "race_history_stats":  sel.get("race_history_stats", []) or [],
+                "rating123":           sel.get("rating123"),
+                "last_ran_days":       sel.get("last_ran_days"),
+                "all_ratings_in_race": sel.get("all_ratings_in_race", []) or [],
+                "race_class":          sel.get("race_class", ""),
+                "is_handicap":         bool(sel.get("is_handicap", False)),
+                "race_dist_f":         float(sel.get("race_dist_f", 0) or 0),
             }
             try:
                 signals = model.get_signal_breakdown(runner_data)
@@ -177,6 +186,24 @@ class LearningLoop:
         _save(RECOMMENDATIONS_PATH, self.recommendations)
         print(f"[LearningLoop] Recorded {count} OFFICIAL selections for {today}")
         return count
+
+    def force_record_today(self) -> int:
+        """v2.6.1 — Force re-record today even if already attempted.
+
+        Use after fixing signal passthrough so a day that was logged with
+        broken (all-zero) signals can be replaced with a clean record.
+        """
+        today = date.today().isoformat()
+        before = len(self.recommendations.get("records", []))
+        self.recommendations["records"] = [
+            r for r in self.recommendations.get("records", [])
+            if r.get("date") != today
+        ]
+        removed = before - len(self.recommendations["records"])
+        if removed:
+            print(f"[LearningLoop] force_record_today: dropped {removed} stale records for {today}")
+            _save(RECOMMENDATIONS_PATH, self.recommendations)
+        return self.auto_record_day()
 
     # ─────────────────────────────────────────────────────────
     # 2. AUTO-SETTLE — runs every 2 minutes

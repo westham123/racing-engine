@@ -79,6 +79,41 @@ def _clean_price_or_none(v):
         return None
     return f
 
+
+def _coerce_list(v):
+    """v2.6.1 — return a list. Handles None, pandas NA/NaN, scalar, list."""
+    if v is None:
+        return []
+    if isinstance(v, list):
+        return v
+    # pandas NA / NaN: scalar nan != itself; pd.NA raises on bool
+    try:
+        if v != v:  # NaN check
+            return []
+    except (TypeError, ValueError):
+        return []
+    if isinstance(v, tuple):
+        return list(v)
+    return []
+
+
+def _coerce_int_or_none(v):
+    """v2.6.1 — return int or None. Handles pandas NA, NaN, '', '-'."""
+    if v is None:
+        return None
+    try:
+        if v != v:  # NaN
+            return None
+    except (TypeError, ValueError):
+        return None
+    s = str(v).strip()
+    if not s or s.lower() in ("nan", "none", "n/a", "-"):
+        return None
+    try:
+        return int(float(s))
+    except (TypeError, ValueError):
+        return None
+
 # ── Live Data Helpers ──────────────────────────────────────────
 def _get_overnight_moves(today: str = None) -> list:
     """
@@ -303,6 +338,13 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "is_handicap":  bool(row.get("Is Handicap", False)),
                 "race_type":    str(row.get("Race Type", "") or "").strip(),
                 "race_dist_f":  float(row.get("Race Dist F", 0) or 0),
+                # v2.6.1 — pass v2.6.0 signal fields through to scoring
+                "previous_results":     _coerce_list(row.get("Previous Results")),
+                "race_history_stats":   _coerce_list(row.get("Race History Stats")),
+                "rating123":            _coerce_int_or_none(row.get("Rating123")),
+                "last_ran_days":        _coerce_int_or_none(row.get("Last Ran Days")),
+                "all_ratings_in_race":  _coerce_list(row.get("All Ratings In Race")),
+                "race_class":           str(row.get("Race Class", "") or ""),
             }
 
             # Hard filter layer
@@ -463,11 +505,12 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "distance_runs":   int(row.get("Distance Runs", 0) or 0),
                 "race_dist_f":     float(row.get("Race Dist F", 0) or 0),
                 # v2.6.0 — feed fields for "why selected" line in emails
-                "previous_results":     row.get("Previous Results", []) or [],
-                "race_history_stats":   row.get("Race History Stats", []) or [],
-                "rating123":            row.get("Rating123"),
-                "last_ran_days":        row.get("Last Ran Days"),
-                "all_ratings_in_race":  row.get("All Ratings In Race", []) or [],
+                # v2.6.1 — coerce pandas NA/scalar safely so downstream gets list/int|None
+                "previous_results":     _coerce_list(row.get("Previous Results")),
+                "race_history_stats":   _coerce_list(row.get("Race History Stats")),
+                "rating123":            _coerce_int_or_none(row.get("Rating123")),
+                "last_ran_days":        _coerce_int_or_none(row.get("Last Ran Days")),
+                "all_ratings_in_race":  _coerce_list(row.get("All Ratings In Race")),
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
