@@ -632,6 +632,163 @@ def _get_todays_results() -> list:
         return []
 
 
+def _get_todays_results_from_feed(date_str: str) -> dict:
+    """v2.6.4 — Direct-from-feed results lookup for evening summary fallback.
+
+    Fetches Sporting Life's results page for date_str and parses __NEXT_DATA__.
+    Returns dict keyed by race_id ({date}::{time}::{course}) with:
+      { "winner": name, "odds": sp_fractional, "position": {horse_lower: pos} }
+
+    Used when auto_settle() finds 0 open recommendations to settle — lets the
+    evening summary cross-reference today's selections against the feed
+    directly and compute P&L even when the learning loop is empty.
+    """
+    import requests, json as _json
+    from bs4 import BeautifulSoup
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                      "(KHTML, like Gecko) Chrome/124.0 Safari/537.36"
+    }
+    url = f"https://www.sportinglife.com/racing/results/{date_str}"
+    out = {}
+    try:
+        r = requests.get(url, headers=HEADERS, timeout=15)
+        if r.status_code != 200:
+            print(f"[Evening] Feed results fetch {date_str} status {r.status_code}")
+            return out
+        soup = BeautifulSoup(r.text, "html.parser")
+        nd = soup.find("script", id="__NEXT_DATA__")
+        if not nd:
+            return out
+        data = _json.loads(nd.get_text())
+    except Exception as _e:
+        print(f"[Evening] Feed results fetch failed {date_str}: {_e}")
+        return out
+
+    meetings = data.get("props", {}).get("pageProps", {}).get("meetings", []) or []
+    for meeting in meetings:
+        for race in meeting.get("races", []) or []:
+            course = race.get("course_name", "")
+            time_  = race.get("time", "")
+            if not course or not time_:
+                continue
+            winner_name = ""
+            winner_odds = ""
+            positions = {}
+            for th in race.get("top_horses", []) or []:
+                try:
+                    pos = int(th.get("position", 0))
+                except Exception:
+                    pos = 0
+                hname = str(th.get("name", ""))
+                if hname:
+                    positions[hname.strip().lower()] = pos
+                if pos == 1 and not winner_name:
+                    winner_name = hname
+                    winner_odds = str(th.get("starting_price", "") or "")
+            race_id = f"{date_str}::{time_}::{course}"
+            out[race_id] = {
+                "winner":   winner_name,
+                "odds":     winner_odds,
+                "position": positions,
+                "course":   course,
+                "time":     time_,
+            }
+    return out
+
+
+def _build_learning_update_block(today_str: str) -> str:
+    """v2.6.4 — Render the LEARNING UPDATE section for the evening summary.
+
+    Reports: today's recorded selections, how many were settled, running win
+    rate, and a 14-day signal performance snapshot. Falls back to a "building
+    data" notice when fewer than 10 results are logged.
+    """
+    import json as _json
+    recs_path    = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
+    results_path = os.path.join(os.path.dirname(__file__), "..", "learning", "results_store.json")
+
+    try:
+        recs_raw = _json.load(open(recs_path))
+        recs = recs_raw.get("records", []) if isinstance(recs_raw, dict) else recs_raw
+    except Exception:
+        recs = []
+    try:
+        res_raw = _json.load(open(results_path))
+        results = res_raw.get("results", []) if isinstance(res_raw, dict) else res_raw
+    except Exception:
+        results = []
+
+    # Strip noise: 21 Apr "all_runners" backfill is not a real selection set.
+    real_recs = [r for r in recs if r.get("source") != "all_runners"]
+
+    today_recs = [r for r in real_recs if r.get("date") == today_str]
+    today_settled = [r for r in today_recs if r.get("won") is not None]
+
+    settled_all = [r for r in real_recs if r.get("won") is not None]
+    wins_all    = [r for r in settled_all if r.get("won") is True]
+    win_pct = (100.0 * len(wins_all) / len(settled_all)) if settled_all else 0.0
+
+    # 14-day signal performance: per-signal SR when value > 0.65
+    from datetime import date as _date, timedelta as _td
+    cutoff = (_date.today() - _td(days=14)).isoformat()
+    recent = [r for r in settled_all if (r.get("date") or "") >= cutoff]
+
+    signal_keys = [
+        ("going",           "Going preference"),
+        ("course_signal",   "Course form"),
+        ("distance_signal", "Distance form"),
+    ]
+    signal_lines = []
+    for key, label in signal_keys:
+        fired = [r for r in recent
+                 if float((r.get("signals") or {}).get(key, 0) or 0) > 0.65]
+        if fired:
+            sr = 100.0 * sum(1 for r in fired if r.get("won") is True) / len(fired)
+            signal_lines.append(
+                f"<tr><td style='padding:4px 0;color:#888;font-size:12px;'>"
+                f"{label}</td>"
+                f"<td style='padding:4px 0;font-size:12px;color:#e0e0e0;'>"
+                f"fired on {len(fired)} horses, {sr:.0f}% SR when high (&gt;0.65)</td></tr>"
+            )
+        else:
+            signal_lines.append(
+                f"<tr><td style='padding:4px 0;color:#888;font-size:12px;'>"
+                f"{label}</td>"
+                f"<td style='padding:4px 0;font-size:12px;color:#888;'>"
+                f"no high signal firings in last 14 days</td></tr>"
+            )
+
+    if len(settled_all) < 10:
+        body_html = (
+            f"<div style='font-size:13px;color:#e0e0e0;margin-bottom:8px;'>"
+            f"Selections recorded today: <b>{len(today_recs)}</b><br>"
+            f"Results settled today: <b>{len(today_settled)}</b><br>"
+            f"</div>"
+            f"<div style='font-size:12px;color:#A1873B;'>"
+            f"Building data — {len(settled_all)} settled results so far, "
+            f"need ~50 for meaningful patterns.</div>"
+        )
+    else:
+        body_html = (
+            f"<table style='width:100%;border-collapse:collapse;margin-bottom:8px;'>"
+            f"<tr><td style='padding:4px 0;color:#888;font-size:12px;'>Selections recorded today</td>"
+            f"<td style='padding:4px 0;font-size:12px;color:#e0e0e0;'>{len(today_recs)}</td></tr>"
+            f"<tr><td style='padding:4px 0;color:#888;font-size:12px;'>Results settled today</td>"
+            f"<td style='padding:4px 0;font-size:12px;color:#e0e0e0;'>{len(today_settled)}</td></tr>"
+            f"<tr><td style='padding:4px 0;color:#888;font-size:12px;'>Running win rate</td>"
+            f"<td style='padding:4px 0;font-size:12px;color:#e0e0e0;'>"
+            f"{win_pct:.0f}% ({len(wins_all)}/{len(settled_all)} selections logged)</td></tr>"
+            f"</table>"
+            f"<div style='font-size:12px;color:#888;margin-bottom:6px;'>"
+            f"Signal performance (last 14 days):</div>"
+            f"<table style='width:100%;border-collapse:collapse;'>"
+            f"{''.join(signal_lines)}"
+            f"</table>"
+        )
+    return _section("Learning Update", body_html, "#A1873B")
+
+
 def _calc_staking(selections: list, budget: float = 100.0) -> dict:
     """
     Adaptive staking plan wrapper.
@@ -2368,7 +2525,8 @@ def build_result_alert(horse: str, race: str, result: str,
 
 
 # ── Email Type 3: Evening Summary ──────────────────────────────
-def build_evening_summary(results: list, selections: list, budget: float = 100.0) -> str:
+def build_evening_summary(results: list, selections: list, budget: float = 100.0,
+                          extra_html: str = "", note: str = "") -> str:
     """
     Full day P&L once all races have run.
     results: list of dicts with horse/result/sp keys (matched against selections).
@@ -2524,6 +2682,14 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
 
     body  = _section(f"Results — {len(winners)}/{len(selections)} Winners", results_table, "#01696F")
     body += _section("P&L Summary", pl_block, net_col)
+    if note:
+        body += _section(
+            "Note",
+            f"<div style='font-size:12px;color:#A1873B;'>{note}</div>",
+            "#A1873B",
+        )
+    if extra_html:
+        body += extra_html
 
     return _email_shell(
         title       = f"Evening Summary — {len(winners)}/{len(selections)} Winners",
@@ -2919,8 +3085,9 @@ def send_late_prerace_alerts():
 def send_evening_summary(budget: float = 100.0):
     """Called directly by the 21:00 BST cron. Fetches live results + runs ML settlement.
 
-    Guards against stale data: if 0 results for today, send a fallback
-    notice rather than any cached/yesterday content.
+    v2.6.4 — Settle FIRST, then build email. If auto_settle() finds no open
+    recs (because the morning recording job didn't run or selections weren't
+    logged), fall back to direct feed comparison so P&L still renders.
     """
     # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
     try:
@@ -2930,12 +3097,56 @@ def send_evening_summary(budget: float = 100.0):
         pass
     today_str  = datetime.now(_LONDON).date().isoformat()
     print(f"[Evening] Fetching results for {today_str}")
-    selections = _get_official_selections()
-    results    = _get_todays_results()
     subject    = f"Racing Engine — Evening Summary | {_date_bst()}"
 
-    if not results:
-        # Fallback: feed empty for today — don't send yesterday's/Tuesday's data.
+    # ── Step 1: Settle BEFORE building the email so the learning block
+    #           reflects the most recent state.
+    settled_count = 0
+    try:
+        import sys as _sys
+        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+        from learning.loop import LearningLoop
+        loop = LearningLoop()
+        settled_count = loop.auto_settle()
+        print(f"[ML] Settled {settled_count} races")
+    except Exception as _ml_err:
+        print(f"[ML] auto_settle error (non-fatal): {_ml_err}")
+
+    # ── Step 2: Gather selections + results
+    selections = _get_official_selections()
+    results    = _get_todays_results()
+
+    # ── Step 3: Direct-from-feed fallback when settlement was empty.
+    # Triggered when nothing was settled AND we have selections to score.
+    note = ""
+    if settled_count == 0 and selections:
+        feed_results = _get_todays_results_from_feed(today_str)
+        if feed_results:
+            print(f"[Evening] Direct-feed fallback: {len(feed_results)} races")
+            # Augment results list with feed entries so build_evening_summary's
+            # winner-matching logic finds today's winners even if get_todays_results()
+            # returned a sparse set.
+            existing_winners = {
+                (r.get("winner", "") or "").lower().strip()
+                for r in (results or [])
+            }
+            for race_id, info in feed_results.items():
+                w = (info.get("winner", "") or "").lower().strip()
+                if w and w not in existing_winners:
+                    results = (results or []) + [{
+                        "race":   f"{info.get('time','')} {info.get('course','')}",
+                        "winner": info.get("winner", ""),
+                        "sp":     info.get("odds", "") or "—",
+                        "date":   today_str,
+                    }]
+                    existing_winners.add(w)
+            note = (
+                "Selection records were not in the learning loop for this date — "
+                "P&L computed by direct cross-reference against the live results feed."
+            )
+
+    if not results and not selections:
+        # Nothing to report — feed and selections both empty.
         import smtplib
         from email.mime.text import MIMEText
         SENDER_EMAIL = "racingengine.sender@gmail.com"
@@ -2944,7 +3155,7 @@ def send_evening_summary(budget: float = 100.0):
         msg = MIMEText(
             f"Racing Engine — Evening Summary\n"
             f"{_date_bst()} | {_now_bst()} BST\n\n"
-            f"No results available for {today_str}.\n"
+            f"No results or selections available for {today_str}.\n"
             "Results feed returned 0 races — sending holding notice rather than stale data.\n"
             "Check again later or review the dashboard directly.",
             "plain"
@@ -2961,34 +3172,31 @@ def send_evening_summary(budget: float = 100.0):
             print(f"[Evening] Fallback email failed: {e}")
         return False
 
-    html       = build_evening_summary(results, selections, budget)
-    ok         = send_email(subject, html)
-
-    # ── ML Learning loop ──────────────────────────────────────
-    # 1. Settle today's races (match winners to recommendations)
-    # 2. Adjust signal weights based on today's outcomes
-    # 3. Log outcomes for loss analysis
+    # ── Step 4: Build learning block + email
+    learning_block = ""
     try:
-        import sys as _sys
-        _sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-        from learning.loop import LearningLoop
-        from learning.loss_analyser import LossAnalyser
+        learning_block = _build_learning_update_block(today_str)
+    except Exception as _lb_err:
+        print(f"[Evening] Learning block render skipped: {_lb_err}")
 
-        loop = LearningLoop()
+    html = build_evening_summary(
+        results, selections, budget,
+        extra_html=learning_block,
+        note=note,
+    )
+    ok = send_email(subject, html)
 
-        # Step 1: Settle — pull results from feed, match to recs
-        settled_count = loop.auto_settle()
-        print(f"[ML] Settled {settled_count} races")
-
-        # Step 2: Adjust weights — requires >=20 settled races
+    # ── Step 5: Adjust weights + loss analysis (post-email so a slow
+    # ML pass never delays the summary).
+    try:
+        from learning.loop import LearningLoop as _LL
+        loop = _LL()
         new_weights = loop.adjust_weightings()
         print(f"[ML] Weights updated: {new_weights}")
 
-        # Step 3: Loss analysis — diagnose losing selections
         try:
             from learning.loss_analyser import diagnose_loss
             recs = loop.recommendations.get("records", [])
-            today_str = datetime.now(_LONDON).strftime("%Y-%m-%d")
             today_losses = [
                 r for r in recs
                 if r.get("date") == today_str and r.get("won") is False
@@ -3009,7 +3217,7 @@ def send_evening_summary(budget: float = 100.0):
             print(f"[ML] Loss analyser skipped: {_la_err}")
 
     except Exception as _ml_err:
-        print(f"[ML] Learning loop error (non-fatal): {_ml_err}")
+        print(f"[ML] Post-email ML error (non-fatal): {_ml_err}")
 
     return ok
 
