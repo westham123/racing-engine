@@ -535,7 +535,10 @@ class OddsModel:
             return 0.50
         if not snap or not horse_name or current_dec <= 0:
             return 0.50
-        key = f"{today_str}::{race_time}::{course}::{str(horse_name).lower().strip()}"
+        # v2.6.3 — snapshot stores keys keyed by the target racing date,
+        # which may be today or tomorrow (15:30 capture is for tomorrow).
+        snap_date_str = OddsModel._SHOW_SNAPSHOT_CACHE.get("snap_date") or today_str
+        key = f"{snap_date_str}::{race_time}::{course}::{str(horse_name).lower().strip()}"
         entry = snap.get(key)
         if not entry:
             return 0.50
@@ -564,18 +567,21 @@ class OddsModel:
             with open(cls._SHOW_SNAPSHOT_PATH, "r") as f:
                 raw = json.load(f) or {}
             cls._SHOW_SNAPSHOT_CACHE["data"] = raw.get("horses", {}) or {}
-            # v2.6.2 — surface staleness so operators notice when snapshot
-            # date drifts from today. market_moves silently returns 0.50 for
-            # every horse if the snapshot is from a different day.
-            try:
-                from datetime import date as _date
-                snap_date = str(raw.get("date", ""))
-                today_str = _date.today().isoformat()
-                if snap_date and snap_date != today_str:
-                    print(f"[OddsModel] WARN show_price_snapshot.json date={snap_date} "
-                          f"!= today {today_str} — market_moves will be neutral")
-            except Exception:
-                pass
+            # v2.6.3 — snapshot is captured at 15:30 BST for tomorrow's racing,
+            # so a snap_date of today OR tomorrow is correct. Only warn if the
+            # snapshot is from before today (something broke).
+            from datetime import date as _date, timedelta
+            snap_date_str = str(raw.get("date", ""))
+            cls._SHOW_SNAPSHOT_CACHE["snap_date"] = snap_date_str
+            today = _date.today()
+            if snap_date_str:
+                try:
+                    snap_date = _date.fromisoformat(snap_date_str)
+                    if snap_date < today:
+                        print(f"[OddsModel] WARN show_price_snapshot.json is STALE "
+                              f"(date={snap_date_str}, today={today.isoformat()}) — market_moves neutral")
+                except ValueError:
+                    pass
         except Exception:
             cls._SHOW_SNAPSHOT_CACHE["data"] = {}
         cls._SHOW_SNAPSHOT_CACHE["loaded"] = True

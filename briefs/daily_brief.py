@@ -2297,6 +2297,12 @@ def send_confirmed_selections() -> bool:
     v2.5.59 — hard 90s timeout via concurrent.futures; sends plain fallback
     if build hangs so the cron never times out silently.
     """
+    # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
+    try:
+        from engine.odds_model import OddsModel
+        OddsModel._SHOW_SNAPSHOT_CACHE["loaded"] = False
+    except Exception:
+        pass
     import concurrent.futures as _cf
     subject = f"Racing Engine — Confirmed Selections | {_date_bst()}"
     fallback_body = (
@@ -2725,6 +2731,12 @@ def send_email(subject: str, html_content: str, recipient: str = RECIPIENT, plai
 # ── Top-level convenience functions (used by crons) ───────────
 def send_morning_brief(budget: float = 100.0):
     """Called directly by the 10:00 BST cron. Checks feed is live before sending."""
+    # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
+    try:
+        from engine.odds_model import OddsModel
+        OddsModel._SHOW_SNAPSHOT_CACHE["loaded"] = False
+    except Exception:
+        pass
     # Guard: check feed has today's selections before building brief
     try:
         _test_sels = _get_official_selections()
@@ -2910,6 +2922,12 @@ def send_evening_summary(budget: float = 100.0):
     Guards against stale data: if 0 results for today, send a fallback
     notice rather than any cached/yesterday content.
     """
+    # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
+    try:
+        from engine.odds_model import OddsModel
+        OddsModel._SHOW_SNAPSHOT_CACHE["loaded"] = False
+    except Exception:
+        pass
     today_str  = datetime.now(_LONDON).date().isoformat()
     print(f"[Evening] Fetching results for {today_str}")
     selections = _get_official_selections()
@@ -3061,21 +3079,28 @@ def send_operator_brief():
             version = "v2.5.29"
 
     # ── ML learning status ───────────────────────────────────────
+    recs_count = 0
+    settled_count = 0
+    wins_count = 0
+    results_count = 0
     try:
         recs_path     = os.path.join(os.path.dirname(__file__), "..", "learning", "recommendations.json")
         results_path  = os.path.join(os.path.dirname(__file__), "..", "learning", "results_store.json")
         if os.path.exists(recs_path):
-            _recs = json.load(open(recs_path))
-            recs_count = len(_recs.get("records", [])) if isinstance(_recs, dict) else len(_recs)
-        else:
-            recs_count = 0
+            _recs_raw = json.load(open(recs_path))
+            _recs = _recs_raw.get("records", []) if isinstance(_recs_raw, dict) else _recs_raw
+            recs_count = len(_recs)
+            settled_count = len([r for r in _recs if r.get("won") is not None])
+            wins_count = len([r for r in _recs if r.get("won") is True])
         if os.path.exists(results_path):
-            _res = json.load(open(results_path))
-            results_count = len(_res.get("records", [])) if isinstance(_res, dict) else len(_res)
-        else:
-            results_count = 0
+            _res_raw = json.load(open(results_path))
+            if isinstance(_res_raw, dict):
+                _res = _res_raw.get("results", _res_raw.get("records", []))
+            else:
+                _res = _res_raw
+            results_count = len(_res)
     except Exception:
-        recs_count, results_count = 0, 0
+        pass
 
     # ── Git status ───────────────────────────────────────────────
     try:
@@ -3230,8 +3255,9 @@ ARCHITECTURE NOTES:
 MACHINE LEARNING STATUS
 ────────────────────────
 Recommendations logged : {recs_count}
-Results fed back       : {results_count}
-Pending outcome records: {pending_str}
+Settled with outcome   : {settled_count} ({wins_count} wins)
+Results in store       : {results_count}
+Trainer/jockey data    : from {results_count} races (builds over ~2 weeks)
 Learned weights        : self-adjusting (evening loop recalibrates)
 Learning loop status   : CLOSED — wired in v2.5.26
 What's wired           : morning brief calls auto_record_day();
@@ -3261,28 +3287,18 @@ Betfair    : richardking123@outlook.com / Pa55word2018!
 
 KNOWN BUGS & NEXT BUILDS (in priority order)
 ──────────────────────────────────────────────
-1. LEARNING LOOP — settled_races.json is empty.
-   auto_settle() may not be writing results back correctly after evening
-   summary runs. Investigate before weighting adjustments become meaningful.
+1. LEARNING DATA THIN
+   {recs_count} selections logged, {results_count} results in store (from 2 May).
+   Trainer/jockey form, market moves will activate as data accumulates (~2 weeks).
+   Action: none needed — accumulates automatically.
 
 2. IRISH TRACK PRICE COVERAGE
-   Oddschecker does not cover Punchestown/Leopardstown — horses from these
-   venues qualify on Sporting Life SP only. No Oddschecker price comparison
-   available.
+   Oddschecker does not cover Punchestown/Leopardstown.
+   Horses from these venues qualify on Sporting Life SP only.
 
-3. SPLIT MARKET DETECTION (v2.5.48)
-   When 2nd fav is within 20% of our horse's price, market is genuinely split.
-   These horses are now flagged SPLIT_MARKET in the engine and excluded from Bet A.
-   Monitor: check evening summary to see if exclusions are correct.
-
-4. LEARNING DATA THIN
-   Only 65 records from Apr 21 (one course). Need 2+ weeks of live data
-   before weight adjustments are statistically meaningful.
-   Action: none needed — accumulates automatically via auto_record_day().
-
-5. MARKET MOVERS THRESHOLD
-   Changed to 30% on 27 Apr (v2.5.43). Monitor for first week to confirm
-   threshold is catching meaningful moves without noise.
+3. BETFAIR BSP — HTTP 403
+   BSP data unavailable (app key 403). BSP treated as neutral in all scoring.
+   Expected until Betfair resolves access.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
