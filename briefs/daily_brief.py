@@ -1803,6 +1803,77 @@ _MORNING_PRICES_FILE = os.path.join(
     os.path.dirname(__file__), "..", "learning", "morning_prices.json"
 )
 
+_DAILY_SELECTIONS_PATH = os.path.join(
+    os.path.dirname(__file__), "..", "learning", "daily_selections.json"
+)
+
+
+def _save_daily_selections_snapshot(selections: list) -> None:
+    """Save today's confirmed selections at 13:00 for use by evening summary.
+
+    The 21:00 evening summary cannot re-derive selections from the live
+    racecard (races have finished). This snapshot is the canonical source.
+    """
+    import json as _json
+    today = datetime.now(_LONDON).date().isoformat()
+    snap_sels = []
+    for s in (selections or []):
+        snap_sels.append({
+            "horse":        s.get("horse", ""),
+            "course":       s.get("course", ""),
+            "time":         s.get("time", ""),
+            "confidence":   float(s.get("confidence", 0) or 0),
+            "odds":         s.get("curr_odds", s.get("odds", "")),
+            "odds_decimal": float(s.get("best_odds_decimal") or s.get("decimal") or s.get("odds_dec") or 0),
+            "decimal":      float(s.get("decimal") or s.get("best_odds_decimal") or 0),
+            "decimal_odds": float(s.get("decimal") or s.get("best_odds_decimal") or 0),
+            "why":          s.get("why_selected", ""),
+            "dominant_rival": bool(s.get("dominant_rival", False)),
+            "yg_risk":      bool(s.get("yg_risk", False)),
+            "runners":      int(s.get("runners") or s.get("field_size") or 0),
+            "bet_a":        not bool(s.get("dominant_rival", False)),
+            "is_handicap":  bool(s.get("is_handicap", False)),
+            "race_type":    s.get("race_type", ""),
+            "signals": {
+                "going":           float((s.get("signals") or {}).get("going", 0) or 0),
+                "course_signal":   float(s.get("course_signal", 0) or 0),
+                "distance_signal": float(s.get("distance_signal", 0) or 0),
+            },
+        })
+    payload = {
+        "date":       today,
+        "saved_at":   datetime.now(_LONDON).isoformat(),
+        "selections": snap_sels,
+    }
+    try:
+        os.makedirs(os.path.dirname(_DAILY_SELECTIONS_PATH), exist_ok=True)
+        with open(_DAILY_SELECTIONS_PATH, "w") as f:
+            _json.dump(payload, f, indent=2)
+        print(f"[Brief] Saved {len(snap_sels)} selections to daily snapshot")
+    except Exception as e:
+        print(f"[Brief] Could not save daily selections snapshot: {e}")
+
+
+def _load_daily_selections_snapshot() -> list:
+    """Load today's confirmed selections from the 13:00 snapshot file."""
+    import json as _json
+    today = datetime.now(_LONDON).date().isoformat()
+    try:
+        with open(_DAILY_SELECTIONS_PATH) as f:
+            snap = _json.load(f)
+        if snap.get("date") != today:
+            print(f"[Evening] daily_selections.json is from {snap.get('date')} not today — no selections")
+            return []
+        sels = snap.get("selections", []) or []
+        print(f"[Evening] Loaded {len(sels)} selections from 13:00 snapshot")
+        return sels
+    except FileNotFoundError:
+        print("[Evening] No daily selections snapshot found")
+        return []
+    except Exception as e:
+        print(f"[Evening] Could not load daily selections snapshot: {e}")
+        return []
+
 
 def _going_badge_colour(g: str) -> tuple:
     """Return (background, text) hex colours for a going string."""
@@ -2307,6 +2378,13 @@ def build_confirmed_selections() -> str:
             continue
         bet_pool.append(s)
 
+    # v2.6.6 — persist confirmed selections so the 21:00 evening summary
+    # can compute P&L (the live racecard returns 0 horses by then).
+    try:
+        _save_daily_selections_snapshot(bet_pool)
+    except Exception as _snap_err:
+        print(f"[Confirmed] Daily selections snapshot failed: {_snap_err}")
+
     body = ""
 
     # 1. Urgency banner
@@ -2593,95 +2671,224 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
     bet_a_return, bet_a_stake, bet_a_won_lines, bet_a_total_lines, bet_a_failed = _eval_bet(bet_a)
     bet_b_return, bet_b_stake, bet_b_won_lines, bet_b_total_lines, bet_b_failed = _eval_bet(bet_b)
 
-    bet_a_won = bool(bet_a) and bet_a_return > 0
-    bet_b_won = bool(bet_b) and bet_b_return > 0
+    bet_a_net = round(bet_a_return - bet_a_stake, 2) if bet_a_stake > 0 else 0.0
+    bet_b_net = round(bet_b_return - bet_b_stake, 2) if bet_b_stake > 0 else 0.0
 
     total_staked = round(bet_a_stake + bet_b_stake, 2)
     net          = round((bet_a_return + bet_b_return) - total_staked, 2)
 
-    # Results table
-    def results_rows():
-        rows = ""
-        for s in selections:
+    # ── Per-bet membership lookup so the results table can tag each
+    # selection with [Bet A] / [Bet B] / [—] for the punter.
+    def _names_in(bet):
+        if not bet:
+            return set()
+        return {(s.get("name") or "").lower().strip() for s in (bet.get("selections") or [])}
+    bet_a_names = _names_in(bet_a)
+    bet_b_names = _names_in(bet_b)
+
+    bet_a_winners = sum(1 for n in bet_a_names if any(
+        (r.get("winner", "") or "").lower().strip() == n for r in results))
+    bet_b_winners = sum(1 for n in bet_b_names if any(
+        (r.get("winner", "") or "").lower().strip() == n for r in results))
+
+    def _bet_tag(horse: str) -> str:
+        n = (horse or "").lower().strip()
+        in_a = n in bet_a_names
+        in_b = n in bet_b_names
+        if in_a and in_b: return "Bet A+B"
+        if in_a:          return "Bet A"
+        if in_b:          return "Bet B"
+        return "—"
+
+    # ── Results card — every selection shown with WIN/LOSS, mobile-friendly.
+    def _result_rows():
+        if not selections:
+            return ('<div style="padding:12px 0;color:#888;font-size:13px;">'
+                    'No selections recorded for today.</div>')
+        rows = []
+        for s in sorted(selections, key=lambda x: (x.get("time", ""), x.get("course", ""))):
             won = _won_horse(s.get("horse", ""))
-            result_str = "WON" if won else "LOST"
-            col = "#437A22" if won else "#A13544"
+            tag = _bet_tag(s.get("horse", ""))
             sp_str = next(
                 (r.get("sp", "") for r in results
                  if (r.get("winner", "") or "").lower().strip()
                     == (s.get("horse", "") or "").lower().strip()),
-                "—",
+                "",
             )
-            rows += f"""<tr>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;color:#888;">{s.get('time','')} {s.get('course','')}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;">{s.get('horse','')}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{s.get('curr_odds','')}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;">{sp_str}</td>
-              <td style="padding:7px 6px;border-bottom:1px solid #2a2a2a;font-size:13px;font-weight:bold;color:{col};">{result_str}</td>
-            </tr>"""
-        return rows
+            odds_disp = s.get("curr_odds") or s.get("odds") or ""
+            if won and sp_str:
+                odds_show = f"SP {sp_str}"
+            else:
+                odds_show = str(odds_disp) if odds_disp else "—"
+            mark      = "✓" if won else "✗"
+            mark_col  = "#437A22" if won else "#A13544"
+            label     = "WON" if won else "LOST"
+            rows.append(
+                f'<div style="display:block;padding:9px 10px;'
+                f'border-bottom:1px solid #2a2a2a;">'
+                f'<table style="width:100%;border-collapse:collapse;"><tr>'
+                f'<td style="width:22px;font-size:18px;font-weight:bold;color:{mark_col};'
+                f'vertical-align:top;">{mark}</td>'
+                f'<td style="vertical-align:top;">'
+                f'<div style="font-size:14px;font-weight:bold;color:#fff;">{s.get("horse","")}</div>'
+                f'<div style="font-size:12px;color:#888;margin-top:2px;">'
+                f'{s.get("time","")} {s.get("course","")}'
+                f'</div>'
+                f'</td>'
+                f'<td style="text-align:right;vertical-align:top;white-space:nowrap;">'
+                f'<div style="font-size:13px;color:{mark_col};font-weight:bold;">{label}</div>'
+                f'<div style="font-size:11px;color:#888;margin-top:2px;">{odds_show} · [{tag}]</div>'
+                f'</td>'
+                f'</tr></table>'
+                f'</div>'
+            )
+        # Summary line
+        a_n = len(bet_a_names)
+        b_n = len(bet_b_names)
+        a_pct = (100.0 * bet_a_winners / a_n) if a_n else 0.0
+        b_pct = (100.0 * bet_b_winners / b_n) if b_n else 0.0
+        a_summary = (f"{bet_a_winners} winner{'s' if bet_a_winners != 1 else ''} "
+                     f"from {a_n} Bet A selections ({a_pct:.0f}%)") if a_n else "Bet A: no qualifying selections"
+        b_summary = (f"{bet_b_winners} winner{'s' if bet_b_winners != 1 else ''} "
+                     f"from {b_n} Bet B selections ({b_pct:.0f}%)") if b_n else "Bet B: no qualifying selections"
+        rows.append(
+            f'<div style="padding:10px 10px 4px;font-size:12px;color:#aaa;">'
+            f'{a_summary}<br>{b_summary}'
+            f'</div>'
+        )
+        return "".join(rows)
 
-    results_table = f"""<table style="width:100%;border-collapse:collapse;">
-      <thead><tr style="color:#555;font-size:11px;text-transform:uppercase;">
-        <th style="padding:5px 6px;text-align:left;">Race</th>
-        <th style="padding:5px 6px;text-align:left;">Horse</th>
-        <th style="padding:5px 6px;text-align:left;">SP (eng)</th>
-        <th style="padding:5px 6px;text-align:left;">SP (actual)</th>
-        <th style="padding:5px 6px;text-align:left;">Result</th>
-      </tr></thead>
-      <tbody>{results_rows()}</tbody>
-    </table>"""
+    results_block = (
+        f'<div style="background:#1c1f2e;border-radius:8px;overflow:hidden;">'
+        f'{_result_rows()}'
+        f'</div>'
+    )
 
-    net_col = "#437A22" if net >= 0 else "#A13544"
-    net_str = f"+£{net:.2f}" if net >= 0 else f"-£{abs(net):.2f}"
-
-    def _bet_row_html(bet, stake, ret, won_lines, total_lines, failed, label):
+    # ── Per-bet P&L breakdown (actual money, not percentages).
+    def _bet_breakdown(bet, stake, ret, won_lines, total_lines, label, net_b):
         if not bet or stake <= 0:
-            extra_msg = "BET B requires 5+ selections" if label == "BET B" else "no qualifying selections"
-            cell = f"N/A — {extra_msg}"
-            colour = "#888"
-        else:
-            net_b = round(ret - stake, 2)
-            colour_main = "#437A22" if net_b >= 0 else "#A13544"
-            tier = bet.get("tier", "")
-            n    = len(bet.get("selections") or [])
-            lucky_lbl = (bet.get("lucky_bet") or {}).get("label", "Lucky")
-            failed_names = ", ".join(h.get("name", "?") for h in failed) or "—"
-            cell = (
-                f"<span style='color:{colour_main};font-weight:bold;'>"
-                f"£{ret:,.2f} return</span> on £{stake:.2f} stake "
-                f"&middot; {lucky_lbl} {won_lines}/{total_lines} lines won "
-                f"&middot; losers: {failed_names}"
+            why = "needs 5+ qualifying selections" if label == "BET B" \
+                  else "needs 4+ qualifying selections"
+            return (
+                f'<div style="background:#1c1f2e;border-radius:8px;'
+                f'padding:12px 14px;margin:8px 0;border-left:3px solid #555;">'
+                f'<div style="font-size:13px;font-weight:bold;color:#aaa;'
+                f'letter-spacing:0.4px;text-transform:uppercase;">{label}</div>'
+                f'<div style="font-size:13px;color:#888;margin-top:4px;">'
+                f'Not run today — {why}.</div>'
+                f'</div>'
             )
-            colour = "#e0e0e0"
-        head = f"{label} ({len(bet.get('selections') or [])} sel)" if bet else label
-        return (
-            f"<tr>"
-            f"<td style='padding:6px 0;color:#888;font-size:13px;'>{head}</td>"
-            f"<td style='padding:6px 0;font-size:13px;color:{colour};'>{cell}</td>"
-            f"</tr>"
+        n         = len(bet.get("selections") or [])
+        lucky     = bet.get("lucky_bet") or {}
+        sgls      = bet.get("singles")   or {}
+        lucky_lbl = lucky.get("label", "Lucky")
+        lucky_stk = float(lucky.get("stake", 0.0) or 0.0)
+        sgls_stk  = float(sgls.get("stake", 0.0) or 0.0)
+
+        # Singles breakdown
+        win_flags = []
+        decs      = []
+        winning_singles_lines = []
+        losing_count = 0
+        single_each  = round(sgls_stk / n, 2) if n else 0.0
+        singles_ret  = 0.0
+        for sel in (bet.get("selections") or []):
+            won = _won_horse(sel.get("name", ""))
+            dec = float(sel.get("decimal_odds", 0) or 0)
+            win_flags.append(won)
+            decs.append(dec)
+            if won:
+                ret_one = round(single_each * dec, 2)
+                profit  = round(ret_one - single_each, 2)
+                singles_ret += ret_one
+                winning_singles_lines.append(
+                    f'<div style="font-size:12px;color:#e0e0e0;margin-left:14px;">'
+                    f'{sel.get("name","?")} @ {dec:.2f} → '
+                    f'£{ret_one:.2f} return (+£{profit:.2f})</div>'
+                )
+            else:
+                losing_count += 1
+        singles_loss = round(losing_count * single_each, 2)
+        singles_net  = round(singles_ret - sgls_stk, 2)
+
+        # Lucky perm net
+        lucky_ret = round(ret - singles_ret, 2)
+        lucky_net = round(lucky_ret - lucky_stk, 2)
+        lucky_status = (f"all {total_lines} lines lose"
+                        if won_lines == 0 else
+                        f"{won_lines}/{total_lines} lines won")
+
+        net_col = "#437A22" if net_b >= 0 else "#A13544"
+        net_str = (f"+£{net_b:.2f}" if net_b >= 0 else f"-£{abs(net_b):.2f}")
+
+        winning_html = "".join(winning_singles_lines) or (
+            '<div style="font-size:12px;color:#888;margin-left:14px;">No singles won.</div>'
         )
 
-    pl_block = f"""
-    <table style="width:100%;border-collapse:collapse;">
-      <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Budget</td>
-        <td style="padding:6px 0;font-size:13px;">£{budget:.2f}</td>
-      </tr>
-      <tr>
-        <td style="padding:6px 0;color:#888;font-size:13px;">Total Staked</td>
-        <td style="padding:6px 0;font-size:13px;">£{total_staked:.2f}</td>
-      </tr>
-      {_bet_row_html(bet_a, bet_a_stake, bet_a_return, bet_a_won_lines, bet_a_total_lines, bet_a_failed, "BET A")}
-      {_bet_row_html(bet_b, bet_b_stake, bet_b_return, bet_b_won_lines, bet_b_total_lines, bet_b_failed, "BET B")}
-      <tr style="border-top:1px solid #333;">
-        <td style="padding:8px 0;font-size:14px;font-weight:bold;">Net P&amp;L</td>
-        <td style="padding:8px 0;font-size:16px;font-weight:bold;color:{net_col};">{net_str}</td>
-      </tr>
-    </table>"""
+        return (
+            f'<div style="background:#1c1f2e;border-radius:8px;'
+            f'padding:12px 14px;margin:8px 0;border-left:3px solid {net_col};">'
+            f'<div style="font-size:13px;font-weight:bold;color:#fff;'
+            f'letter-spacing:0.4px;text-transform:uppercase;margin-bottom:6px;">'
+            f'{label} — {lucky_lbl} (£{lucky_stk:.2f}) + Singles (£{sgls_stk:.2f})</div>'
+            f'<div style="font-size:12px;color:#aaa;margin-top:6px;">'
+            f'<b style="color:#e0e0e0;">Singles</b> '
+            f'(£{single_each:.2f} each × {n}):</div>'
+            f'{winning_html}'
+            f'<div style="font-size:12px;color:#aaa;margin-left:14px;">'
+            f'{losing_count} lost = -£{singles_loss:.2f} '
+            f'&middot; singles net: <b style="color:{("#437A22" if singles_net>=0 else "#A13544")};">'
+            f'{("+" if singles_net>=0 else "-")}£{abs(singles_net):.2f}</b></div>'
+            f'<div style="font-size:12px;color:#aaa;margin-top:8px;">'
+            f'<b style="color:#e0e0e0;">{lucky_lbl}</b>: £{lucky_ret:.2f} return on '
+            f'£{lucky_stk:.2f} stake &middot; {lucky_status} &middot; net '
+            f'<b style="color:{("#437A22" if lucky_net>=0 else "#A13544")};">'
+            f'{("+" if lucky_net>=0 else "-")}£{abs(lucky_net):.2f}</b>'
+            f'</div>'
+            f'<div style="font-size:14px;font-weight:bold;color:{net_col};'
+            f'margin-top:10px;letter-spacing:0.4px;">'
+            f'{label} NET: {net_str}</div>'
+            f'</div>'
+        )
 
-    body  = _section(f"Results — {len(winners)}/{len(selections)} Winners", results_table, "#01696F")
-    body += _section("P&L Summary", pl_block, net_col)
+    pl_block = (
+        _bet_breakdown(bet_a, bet_a_stake, bet_a_return, bet_a_won_lines,
+                       bet_a_total_lines, "BET A", bet_a_net) +
+        _bet_breakdown(bet_b, bet_b_stake, bet_b_return, bet_b_won_lines,
+                       bet_b_total_lines, "BET B", bet_b_net)
+    )
+
+    # ── Net day footer
+    net_col = "#437A22" if net >= 0 else "#A13544"
+    net_str = f"+£{net:.2f}" if net >= 0 else f"-£{abs(net):.2f}"
+    a_net_str = ("+" if bet_a_net >= 0 else "-") + f"£{abs(bet_a_net):.2f}"
+    b_net_str = ("+" if bet_b_net >= 0 else "-") + f"£{abs(bet_b_net):.2f}"
+
+    if total_staked <= 0:
+        net_footer = (
+            f'<div style="background:#1c1f2e;border-radius:8px;padding:14px 16px;'
+            f'margin-top:8px;border-top:2px solid #888;text-align:center;">'
+            f'<div style="font-size:13px;color:#aaa;">No bets placed today — '
+            f'fewer than 4 qualifying selections.</div>'
+            f'</div>'
+        )
+    else:
+        net_footer = (
+            f'<div style="background:#1c1f2e;border-radius:8px;padding:14px 16px;'
+            f'margin-top:8px;border-top:2px solid {net_col};text-align:center;">'
+            f'<div style="font-size:12px;color:#888;letter-spacing:0.5px;'
+            f'text-transform:uppercase;">Net day</div>'
+            f'<div style="font-size:24px;font-weight:bold;color:{net_col};'
+            f'margin:4px 0;">{net_str}</div>'
+            f'<div style="font-size:12px;color:#aaa;">'
+            f'Bet A: {a_net_str} &middot; Bet B: {b_net_str} &middot; '
+            f'Total staked £{total_staked:.2f}</div>'
+            f'</div>'
+        )
+
+    body  = _section(f"Today's Results — {len(winners)}/{len(selections)} Winners",
+                     results_block, "#01696F")
+    body += _section("P&L Summary", pl_block + net_footer, net_col)
     if note:
         body += _section(
             "Note",
@@ -3113,7 +3320,16 @@ def send_evening_summary(budget: float = 100.0):
         print(f"[ML] auto_settle error (non-fatal): {_ml_err}")
 
     # ── Step 2: Gather selections + results
-    selections = _get_official_selections()
+    # v2.6.6 — Prefer the 13:00 confirmed-selections snapshot. By 21:00 the
+    # live pipeline returns 0 horses (races finished, racecard no longer live)
+    # so the snapshot is the only reliable source for today's actual bets.
+    selections = _load_daily_selections_snapshot()
+    if not selections:
+        selections = _get_official_selections()
+        if selections:
+            print(f"[Evening] Used live pipeline fallback: {len(selections)} selections")
+        else:
+            print("[Evening] No selections available from snapshot or live pipeline")
     results    = _get_todays_results()
 
     # ── Step 3: Direct-from-feed fallback when settlement was empty.
@@ -3171,6 +3387,20 @@ def send_evening_summary(budget: float = 100.0):
         except Exception as e:
             print(f"[Evening] Fallback email failed: {e}")
         return False
+
+    # ── Step 3b: Cross-reference results against selections (v2.6.6)
+    results_by_winner = {}
+    for r in (results or []):
+        w = (r.get("winner", "") or "").lower().strip()
+        if w:
+            results_by_winner[w] = r
+    for sel in (selections or []):
+        horse_lower = (sel.get("horse", "") or "").lower().strip()
+        if horse_lower in results_by_winner:
+            sel["won"] = True
+            sel["result_sp"] = results_by_winner[horse_lower].get("sp", "")
+        else:
+            sel["won"] = False
 
     # ── Step 4: Build learning block + email
     learning_block = ""
