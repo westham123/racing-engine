@@ -3297,6 +3297,9 @@ def send_operator_brief():
         if os.path.exists(recs_path):
             _recs_raw = json.load(open(recs_path))
             _recs = _recs_raw.get("records", []) if isinstance(_recs_raw, dict) else _recs_raw
+            # v2.6.5 — exclude legacy "all_runners" backfill so the brief
+            # doesn't claim "65 selections, 7 wins" off one noisy day.
+            _recs = [r for r in _recs if r.get("source") != "all_runners"]
             recs_count = len(_recs)
             settled_count = len([r for r in _recs if r.get("won") is not None])
             wins_count = len([r for r in _recs if r.get("won") is True])
@@ -3430,7 +3433,7 @@ SCHEDULED CRONS (all times BST = UTC+1)
 ────────────────────────────────────────
 [3fb7f776] 09:00 daily  — Operator Brief → richardking123@outlook.com
 [4eac6ab1] 10:00 daily  — Morning Brief → richardking123@outlook.com
-[a54556fb] 13:30 daily  — Confirmed Selections → richardking123@outlook.com
+[a54556fb] 13:00 daily  — Confirmed Selections → richardking123@outlook.com
 [909fe390] 14:30 daily  — Late Pre-Race Alerts (15:00–18:30 BST)
 [c58b4236] 15:30 daily  — Show Price Baseline snapshot
 [de70bd36] Hourly 16:09–07:09 — Market Movers (silent if nothing ≥30%)

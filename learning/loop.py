@@ -121,6 +121,18 @@ class LearningLoop:
             return 0
 
         if not selections:
+            # v2.6.5 — Oddschecker may not be warm yet on early-morning runs;
+            # retry once after a short pause before giving up.
+            import time
+            print("[LearningLoop] No selections on first try — retrying in 30s")
+            time.sleep(30)
+            try:
+                selections = _get_official_selections()
+            except Exception as e:
+                print(f"[LearningLoop] Retry failed: {e}")
+                selections = []
+
+        if not selections:
             print(f"[LearningLoop] No official selections for {today} — nothing to record")
             return 0
 
@@ -188,21 +200,42 @@ class LearningLoop:
         return count
 
     def force_record_today(self) -> int:
-        """v2.6.1 — Force re-record today even if already attempted.
+        """v2.6.5 — Re-record today only if existing records have broken signals.
 
-        Use after fixing signal passthrough so a day that was logged with
-        broken (all-zero) signals can be replaced with a clean record.
+        Earlier (v2.6.1) version stripped ALL records for today unconditionally,
+        which wiped valid days during debugging. Now we only strip when every
+        record's signals look broken (all stuck at 0.5 with no variance).
         """
         today = date.today().isoformat()
-        before = len(self.recommendations.get("records", []))
-        self.recommendations["records"] = [
-            r for r in self.recommendations.get("records", [])
-            if r.get("date") != today
-        ]
-        removed = before - len(self.recommendations["records"])
-        if removed:
-            print(f"[LearningLoop] force_record_today: dropped {removed} stale records for {today}")
+        existing = [r for r in self.recommendations["records"] if r.get("date") == today]
+
+        if existing:
+            def _is_broken(r):
+                sigs = r.get("signals", {})
+                if not sigs:
+                    return True
+                vals = []
+                for v in sigs.values():
+                    try:
+                        vals.append(float(v))
+                    except Exception:
+                        pass
+                if not vals:
+                    return True
+                variance = sum((v - 0.5) ** 2 for v in vals) / len(vals)
+                return variance < 0.001
+
+            broken = all(_is_broken(r) for r in existing)
+            if not broken:
+                print(f"[LearningLoop] Records for {today} look valid — not overwriting")
+                return len(existing)
+
+            print(f"[LearningLoop] Stripping {len(existing)} broken records for {today}")
+            self.recommendations["records"] = [
+                r for r in self.recommendations["records"] if r.get("date") != today
+            ]
             _save(RECOMMENDATIONS_PATH, self.recommendations)
+
         return self.auto_record_day()
 
     # ─────────────────────────────────────────────────────────
@@ -439,8 +472,11 @@ class LearningLoop:
         Requires >= 20 settled races to avoid noise.
         Max nudge: 1% per signal per daily cycle.
         """
-        settled = [r for r in self.recommendations["records"]
-                  if r.get("won") is not None]
+        # v2.6.5 — exclude legacy "all_runners" backfill (every horse in every
+        # race) so weight adjustment learns from real selections only.
+        real_recs = [r for r in self.recommendations["records"]
+                     if r.get("source") != "all_runners"]
+        settled = [r for r in real_recs if r.get("won") is not None]
 
         if len(settled) < 20:
             print(f"[LearningLoop] {len(settled)}/20 settled races — skipping adjustment")
@@ -547,7 +583,9 @@ class LearningLoop:
                 return v
             return str(v).strip().lower() == "true"
 
-        all_recs  = self.recommendations["records"]
+        # v2.6.5 — exclude legacy "all_runners" backfill from win-rate stats.
+        all_recs  = [r for r in self.recommendations["records"]
+                     if r.get("source") != "all_runners"]
         settled   = [r for r in all_recs if r.get("won") is not None]
         winners   = [r for r in settled if _won(r)]
         losers    = [r for r in settled if not _won(r)]
