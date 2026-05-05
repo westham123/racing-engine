@@ -18,6 +18,14 @@
 import smtplib, os, sys, zoneinfo
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+# v2.6.8 — real BHA Official Ratings (replaces 1–5 star Timeform proxy on
+# selection cards). Wrapped so a missing lookup never breaks the brief.
+try:
+    from learning.bha_loader import get_bha_or as _get_bha_or
+except Exception:
+    def _get_bha_or(horse_name, race_type="flat"):  # type: ignore
+        return None
+
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from datetime import datetime, date, timedelta
@@ -388,6 +396,11 @@ def _get_official_selections(conf_threshold: float = 0.65) -> list:
                 "last_ran_days":        _coerce_int_or_none(row.get("Last Ran Days")),
                 "all_ratings_in_race":  _coerce_list(row.get("All Ratings In Race")),
                 "race_class":           str(row.get("Race Class", "") or ""),
+                # v2.6.8 — real BHA Official Rating (None for Irish horses).
+                "bha_or":               _get_bha_or(
+                    str(row.get("Horse", "") or ""),
+                    str(row.get("Race Type", "") or "flat"),
+                ),
             }
 
             # Hard filter layer
@@ -558,6 +571,11 @@ def _get_official_selections(conf_threshold: float = 0.65) -> list:
                 "rating123":            _coerce_int_or_none(row.get("Rating123")),
                 "last_ran_days":        _coerce_int_or_none(row.get("Last Ran Days")),
                 "all_ratings_in_race":  _coerce_list(row.get("All Ratings In Race")),
+                # v2.6.8 — real BHA Official Rating (or None for Irish horses)
+                "bha_or":               _get_bha_or(
+                    str(row.get("Horse", "") or ""),
+                    str(row.get("Race Type", "") or "flat"),
+                ),
             })
 
         out.sort(key=lambda x: x["confidence"], reverse=True)
@@ -987,6 +1005,10 @@ def _sel_table(selections: list, movers: list = None) -> str:
         sig_col  = "#437A22" if any(x in s["signal"] for x in ["Steam","Move","⬆"]) \
                    else "#A13544" if "Drift" in s["signal"] else "#888"
         hcap_tag = ' <span style="font-size:10px;color:#964219;">[H]</span>' if s.get("is_handicap") else ""
+        # v2.6.8 — surface real BHA OR for handicaps (Irish horses → no tag)
+        _bha_or = s.get("bha_or")
+        if s.get("is_handicap") and isinstance(_bha_or, int) and _bha_or > 5:
+            hcap_tag += f' <span style="font-size:10px;color:#01696F;">OR {_bha_or}</span>'
 
         # Overnight move tag
         mv = moves_map.get(s["horse"].lower().strip())

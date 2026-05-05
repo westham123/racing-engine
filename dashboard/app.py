@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.6.7** — Going shortcode map, 65/70% confidence, 5-selection cap, drifter+steamer filter, Bet A=top3")
+    st.markdown("**Engine v2.6.8** — Real BHA OR gap signal, rpscrape trainer/jockey stats, weekly BHA refresh hook")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")

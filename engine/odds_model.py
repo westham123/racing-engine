@@ -61,6 +61,86 @@ from engine.going_matcher import score_going_preference, score_going_from_form_s
 from engine.form_scorer import score_trainer_form, score_jockey_form
 from engine.race_times_stride import score_race_pace, RaceTimesStore
 
+# v2.6.8 — real BHA Official Ratings (replaces 1–5 star rating123 proxy in
+# handicap OR-gap signal). Wrapped in try/except so a missing lookup never
+# breaks the pipeline; get_bha_or(...) returns None and callers fall back to
+# the existing rating123 / neutral path.
+try:
+    from learning.bha_loader import get_bha_or as _get_bha_or
+except Exception:
+    def _get_bha_or(horse_name, race_type="flat"):  # type: ignore
+        return None
+
+# v2.6.8 — historical trainer/jockey stats from rpscrape. Loaded lazily;
+# absent file → falls back to the existing form_scorer behaviour (neutral).
+_TRAINER_STATS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "learning", "trainer_stats.json",
+)
+_JOCKEY_STATS_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "learning", "jockey_stats.json",
+)
+_TRAINER_STATS_CACHE: dict | None = None
+_JOCKEY_STATS_CACHE: dict | None = None
+
+
+def _load_json_cached(path: str, cache_attr: str) -> dict:
+    g = globals()
+    cached = g.get(cache_attr)
+    if cached is not None:
+        return cached
+    try:
+        with open(path, "r") as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+    g[cache_attr] = data
+    return data
+
+
+def _historical_stats_score(stats: dict, name: str, going_group: str = "") -> float | None:
+    """Return a score in [0,1] from a {trainer|jockey}_stats.json entry, or None.
+
+    Banding (overall win_pct):
+      ≥20%  → 0.65–0.75 (linear in [20, 30])
+      15–20 → 0.55–0.65
+      10–15 → 0.50
+      <10   → 0.40–0.48
+    Going-specific stats nudge the score by up to ±0.05 when sample ≥ 8 runs.
+    """
+    if not stats or not name:
+        return None
+    entry = stats.get(name.lower())
+    if not entry:
+        return None
+    runs = int(entry.get("runs", 0) or 0)
+    wins = int(entry.get("wins", 0) or 0)
+    if runs < 20:
+        return None  # too thin to act on
+    win_pct = wins / runs
+    if win_pct >= 0.20:
+        base = 0.65 + min((win_pct - 0.20) / 0.10, 1.0) * 0.10
+    elif win_pct >= 0.15:
+        base = 0.55 + (win_pct - 0.15) / 0.05 * 0.10
+    elif win_pct >= 0.10:
+        base = 0.50
+    else:
+        # 0.40 at 0%, 0.48 at 10%
+        base = 0.40 + (win_pct / 0.10) * 0.08
+    # Going-specific tilt
+    by_going = entry.get("by_going") or {}
+    g = (going_group or "").upper()
+    if g and g in by_going:
+        gr = by_going[g]
+        g_runs = int(gr.get("runs", 0) or 0)
+        g_wins = int(gr.get("wins", 0) or 0)
+        if g_runs >= 8:
+            g_pct = g_wins / g_runs
+            delta = (g_pct - win_pct)
+            base += max(-0.05, min(0.05, delta * 0.5))
+    return round(max(0.05, min(0.95, base)), 4)
+
 # v2.5.55 — course specialist + distance affinity. Optional fetch via
 # Sporting Life horse pages; failures return neutral (0.50, 0.50) and
 # never block the main pipeline.
@@ -267,19 +347,30 @@ class OddsModel:
         return round(base, 4)
 
     # ── Signal 5: Trainer Form (8%) ───────────────────────────
-    def _score_trainer_form(self, trainer_name: str, tf_stars=None) -> float:
+    def _score_trainer_form(self, trainer_name: str, tf_stars=None,
+                            going_group: str = "") -> float:
         """
-        Rolling win rate from results store (building up).
-        Falls back to tf_stars proxy — reasonable stand-in until data exists.
+        v2.6.8 — prefer rpscrape historical stats (90d GB flat) over the
+        in-pipeline results store, which is sparse. Falls back to the existing
+        rolling-window scorer, then to neutral.
         """
+        stats = _load_json_cached(_TRAINER_STATS_PATH, "_TRAINER_STATS_CACHE")
+        hist = _historical_stats_score(stats, trainer_name, going_group)
+        if hist is not None:
+            return hist
         result = score_trainer_form(trainer_name)
         if result.get("note") in ("unknown", "insufficient_data"):
             return self._tf_stars_to_trainer_score(tf_stars)
         return result["score"]
 
     # ── Signal 6: Jockey Form (7%) ────────────────────────────
-    def _score_jockey_form(self, jockey_name: str, tf_stars=None) -> float:
-        """Rolling win rate. Falls back to tf_stars proxy."""
+    def _score_jockey_form(self, jockey_name: str, tf_stars=None,
+                           going_group: str = "") -> float:
+        """v2.6.8 — prefer rpscrape historical stats. See _score_trainer_form."""
+        stats = _load_json_cached(_JOCKEY_STATS_PATH, "_JOCKEY_STATS_CACHE")
+        hist = _historical_stats_score(stats, jockey_name, going_group)
+        if hist is not None:
+            return hist
         result = score_jockey_form(jockey_name)
         if result.get("note") in ("unknown", "insufficient_data"):
             return self._tf_stars_to_trainer_score(tf_stars)
@@ -459,19 +550,30 @@ class OddsModel:
         if places > 0:       return 0.55
         return 0.35
 
-    def _score_official_rating_gap(self, runner_rating, all_ratings_in_race, is_handicap) -> float:
+    def _score_official_rating_gap(self, runner_rating, all_ratings_in_race,
+                                   is_handicap, bha_or=None) -> float:
         """v2.6.0 — OR gap (handicaps only).
         v2.6.2 — Sporting Life's `rating123` field sometimes returns Timeform
         star ratings (1-5) instead of BHA Official Ratings (typically 50-115
         flat, 80-165 jumps). Filter out values <= 5 — they're stars, not OR,
         and the gap calculation is meaningless on a 1-5 scale.
+        v2.6.8 — when a real BHA OR is provided it overrides `runner_rating`.
         """
         if not is_handicap:
             return 0.50
-        try:
-            rr = int(runner_rating) if runner_rating not in (None, "", "-") else None
-        except Exception:
-            rr = None
+        rr = None
+        if bha_or not in (None, "", 0):
+            try:
+                v = int(bha_or)
+                if v > 5:
+                    rr = v
+            except Exception:
+                rr = None
+        if rr is None:
+            try:
+                rr = int(runner_rating) if runner_rating not in (None, "", "-") else None
+            except Exception:
+                rr = None
         if rr is None or rr <= 5:
             return 0.50
         ratings = []
@@ -850,8 +952,11 @@ class OddsModel:
         s_tf      = self._score_tf_stars(tf_stars)
         s_odds    = self._score_market_odds(odds_str)
         s_moves   = self._score_market_moves(signal, bet_moves)
-        s_trainer = self._score_trainer_form(trainer, tf_stars)
-        s_jockey  = self._score_jockey_form(jockey, tf_stars)
+        # v2.6.8 — going group tightens trainer/jockey signals when historical
+        # data covers today's surface; falls back gracefully to overall stats.
+        _gg = self._classify_going(runner_data.get("going", "") or "")
+        s_trainer = self._score_trainer_form(trainer, tf_stars, going_group=_gg)
+        s_jockey  = self._score_jockey_form(jockey, tf_stars, going_group=_gg)
 
         # v2.6.0 — feed-driven signals (no extra HTTP calls)
         prev_results = runner_data.get("previous_results", []) or []
@@ -867,7 +972,19 @@ class OddsModel:
         s_going    = self._score_going_preference(going_str, prev_results)
         s_course   = self._score_course_form(course_name, prev_results)
         s_distance = self._score_distance_form(dist_f, prev_results)
-        s_or_gap   = self._score_official_rating_gap(rating123, all_ratings, is_handicap)
+        # v2.6.8 — prefer real BHA Official Rating over Sporting Life's
+        # `rating123` (which is Timeform 1–5 stars for non-handicaps and only
+        # sometimes the real OR). Falls back to None for Irish horses etc.
+        bha_or = runner_data.get("bha_or")
+        if bha_or in (None, "", 0):
+            try:
+                bha_or = _get_bha_or(
+                    str(runner_data.get("horse", "") or ""),
+                    str(runner_data.get("race_type", "") or "flat"),
+                )
+            except Exception:
+                bha_or = None
+        s_or_gap   = self._score_official_rating_gap(rating123, all_ratings, is_handicap, bha_or=bha_or)
         s_class    = self._score_class_consistency(prev_results, race_class)
         s_fresh    = self._score_freshness(last_ran_days)
 
@@ -1001,7 +1118,13 @@ class OddsModel:
             "going":         round(self._score_going_preference(going_str, prev_results), 3),
             "course_form":   round(self._score_course_form(course_name, prev_results), 3),
             "distance_form": round(self._score_distance_form(dist_f, prev_results), 3),
-            "or_gap":        round(self._score_official_rating_gap(rating123, all_ratings, is_handicap), 3),
+            "or_gap":        round(self._score_official_rating_gap(
+                rating123, all_ratings, is_handicap,
+                bha_or=runner_data.get("bha_or") or _get_bha_or(
+                    str(runner_data.get("horse", "") or ""),
+                    str(runner_data.get("race_type", "") or "flat"),
+                ),
+            ), 3),
             "class_consistency": round(self._score_class_consistency(prev_results, race_class), 3),
             "freshness":     round(self._score_freshness(last_ran_days), 3),
             "trainer_travel": round(self._trainer_travel_signal(trainer), 3),
