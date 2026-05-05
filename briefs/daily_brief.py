@@ -138,8 +138,9 @@ def _get_overnight_moves(today: str = None) -> list:
         return []
 
 
-def _get_official_selections(conf_threshold: float = 0.50) -> list:
-    # Calibration threshold — review after 2 weeks of live data
+def _get_official_selections(conf_threshold: float = 0.65) -> list:
+    # v2.6.7 — base threshold raised 0.50 → 0.65 (non-handicap).
+    # Handicaps add +0.05 with a 0.70 floor (see get_handicap_threshold).
     """
     Returns only official selections: cleared threshold + evens cut-off
     on the live engine. No fallback — returns empty list if feed is down.
@@ -170,6 +171,33 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             _morning_prices = _load_show_price_snapshot()
         except Exception:
             _morning_prices = {}
+
+        # v2.6.7 — per-race steamer scan. A horse "steamed" if its current
+        # decimal price is ≤80% of its morning baseline (i.e. shortened
+        # ≥20%). Used by the drifter+steamer-rival filter below.
+        # Map: {race_key -> True if any horse in that race has steamed ≥20%}
+        _race_has_steamer = {}
+        if _morning_prices:
+            for _, _sr in df.iterrows():
+                _sr_t = str(_sr.get("Time", "")).strip()
+                _sr_c = str(_sr.get("Course", "")).strip()
+                _sr_h = str(_sr.get("Horse", "")).strip()
+                if not _sr_t or not _sr_c or not _sr_h:
+                    continue
+                _sr_curr = str(_sr.get("Current Odds", "") or "").strip()
+                _sr_odds = _sr_curr if _sr_curr.lower() not in ("", "n/a", "none", "nan") \
+                                    else str(_sr.get("Odds", "")).strip()
+                try:
+                    _sr_dec = _to_decimal(_sr_odds)
+                except Exception:
+                    _sr_dec = 0.0
+                if _sr_dec <= 1.0:
+                    continue
+                _sr_morn_key = (f"{_sr_h.lower()}|{_sr_c.lower()}|{_sr_t}")
+                _sr_morn_dec = _morning_prices.get(_sr_morn_key, 0.0)
+                if _sr_morn_dec and _sr_morn_dec > 1.0 \
+                        and _sr_dec <= _sr_morn_dec * 0.80:
+                    _race_has_steamer[f"{_sr_t}::{_sr_c}"] = True
 
         # ── Market position lookup (v2.5.50 — info, not filter) ──────────────
         # Oddschecker consensus is the source of truth for market position.
@@ -297,20 +325,28 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
             _our_oc_dec = _oc_map.get(str(row.get('Horse','')).strip().lower(), 0.0) if _oc_map else 0.0
             _our_eff_dec = _our_oc_dec if (_our_oc_dec and _our_oc_dec > 1.0) else dec
 
-            # Drift auto-drop — silent exclusion if current price has drifted
-            # >20% out from the morning baseline (show-price snapshot).
-            # Drift signals the market thinks worse of the horse since 15:30 BST
-            # the day before — staking through it has historically lost money.
+            # v2.6.7 — drifter+steamer-rival filter. Only drop a drifter
+            # when a rival in the same race has steamed ≥20% (well-backed
+            # money against us). Drifting alone is no longer enough.
+            # If snapshot is unavailable we cannot detect either side, so we
+            # set drifter_with_steamer_rival=False and let the horse through.
             _horse_str  = str(row.get("Horse", ""))
             _course_str = str(row.get("Course", ""))
             _morn_key   = (f"{_horse_str.lower().strip()}|"
                            f"{_course_str.lower().strip()}|"
                            f"{t.strip()}")
             _morn_dec   = _morning_prices.get(_morn_key, 0.0)
-            if _morn_dec and _morn_dec > 1.0 and dec > _morn_dec * 1.20:
+            _race_key_for_steam = f"{t}::{_course_str}"
+            _has_steamer_rival = bool(_race_has_steamer.get(_race_key_for_steam, False))
+            _has_drifted = bool(_morn_dec and _morn_dec > 1.0
+                                and dec >= _morn_dec * 1.20)
+            _drifter_with_steamer_rival = False
+            if _has_drifted and _has_steamer_rival:
                 _drift_pct = (dec - _morn_dec) / _morn_dec * 100.0
-                print(f"[Brief] Drift-excluded {_horse_str} @ {dec:.2f}x "
-                      f"(morning {_morn_dec:.2f}x, drift {_drift_pct:+.1f}%)")
+                print(f"[Brief] Dropped: drifter vs steamer in same race — "
+                      f"{_horse_str} @ {dec:.2f}x (morning {_morn_dec:.2f}x, "
+                      f"drift {_drift_pct:+.1f}%); rival steamed in "
+                      f"{_race_key_for_steam}")
                 drift_excluded_log.append({
                     "horse":        _horse_str,
                     "course":       _course_str,
@@ -319,8 +355,15 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                     "current_odds": round(dec, 2),
                     "drift_pct":    round(_drift_pct, 1),
                     "drift_excluded": True,
+                    "reason":       "drifter_with_steamer_rival",
                 })
                 continue
+            elif _has_drifted and not _morning_prices:
+                # Snapshot unavailable for this row — flag for the email so
+                # the user sees the warning, but do not drop.
+                _drifter_with_steamer_rival = True
+            elif _has_drifted:
+                _drifter_with_steamer_rival = False
 
             runner = {
                 "horse":        str(row.get("Horse", "")),
@@ -485,6 +528,10 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 "dominant_rival_price":  dominant_rival_price,
                 "rival_top_trainer":  _rival_flag.get("rival_top_trainer", False),
                 "rival_trainer_name": _rival_flag.get("rival_trainer_name", ""),
+                # v2.6.7 — set when this horse has drifted ≥20% but the
+                # snapshot was unavailable to detect a rival steamer. Email
+                # surfaces it as a warning rather than dropping the bet.
+                "drifter_with_steamer_rival": _drifter_with_steamer_rival,
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
@@ -567,6 +614,17 @@ def _get_official_selections(conf_threshold: float = 0.50) -> list:
                 print(f"[Brief] NR gate removed {_dropped} non-runner(s) from selections")
         except Exception as _nr_err:
             print(f"[Brief] NR gate warning: {_nr_err}")
+
+        # v2.6.7: hard cap 5 selections — quality over volume.
+        # Applied AFTER all other filters (price gate, exclusion layer,
+        # confidence gate, drifter+steamer-rival, one-per-race, NR gate).
+        # Sort by confidence DESC, take top 5, then re-sort by time for the email.
+        if len(out) > 5:
+            _before_cap = len(out)
+            out = sorted(out, key=lambda x: x.get("confidence", 0.0), reverse=True)[:5]
+            out.sort(key=lambda x: x["time"])
+            print(f"[Brief] 5-cap applied: {_before_cap} → 5 selections "
+                  f"(top by confidence)")
 
         # Persist drift exclusions so the dashboard can show "DRIFTED — excluded"
         if drift_excluded_log:
@@ -2399,9 +2457,9 @@ def build_confirmed_selections() -> str:
     )
 
     # ── SECTION 1 — ADVISED BETS (prominent, at top) ───────────────────────
-    # Only Bet A (top 4 by confidence) and Bet B (top 5 by confidence) — these
+    # Only Bet A (top 3 by confidence) and Bet B (top 5 by confidence) — these
     # are the only horses to actually back today. Sorted-by-confidence is
-    # enforced inside engine.staking.get_bet_a / get_bet_b (v2.5.62).
+    # enforced inside engine.staking.get_bet_a / get_bet_b (v2.6.7).
     body += (
         '<div style="font-size:14px;font-weight:bold;color:#fff;letter-spacing:1px;'
         'text-transform:uppercase;padding:6px 4px;margin:4px 0 8px;'
@@ -3630,13 +3688,14 @@ STAKING RULES (PERMANENT — do not change without user approval)
 ────────────────────────────────────────────────────────────────
 Budget: £50 per bet (£100 total if both BET A and BET B active)
 Short price cut-off: evens (2.0 decimal) — hard exclusion
-Confidence threshold: 50% minimum (handicaps: 60%)
+Confidence threshold: 65% minimum (handicaps: 70%) — v2.6.7
 One horse per race: highest confidence only
 Group/Listed/Grade races: excluded entirely
+Hard cap: max 5 selections per day — quality over volume (v2.6.7)
 
-BET A (CORE) — top 4 selections by confidence
-  Lucky 15: £20 stake across 15 combination bets (4 horses)
-  Singles: £30 stake (£7.50 per horse)
+BET A (CORE) — top 3 selections by confidence (v2.6.7)
+  Patent: £20 stake across 7 combination bets (3 horses)
+  Singles: £30 stake (£10 per horse)
   Total: £50
 
 BET B (MID) — top 5 selections by confidence

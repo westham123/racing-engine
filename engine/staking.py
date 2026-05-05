@@ -33,15 +33,17 @@ from itertools import combinations as _combs
 
 
 # ── v2.5.54 — unified Bet A / Bet B staking ───────────────────────────────────
-# BET A = Core = top 4 by confidence — Lucky 15 (£20) + 4 singles (£30) = £50.
+# v2.6.7 — Bet A reduced from top 4 to top 3 (quality over volume). Bet B
+# unchanged at top 5.
+# BET A = Core = top 3 by confidence — Patent (£20) + 3 singles (£30) = £50.
 # BET B = Mid  = top 5 by confidence — Lucky 31 (£20) + 5 singles (£30) = £50.
 # Accumulators removed entirely. Each bet is independent at £50; combined £100.
-# Lucky 15  = 15 lines (4 singles + 6 doubles + 4 trebles + 1 four-fold).
+# Patent    =  7 lines (3 singles + 3 doubles + 1 treble).
 # Lucky 31  = 31 lines (5 singles + 10 doubles + 10 trebles + 5 four-folds + 1 five-fold).
 STAKING_MODE = "BET_A"
 
 _BET_CONFIG = {
-    "BET_A": {"n": 4, "lucky_label": "Lucky 15",
+    "BET_A": {"n": 3, "lucky_label": "Patent",
               "lucky_stake": 20.0, "singles_total": 30.0},
     "BET_B": {"n": 5, "lucky_label": "Lucky 31",
               "lucky_stake": 20.0, "singles_total": 30.0},
@@ -162,7 +164,7 @@ def _build_bet(tier_key: str, selections: list) -> dict:
     lucky_potential_return = round(lucky_potential_return, 2)
 
     lucky_bet = {
-        "type":             "L15" if n == 4 else "L31",
+        "type":             "PAT" if n == 3 else ("L15" if n == 4 else "L31"),
         "label":            cfg["lucky_label"],
         "stake":            cfg["lucky_stake"],
         "lines":            total_lines,
@@ -195,7 +197,7 @@ def _build_bet(tier_key: str, selections: list) -> dict:
 
 
 def get_bet_a(selections: list) -> dict:
-    """BET A — Core fold — top 4 selections. Lucky 15 + singles, £50 total."""
+    """BET A — Core — top 3 selections. Patent + singles, £50 total (v2.6.7)."""
     return _build_bet("BET_A", selections)
 
 
@@ -207,9 +209,9 @@ def get_bet_b(selections: list) -> dict:
 def get_daily_bets(selections: list) -> dict:
     """Return both BET A and BET B from a ranked selection list.
 
-    - <4 selections: BET A includes everything available (skipped flag set);
-      BET B skipped.
-    - exactly 4: BET A runs; BET B skipped.
+    v2.6.7 — Bet A is now top 3 (was top 4).
+    - <3 selections: BET A skipped; BET B skipped.
+    - 3-4 selections: BET A runs; BET B skipped.
     - 5+ selections: both run.
     """
     bet_a = get_bet_a(selections)
@@ -994,9 +996,11 @@ def get_fold_bets(selections: list) -> dict:
 
     v2.5.50 — form-first fold structure.
 
-    Bet A (core fold): confidence >= 0.55 AND NOT dominant_rival AND NOT yg_risk.
-    Bet B (extended):  confidence >= 0.50 — may include dominant_rival or
+    Bet A (core fold): confidence >= 0.65 AND NOT dominant_rival AND NOT yg_risk.
+    Bet B (extended):  confidence >= 0.65 — may include dominant_rival or
                        yg_risk horses, flagged in warnings.
+    v2.6.7: thresholds raised from 0.55/0.50 to a uniform 0.65 floor; the
+    handicap uplift to 0.70 lives in OddsModel.get_handicap_threshold.
 
     Hard exclusions (both bets): decimal < 2.0 (evens cut-off), low_value_acca,
     field_size >= 16. Minimum 2 legs to form a fold; if only 1 horse qualifies
@@ -1012,8 +1016,9 @@ def get_fold_bets(selections: list) -> dict:
     if not selections:
         return result
 
-    BET_A_CONF = 0.55
-    BET_B_CONF = 0.50
+    # v2.6.7 — thresholds tightened from 0.55/0.50 to a uniform 0.65 floor.
+    BET_A_CONF = 0.65
+    BET_B_CONF = 0.65
 
     def _runners(s):
         for k in ("runners", "field_size"):
@@ -1088,10 +1093,11 @@ def get_fold_bets(selections: list) -> dict:
         return w
 
     if len(core) >= 2:
-        bet_a_horses = core[:4]
+        # v2.6.7 — Bet A capped at 3 (was 4).
+        bet_a_horses = core[:3]
         legs_a = len(bet_a_horses)
-        fold_label = {2: "2-fold double", 3: "3-fold treble",
-                      4: "4-fold acca"}.get(legs_a, f"{legs_a}-fold acca")
+        fold_label = {2: "2-fold double", 3: "3-fold treble"}.get(
+            legs_a, f"{legs_a}-fold acca")
         bet_a_pool = sorted(bet_a_horses, key=lambda x: x.get("time", ""))
         result["bet_a"] = {
             "horses":            bet_a_pool,

@@ -325,17 +325,35 @@ class OddsModel:
 
     # ── v2.6.0 helpers — going / course / distance / OR / class / freshness ─
 
+    # v2.6.7 — full shortcode map matching Sporting Life's
+    # `previous_results.going_shortcode` values. Looked up case-sensitively
+    # before any substring fallback.
+    _GOING_SHORTCODES = {
+        # Good
+        "GD": "GOOD", "Gd": "GOOD", "G": "GOOD",
+        # Fast / Firm
+        "GF": "FAST", "F": "FAST", "FT": "FAST", "Fm": "FAST", "HF": "FAST",
+        # Soft
+        "GS": "SOFT", "SF": "SOFT", "Sf": "SOFT", "S": "SOFT",
+        "SL": "SOFT", "Sl": "SOFT", "HV": "SOFT", "Hv": "SOFT", "H": "SOFT",
+        # All-weather
+        "STD": "AW", "SS": "AW", "AW": "AW",
+    }
+
     @staticmethod
     def _classify_going(going_str: str) -> str:
         """Map a going_shortcode or full going string to a coarse group."""
         if not going_str:
             return ""
-        s = str(going_str).strip().upper()
-        # Shortcodes first
-        if s in ("F", "GF"):       return "FAST"
-        if s == "G":               return "GOOD"
-        if s in ("GS", "S", "H", "VS", "YS"):  return "SOFT"
-        if s in ("ST", "SL", "SF"):return "AW"
+        raw = str(going_str).strip()
+        # v2.6.7 — exact shortcode lookup first (case-sensitive — feed uses
+        # mixed case like 'Gd', 'Fm', 'Hv').
+        if raw in OddsModel._GOING_SHORTCODES:
+            return OddsModel._GOING_SHORTCODES[raw]
+        # Try upper-case fallback for shortcodes that don't have a lower variant
+        s = raw.upper()
+        if s in OddsModel._GOING_SHORTCODES:
+            return OddsModel._GOING_SHORTCODES[s]
         # Full string — case-insensitive substring checks
         sl = s.lower()
         if "firm" in sl:           return "FAST"
@@ -785,12 +803,17 @@ class OddsModel:
         """
         Handicap uplift: raise the required threshold for handicap races.
         Handicaps have larger, more competitive fields — harder to predict.
-        Flat conditions races: base_threshold (default 50% — v2.5.45)
-        Handicaps: base_threshold + 0.10 (default 60% — v2.5.45)
+
+        v2.6.7 — thresholds tightened across the board after sub-65% selections
+        consistently underperformed in backtests:
+          Non-handicap: 65% minimum
+          Handicaps:    70% minimum (base + 0.05 floor enforced)
         """
-        if runner_data.get("is_handicap", False):
-            return round(base_threshold + 0.10, 2)
-        return base_threshold
+        is_hcap = bool(runner_data.get("is_handicap", False))
+        # Non-handicap floor 0.65, handicap floor 0.70 — clamp the caller's
+        # base_threshold up to the floor so a relaxed UI slider can't lower it.
+        floor = 0.70 if is_hcap else 0.65
+        return round(max(base_threshold + (0.05 if is_hcap else 0.0), floor), 2)
 
     def _trainer_travel_signal(self, trainer_name: str) -> float:
         """Returns 0.05 uplift if a top-travelling trainer name is detected."""
