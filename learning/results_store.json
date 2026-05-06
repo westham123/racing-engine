@@ -47,6 +47,21 @@
       "won": true,
       "settled_at": "2026-05-06T08:11:52.478991",
       "settled": true
+    },
+    {
+      "race_id": "2026-05-05::21:00::Wolverhampton",
+      "course": "Wolverhampton",
+      "time": "21:00",
+      "date": "2026-05-05",
+      "winner": "Magna",
+      "horse": "Magna",
+      "our_horse": "Magna",
+      "won": true,
+      "settled": true,
+      "settled_at": "2026-05-06T08:17:17.577904",
+      "sp": "4/1",
+      "selection_odds": "7/4",
+      "bet_a": true
     }
   ]
 }
