@@ -1,1 +1,102 @@
-{"bath": {"name": "Bath", "by_going": {"GOOD": {"wins": 15, "runs": 151, "win_pct": 0.0993}}}, "southwell (aw)": {"name": "Southwell (AW)", "by_going": {"AW": {"wins": 7, "runs": 60, "win_pct": 0.1167}}}, "kempton (aw)": {"name": "Kempton (AW)", "by_going": {"AW": {"wins": 7, "runs": 54, "win_pct": 0.1296}}}}
+{
+  "fairyhouse": {
+    "name": "Fairyhouse",
+    "by_going": {
+      "SOFT": {
+        "wins": 2,
+        "runs": 20,
+        "win_pct": 0.1
+      }
+    }
+  },
+  "gowran park": {
+    "name": "Gowran Park",
+    "by_going": {
+      "SOFT": {
+        "wins": 15,
+        "runs": 163,
+        "win_pct": 0.092
+      }
+    }
+  },
+  "dundalk (aw)": {
+    "name": "Dundalk (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 5,
+        "runs": 44,
+        "win_pct": 0.1136
+      }
+    }
+  },
+  "bath": {
+    "name": "Bath",
+    "by_going": {
+      "GOOD": {
+        "wins": 15,
+        "runs": 151,
+        "win_pct": 0.0993
+      }
+    }
+  },
+  "southwell (aw)": {
+    "name": "Southwell (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 25,
+        "runs": 237,
+        "win_pct": 0.1055
+      }
+    }
+  },
+  "kempton (aw)": {
+    "name": "Kempton (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 14,
+        "runs": 118,
+        "win_pct": 0.1186
+      }
+    }
+  },
+  "newcastle (aw)": {
+    "name": "Newcastle (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 24,
+        "runs": 210,
+        "win_pct": 0.1143
+      }
+    }
+  },
+  "lingfield (aw)": {
+    "name": "Lingfield (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 9,
+        "runs": 81,
+        "win_pct": 0.1111
+      }
+    }
+  },
+  "wolverhampton (aw)": {
+    "name": "Wolverhampton (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 26,
+        "runs": 234,
+        "win_pct": 0.1111
+      }
+    }
+  },
+  "chelmsford (aw)": {
+    "name": "Chelmsford (AW)",
+    "by_going": {
+      "AW": {
+        "wins": 4,
+        "runs": 32,
+        "win_pct": 0.125
+      }
+    }
+  }
+}
