@@ -2705,8 +2705,41 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
         n = (name or "").lower().strip()
         return any((r.get("winner", "") or "").lower().strip() == n for r in results)
 
-    winners = [s for s in selections if _won_horse(s.get("horse", ""))]
-    losers  = [s for s in selections if s not in winners]
+    # v2.6.9 — PENDING for late races (≥20:30 BST) when no result is in the
+    # feed yet. Evening summary fires at 21:00 BST and the last race typically
+    # finishes after that. Without this, late races get marked LOSS by default.
+    def _has_result_for(s: dict) -> bool:
+        n = (s.get("horse", "") or "").lower().strip()
+        c = (s.get("course", "") or "").lower().strip()
+        t = (s.get("time", "") or "").strip()
+        for r in results:
+            if (r.get("winner", "") or "").lower().strip() == n:
+                return True
+            rc = (r.get("course", "") or "").lower().strip()
+            rt = (r.get("time", "") or "").strip()
+            race_str = (r.get("race", "") or "").lower()
+            if rc and rt and rc == c and rt == t:
+                return True
+            if c and t and c in race_str and t in race_str:
+                return True
+        return False
+
+    def _is_pending(s: dict) -> bool:
+        t = (s.get("time", "") or "").strip()
+        if not t or ":" not in t:
+            return False
+        try:
+            hh, mm = t.split(":")[:2]
+            mins = int(hh) * 60 + int(mm)
+        except Exception:
+            return False
+        return mins >= (20 * 60 + 30) and not _has_result_for(s)
+
+    pending     = [s for s in selections if _is_pending(s)]
+    pending_set = {id(s) for s in pending}
+    settled_sels = [s for s in selections if id(s) not in pending_set]
+    winners = [s for s in settled_sels if _won_horse(s.get("horse", ""))]
+    losers  = [s for s in settled_sels if s not in winners]
 
     def _eval_bet(bet):
         """Return (return_amount, total_stake, won_lines, total_lines, failed_horses)."""
@@ -2786,7 +2819,8 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
             return ('<div style="padding:12px 0;color:#888;font-size:13px;">'
                     'No selections recorded for today.</div>')
         rows = []
-        for s in sorted(selections, key=lambda x: (x.get("time", ""), x.get("course", ""))):
+        # v2.6.9 — render settled selections first, pending separately below
+        for s in sorted(settled_sels, key=lambda x: (x.get("time", ""), x.get("course", ""))):
             won = _won_horse(s.get("horse", ""))
             tag = _bet_tag(s.get("horse", ""))
             sp_str = next(
@@ -2822,6 +2856,29 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
                 f'</tr></table>'
                 f'</div>'
             )
+        # v2.6.9 — pending card for late races (≥20:30 BST) without results
+        for s in sorted(pending, key=lambda x: (x.get("time", ""), x.get("course", ""))):
+            tag = _bet_tag(s.get("horse", ""))
+            odds_disp = s.get("curr_odds") or s.get("odds") or ""
+            odds_show = str(odds_disp) if odds_disp else "—"
+            rows.append(
+                f'<div style="display:block;padding:9px 10px;background:#23252e;'
+                f'border-bottom:1px solid #2a2a2a;">'
+                f'<table style="width:100%;border-collapse:collapse;"><tr>'
+                f'<td style="width:22px;font-size:18px;vertical-align:top;color:#aaa;">⏳</td>'
+                f'<td style="vertical-align:top;">'
+                f'<div style="font-size:14px;font-weight:bold;color:#ddd;">{s.get("horse","")}</div>'
+                f'<div style="font-size:12px;color:#888;margin-top:2px;">'
+                f'{s.get("time","")} {s.get("course","")}'
+                f'</div>'
+                f'</td>'
+                f'<td style="text-align:right;vertical-align:top;white-space:nowrap;">'
+                f'<div style="font-size:13px;color:#aaa;font-weight:bold;">PENDING</div>'
+                f'<div style="font-size:11px;color:#888;margin-top:2px;">{odds_show} · [{tag}]</div>'
+                f'</td>'
+                f'</tr></table>'
+                f'</div>'
+            )
         # Summary line
         a_n = len(bet_a_names)
         b_n = len(bet_b_names)
@@ -2831,9 +2888,15 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
                      f"from {a_n} Bet A selections ({a_pct:.0f}%)") if a_n else "Bet A: no qualifying selections"
         b_summary = (f"{bet_b_winners} winner{'s' if bet_b_winners != 1 else ''} "
                      f"from {b_n} Bet B selections ({b_pct:.0f}%)") if b_n else "Bet B: no qualifying selections"
+        pending_line = (
+            f"<br><span style='color:#d0a040;'>"
+            f"{len(pending)} race{'s' if len(pending) != 1 else ''} pending results — "
+            f"P&amp;L will update tomorrow.</span>"
+            if pending else ""
+        )
         rows.append(
             f'<div style="padding:10px 10px 4px;font-size:12px;color:#aaa;">'
-            f'{a_summary}<br>{b_summary}'
+            f'{a_summary}<br>{b_summary}{pending_line}'
             f'</div>'
         )
         return "".join(rows)
@@ -2963,10 +3026,17 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
             f'<div style="font-size:12px;color:#aaa;">'
             f'Bet A: {a_net_str} &middot; Bet B: {b_net_str} &middot; '
             f'Total staked £{total_staked:.2f}</div>'
+            + (
+                f'<div style="font-size:12px;color:#d0a040;margin-top:6px;">'
+                f'⏳ {len(pending)} race{"s" if len(pending) != 1 else ""} pending — '
+                f'P&amp;L will update tomorrow once results arrive.</div>'
+                if pending else ""
+            ) +
             f'</div>'
         )
 
-    body  = _section(f"Today's Results — {len(winners)}/{len(selections)} Winners",
+    _pending_suffix = f" ({len(pending)} pending)" if pending else ""
+    body  = _section(f"Today's Results — {len(winners)}/{len(settled_sels)} Winners{_pending_suffix}",
                      results_block, "#01696F")
     body += _section("P&L Summary", pl_block + net_footer, net_col)
     if note:
@@ -2979,7 +3049,7 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
         body += extra_html
 
     return _email_shell(
-        title       = f"Evening Summary — {len(winners)}/{len(selections)} Winners",
+        title       = f"Evening Summary — {len(winners)}/{len(settled_sels)} Winners{_pending_suffix}",
         label_color = "#01696F",
         label_text  = "Evening Summary",
         body_html   = body

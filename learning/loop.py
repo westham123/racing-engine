@@ -42,6 +42,43 @@ RECOMMENDATIONS_PATH = os.path.join(os.path.dirname(__file__), "recommendations.
 RESULTS_PATH         = os.path.join(os.path.dirname(__file__), "results_store.json")
 WEIGHTS_PATH         = os.path.join(os.path.dirname(__file__), "learned_weights.json")
 PERFORMANCE_PATH     = os.path.join(os.path.dirname(__file__), "performance.json")
+DAILY_SELECTIONS_PATH = os.path.join(os.path.dirname(__file__), "daily_selections.json")
+
+
+# v2.6.9 — match selection time to result time accounting for BST/UTC drift.
+# Selections snapshot stores BST times ("18:07"); results_store entries may
+# be either UTC or BST depending on source. Try direct match and ±60min.
+def _times_match(sel_time: str, res_time: str, tolerance_min: int = 10) -> bool:
+    def _to_min(t):
+        try:
+            hh, mm = (t or "").split(":")[:2]
+            return int(hh) * 60 + int(mm)
+        except Exception:
+            return None
+    a = _to_min(sel_time)
+    b = _to_min(res_time)
+    if a is None or b is None:
+        return False
+    for offset in (0, -60, 60):
+        if abs(a - (b + offset)) <= tolerance_min:
+            return True
+    return False
+
+
+def _find_our_horse_in_daily(course: str, time_: str, date_str: str) -> str:
+    """v2.6.9 — Look up our selection for a race in daily_selections.json
+    as a backup when recommendations.json was wiped or empty.
+    """
+    snap = _load(DAILY_SELECTIONS_PATH, {})
+    if not snap or snap.get("date") != date_str:
+        return ""
+    course_l = (course or "").strip().lower()
+    for sel in (snap.get("selections") or []):
+        s_course = (sel.get("course", "") or "").strip().lower()
+        s_time   = (sel.get("time", "") or "").strip()
+        if s_course == course_l and _times_match(s_time, time_):
+            return sel.get("horse", "") or ""
+    return ""
 
 DEFAULT_WEIGHTS = {
     "market_odds":  0.30,
@@ -306,6 +343,20 @@ class LearningLoop:
                     {},
                 )
 
+                # v2.6.9 — backup our_horse lookup from daily_selections.json
+                # when recommendations.json has no matching open record.
+                our_horse = ""
+                for rec in self.recommendations["records"]:
+                    if rec.get("race_id") == race_id and rec.get("outcome") is None:
+                        our_horse = rec.get("runner", "") or ""
+                        break
+                if not our_horse:
+                    our_horse = _find_our_horse_in_daily(course, time_, today)
+
+                won_flag = None
+                if our_horse:
+                    won_flag = (our_horse.strip().lower() == winner.strip().lower())
+
                 # Store result
                 result_record = {
                     "race_id":    race_id,
@@ -315,6 +366,9 @@ class LearningLoop:
                     "winner":     winner,
                     "jockey":     winning_runner.get("jockey", ""),
                     "trainer":    winning_runner.get("trainer", ""),
+                    "our_horse":  our_horse,
+                    "horse":      our_horse,
+                    "won":        won_flag,
                     "settled_at": datetime.now().isoformat(),
                 }
                 self.results["results"].append(result_record)
@@ -395,6 +449,7 @@ class LearningLoop:
 
                 # Match to open recs
                 matched_any = False
+                our_horse = ""
                 for rec in self.recommendations["records"]:
                     if rec.get("race_id") == race_id and rec.get("outcome") is None:
                         rec["outcome"]    = winner
@@ -402,9 +457,21 @@ class LearningLoop:
                                              == str(winner).strip().lower())
                         rec["settled_at"] = datetime.now().isoformat()
                         matched_any = True
+                        if not our_horse:
+                            our_horse = rec.get("runner", "") or ""
 
-                if not matched_any:
+                # v2.6.9 — backup lookup from daily_selections.json. Even if no
+                # recommendation matched, record the result so we can compute
+                # our_horse / won from the snapshot.
+                if not our_horse:
+                    our_horse = _find_our_horse_in_daily(course, time_, date_str)
+
+                if not matched_any and not our_horse:
                     continue
+
+                won_flag = None
+                if our_horse:
+                    won_flag = (our_horse.strip().lower() == winner.strip().lower())
 
                 # Store result. NB: top_horses payload from the historical
                 # results page does not carry trainer/jockey, so those fields
@@ -417,6 +484,9 @@ class LearningLoop:
                     "time":       time_,
                     "date":       date_str,
                     "winner":     winner,
+                    "our_horse":  our_horse,
+                    "horse":      our_horse,
+                    "won":        won_flag,
                     "settled_at": datetime.now().isoformat(),
                 }
                 self.results.setdefault("results", []).append(result_record)
