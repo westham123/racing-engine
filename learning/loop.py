@@ -369,6 +369,7 @@ class LearningLoop:
                     "our_horse":  our_horse,
                     "horse":      our_horse,
                     "won":        won_flag,
+                    "settled":    True,
                     "settled_at": datetime.now().isoformat(),
                 }
                 self.results["results"].append(result_record)
@@ -383,6 +384,7 @@ class LearningLoop:
                     if rec.get("race_id") == race_id and rec.get("outcome") is None:
                         rec["outcome"]    = winner
                         rec["won"]        = (rec["runner"].strip().lower() == winner.strip().lower())
+                        rec["settled"]    = True
                         rec["settled_at"] = datetime.now().isoformat()
 
                 _save(RECOMMENDATIONS_PATH, self.recommendations)
@@ -397,10 +399,25 @@ class LearningLoop:
 
     def settle_historical_date(self, date_str: str) -> int:
         """
-        Fetch Sporting Life results for a past date and settle open recommendations.
-        date_str: YYYY-MM-DD string
-        Returns count of races settled.
+        Fetch Sporting Life results for a past date and settle ONLY the races
+        for which we had a selection in daily_selections.json.
+
+        v2.6.9 fix: previously iterated the full race card and matched any race
+        within ±60min at the same course, which produced multiple wrong records
+        per selection (e.g. Mahler Moon @ Hereford 17:42 BST matched 16:42,
+        17:47, 18:47 — 3 loss records for one selection). Now selection-driven:
+        one record per selection, time tolerance ±10 min with BST/UTC offset.
         """
+        # Only process races where we had a selection for date_str.
+        snap = _load(DAILY_SELECTIONS_PATH, {})
+        if not snap or snap.get("date") != date_str:
+            print(f"[LearningLoop] No daily_selections snapshot for {date_str} — skipping")
+            return 0
+        our_selections = snap.get("selections") or []
+        if not our_selections:
+            print(f"[LearningLoop] No selections in snapshot for {date_str}")
+            return 0
+
         url = f"https://www.sportinglife.com/racing/results/{date_str}"
         try:
             r = requests.get(url, headers=HEADERS, timeout=15)
@@ -418,15 +435,15 @@ class LearningLoop:
             return 0
 
         meetings = data.get("props", {}).get("pageProps", {}).get("meetings", []) or []
-        settled = 0
 
+        # Flatten all races into a (course, time, winner) lookup list.
+        race_results = []
         for meeting in meetings:
             for race in meeting.get("races", []) or []:
                 course = race.get("course_name", "")
                 time_  = race.get("time", "")
                 if not course or not time_:
                     continue
-
                 winner = None
                 for th in race.get("top_horses", []) or []:
                     try:
@@ -437,67 +454,75 @@ class LearningLoop:
                         pass
                 if not winner:
                     continue
+                race_results.append({"course": course, "time": time_, "winner": winner})
 
-                race_id = f"{date_str}::{time_}::{course}"
+        settled = 0
+        for sel in our_selections:
+            sel_horse  = (sel.get("horse", "") or "").strip()
+            sel_course = (sel.get("course", "") or "").strip()
+            sel_time   = (sel.get("time", "") or "").strip()
+            if not sel_horse or not sel_course or not sel_time:
+                continue
 
-                already_settled = any(
-                    r.get("race_id") == race_id and r.get("won") is not None
-                    for r in self.recommendations["records"]
-                )
-                if already_settled:
+            # Find the specific race result that matches this selection.
+            sel_course_l = sel_course.lower()
+            match = None
+            for rr in race_results:
+                if rr["course"].strip().lower() != sel_course_l:
                     continue
+                if _times_match(sel_time, rr["time"], tolerance_min=10):
+                    match = rr
+                    break
+            if not match:
+                continue
 
-                # Match to open recs
-                matched_any = False
-                our_horse = ""
-                for rec in self.recommendations["records"]:
-                    if rec.get("race_id") == race_id and rec.get("outcome") is None:
-                        rec["outcome"]    = winner
-                        rec["won"]        = (str(rec.get("runner", "")).strip().lower()
-                                             == str(winner).strip().lower())
-                        rec["settled_at"] = datetime.now().isoformat()
-                        matched_any = True
-                        if not our_horse:
-                            our_horse = rec.get("runner", "") or ""
+            # Use the selection's own time/course for the race_id so it is
+            # stable across BST/UTC differences in the upstream feed.
+            race_id = f"{date_str}::{sel_time}::{sel_course}"
 
-                # v2.6.9 — backup lookup from daily_selections.json. Even if no
-                # recommendation matched, record the result so we can compute
-                # our_horse / won from the snapshot.
-                if not our_horse:
-                    our_horse = _find_our_horse_in_daily(course, time_, date_str)
+            # Skip if we've already recorded a settlement for this selection.
+            already = any(
+                r.get("race_id") == race_id and r.get("horse")
+                and r.get("horse", "").strip().lower() == sel_horse.lower()
+                for r in self.results.get("results", [])
+            )
+            if already:
+                continue
 
-                if not matched_any and not our_horse:
-                    continue
+            winner   = match["winner"]
+            won_flag = (sel_horse.lower() == winner.strip().lower())
 
-                won_flag = None
-                if our_horse:
-                    won_flag = (our_horse.strip().lower() == winner.strip().lower())
+            # Mark any open recommendation row for this selection.
+            for rec in self.recommendations["records"]:
+                if (rec.get("date") == date_str
+                        and (rec.get("course") or "").strip().lower() == sel_course_l
+                        and rec.get("runner", "").strip().lower() == sel_horse.lower()
+                        and rec.get("outcome") is None):
+                    rec["outcome"]    = winner
+                    rec["won"]        = won_flag
+                    rec["settled"]    = True
+                    rec["settled_at"] = datetime.now().isoformat()
 
-                # Store result. NB: top_horses payload from the historical
-                # results page does not carry trainer/jockey, so those fields
-                # stay blank for back-fills. Form scorer skips records where
-                # trainer/jockey is empty, so this is safe — going forward,
-                # auto_settle() (live path) does record both.
-                result_record = {
-                    "race_id":    race_id,
-                    "course":     course,
-                    "time":       time_,
-                    "date":       date_str,
-                    "winner":     winner,
-                    "our_horse":  our_horse,
-                    "horse":      our_horse,
-                    "won":        won_flag,
-                    "settled_at": datetime.now().isoformat(),
-                }
-                self.results.setdefault("results", []).append(result_record)
-
-                print(f"[LearningLoop] Settled: {winner} won {race_id}")
-                settled += 1
+            result_record = {
+                "race_id":    race_id,
+                "course":     sel_course,
+                "time":       sel_time,
+                "date":       date_str,
+                "winner":     winner,
+                "our_horse":  sel_horse,
+                "horse":      sel_horse,
+                "won":        won_flag,
+                "settled":    True,
+                "settled_at": datetime.now().isoformat(),
+            }
+            self.results.setdefault("results", []).append(result_record)
+            print(f"[LearningLoop] Settled: {sel_horse} vs winner {winner} @ {sel_course} {sel_time}")
+            settled += 1
 
         if settled:
             _save(RECOMMENDATIONS_PATH, self.recommendations)
             _save(RESULTS_PATH, self.results)
-        print(f"[LearningLoop] Historical settlement {date_str}: {settled} races")
+        print(f"[LearningLoop] Historical settlement {date_str}: {settled} selections")
         return settled
 
     def _update_form_stores(self, winning_runner: dict, course: str, today: str):
@@ -767,6 +792,10 @@ def settle_outstanding_recommendations() -> int:
     """
     Settle all pending recommendations by fetching their historical dates.
     Skips today's date (auto_settle handles that). Returns total races settled.
+
+    v2.6.9 — settle_historical_date is now selection-driven (only processes
+    races present in daily_selections.json), so this only triggers settlement
+    for past dates that still have open rows.
     """
     data = _load(RECOMMENDATIONS_PATH, {"records": []})
     recs = data.get("records", []) if isinstance(data, dict) else []
