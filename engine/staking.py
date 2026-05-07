@@ -54,31 +54,43 @@ def _decimal_of(s: dict) -> float:
     return float(s.get("decimal_odds", s.get("decimal", 0.0)) or 0.0)
 
 
-def _has_valid_price(s: dict) -> bool:
-    """v2.5.65 — strict price gate. Reject anything that isn't a real
-    decimal >= 2.0 (the evens floor). Catches Irish-track horses where
-    Oddschecker returns "?", "nan", "Best: nan", or no price at all."""
-    raw = (s.get("decimal_odds") if s.get("decimal_odds") is not None
-           else s.get("best_odds_decimal") if s.get("best_odds_decimal") is not None
-           else s.get("decimal"))
+def _has_valid_price(s) -> bool:
+    """v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter.
+    The 4/6 (1.67) Oddschecker fetch gate is SEPARATE — only this bet
+    qualification floor moved.
+
+    Accepts a selection dict (canonical) or a raw price string/number
+    (test/utility usage). Returns True iff a real decimal >= 3.0 can be
+    parsed. Rejects sentinels (?, nan, n/a, -, "") and NaN floats.
+    """
+    # Allow raw string/number input — convert "X/Y" fraction to decimal.
+    if isinstance(s, (int, float, str)):
+        raw = s
+    else:
+        raw = (s.get("decimal_odds") if s.get("decimal_odds") is not None
+               else s.get("best_odds_decimal") if s.get("best_odds_decimal") is not None
+               else s.get("decimal"))
     if raw is None:
         return False
     try:
         sval = str(raw).strip().lower()
     except Exception:
         return False
-    # v2.5.65 — reject sentinels including "?", "n/a", "-", "" used by feeds
-    # when no price is available (Punchestown / Irish tracks via Oddschecker).
     if sval in ("", "nan", "none", "?", "n/a", "na", "-", "null"):
         return False
+    # Fractional odds (e.g. "2/1") supported when called as a string.
     try:
-        f = float(raw)
-    except (TypeError, ValueError):
+        if "/" in sval:
+            n, d = sval.split("/")
+            f = (float(n) + float(d)) / float(d)
+        else:
+            f = float(raw)
+    except (TypeError, ValueError, ZeroDivisionError):
         return False
-    # NaN check (float("nan") parses but isn't a usable price)
-    if f != f:  # NaN never equals itself
+    if f != f:  # NaN
         return False
-    return f >= 2.0
+    # v2.6.12 — price floor raised to 3.0 (2/1) — no value in shorter
+    return f >= 3.0
 
 
 def _qualifies_for_bet(s: dict, tier_key: str) -> bool:
@@ -1035,7 +1047,7 @@ def get_fold_bets(selections: list) -> dict:
             dec = float(s.get("decimal") or 0.0)
         except Exception:
             continue
-        if dec < 2.0:  # v2.5.53 — evens floor (was 1.67 / 4/6)
+        if dec < 3.0:  # v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter
             continue
         if s.get("low_value_acca", False):
             continue

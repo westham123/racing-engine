@@ -320,8 +320,8 @@ def _get_official_selections(conf_threshold: float = 0.65) -> list:
             except (TypeError, ValueError):
                 print(f"[Gate] {_horse_log} excluded — unparsable price: {odds_str!r}")
                 continue
-            if not dec or dec < 2.0:
-                # v2.5.53 evens cut-off (was 4/6 / 1.67)
+            if not dec or dec < 3.0:
+                # v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter
                 continue
 
             # v2.5.50 — market position is information, not a filter.
@@ -545,6 +545,8 @@ def _get_official_selections(conf_threshold: float = 0.65) -> list:
                 # snapshot was unavailable to detect a rival steamer. Email
                 # surfaces it as a warning rather than dropping the bet.
                 "drifter_with_steamer_rival": _drifter_with_steamer_rival,
+                # v2.6.12 — value gap = our confidence vs market implied probability
+                "value_gap":   round(conf - (1.0 / dec), 4) if dec > 1.0 else None,
                 "role":        ("BANKER" if (conf >= 0.63 and dec <= 4.00) else "VALUE"),
                 "tier":        ("BANKER" if dec <= 2.50 else
                                 "MID"    if dec <= 5.00 else
@@ -2148,6 +2150,20 @@ def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None)
     role    = s.get("role", "VALUE")
     role_col = "#0b5394" if role == "BANKER" else "#6a1b9a"
 
+    # v2.6.12 — value gap display (our confidence - market implied)
+    _vg_raw = s.get("value_gap")
+    if _vg_raw is None and dec > 1.0:
+        _vg_raw = float(s.get("confidence", 0) or 0) - (1.0 / dec)
+    if _vg_raw is not None:
+        _vg_pct = _vg_raw * 100.0
+        _vg_col = "#2d7a3a" if _vg_pct > 0 else "#a13544"
+        value_gap_html = (
+            f' &middot; <span style="color:{_vg_col};font-weight:bold;">'
+            f'Value gap {_vg_pct:+.0f}%</span>'
+        )
+    else:
+        value_gap_html = ""
+
     # v2.5.62 — never render "nan" in the Best: line.
     _bf_raw = s.get("best_odds_fractional") or s.get("odds")
     _bf_str = ("" if _bf_raw is None else str(_bf_raw).strip())
@@ -2248,7 +2264,7 @@ def _selection_card_mobile(s: dict, snapshot: dict, morning_prices: dict = None)
         f'<b>Best:</b> {best_frac}'
         f'{f" @ {best_bk}" if best_bk else ""}</div>'
         f'<div style="font-size:13px;margin:4px 0;color:#1a1a1a;">'
-        f'<b>Conf:</b> {conf}% '
+        f'<b>Conf:</b> {conf}%{value_gap_html} '
         f'<span style="display:inline-block;background:{role_col};color:#fff;'
         f'font-size:11px;font-weight:bold;padding:2px 8px;border-radius:10px;'
         f'margin-left:4px;letter-spacing:0.5px;">{role}</span></div>'
@@ -2837,6 +2853,13 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
             mark      = "✓" if won else "✗"
             mark_col  = "#437A22" if won else "#A13544"
             label     = "WON" if won else "LOST"
+            # v2.6.12 — value gap at selection (genuinely above market expectations?)
+            _vg = s.get("value_gap")
+            if _vg is None:
+                _dec_for_vg = float(s.get("decimal", 0) or 0)
+                if _dec_for_vg > 1.0:
+                    _vg = float(s.get("confidence", 0) or 0) - (1.0 / _dec_for_vg)
+            vg_html = (f' · VG {_vg*100:+.0f}%') if _vg is not None else ""
             rows.append(
                 f'<div style="display:block;padding:9px 10px;'
                 f'border-bottom:1px solid #2a2a2a;">'
@@ -2851,7 +2874,7 @@ def build_evening_summary(results: list, selections: list, budget: float = 100.0
                 f'</td>'
                 f'<td style="text-align:right;vertical-align:top;white-space:nowrap;">'
                 f'<div style="font-size:13px;color:{mark_col};font-weight:bold;">{label}</div>'
-                f'<div style="font-size:11px;color:#888;margin-top:2px;">{odds_show} · [{tag}]</div>'
+                f'<div style="font-size:11px;color:#888;margin-top:2px;">{odds_show} · [{tag}]{vg_html}</div>'
                 f'</td>'
                 f'</tr></table>'
                 f'</div>'
@@ -3764,7 +3787,7 @@ SYSTEM RULES (CRITICAL — AI must follow at all times)
 DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 ──────────────────────────────────────────────────────────────
 • OFFICIAL SELECTION: a horse is official ONLY if it cleared BOTH
-  the confidence threshold AND the evens (2.0) price cut-off. No exceptions.
+  the confidence threshold AND the 2/1 (3.0 decimal) price cut-off. No exceptions.
 • NO HARDCODED / SAMPLE DATA: all selections must come from the
   live Sporting Life feed. Never display example or fallback horses.
 • NON-RUNNERS: must be stripped at EVERY output point — app Tab 1,
@@ -3779,7 +3802,7 @@ DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 STAKING RULES (PERMANENT — do not change without user approval)
 ────────────────────────────────────────────────────────────────
 Budget: £50 per bet (£100 total if both BET A and BET B active)
-Short price cut-off: evens (2.0 decimal) — hard exclusion
+Short price cut-off: 2/1 (3.0 decimal) — hard exclusion (v2.6.12)
 Confidence threshold: 65% minimum (handicaps: 70%) — v2.6.7
 One horse per race: highest confidence only
 Group/Listed/Grade races: excluded entirely

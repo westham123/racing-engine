@@ -52,10 +52,9 @@ import os
 
 from config.settings import WEIGHTS
 
-# v2.5.53 — minimum decimal price for any selection. Raised from 1.67 (4/6)
-# to 2.0 (evens) after sub-evens singles consistently underperformed in
-# backtests. Any horse with decimal SP < MIN_DECIMAL_ODDS is hard-excluded.
-MIN_DECIMAL_ODDS = 2.0
+# v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter. The 4/6
+# (1.67) Oddschecker fetch gate is SEPARATE and remains unchanged.
+MIN_DECIMAL_ODDS = 3.0
 from engine.form_parser import parse_form
 from engine.going_matcher import score_going_preference, score_going_from_form_string
 from engine.form_scorer import score_trainer_form, score_jockey_form
@@ -300,25 +299,54 @@ class OddsModel:
         except Exception:
             return 0.45  # Slightly below neutral — unknown quality
 
-    # ── Signal 3: Market Odds (15%) ───────────────────────────
-    def _score_market_odds(self, odds_str) -> float:
+    # ── Signal 3: Market Odds — Value Signal (v2.6.12) ─────────
+    def _score_market_odds(self, decimal_odds, confidence: float = None) -> float:
         """
-        Implied probability — sanity check signal only.
-        Deliberately down-weighted vs v1 to stop short prices dominating.
-        Capped at 0.80 so 1/10 shots don't score 0.91 and pull everything up.
+        v2.6.12 — VALUE signal. Scores the combination of confidence and price:
+        a horse only has value when we rate it highly AND it's not already a
+        short favourite.
+
+            value_gap = confidence - (1 / decimal_odds)
+
+        Two-pass calling pattern: pass `confidence` from all OTHER signals
+        (base_conf) so the market-odds slot reflects genuine value vs market.
+
+        Backwards-compatible: when called with one argument (the legacy
+        signature accepted a fractional odds string) it returns the neutral
+        0.50 — value cannot be computed without a base confidence. Callers
+        upstream (calculate_confidence) always supply the second arg.
         """
+        # Coerce decimal_odds — accept float, "3.0", "5/2".
         try:
-            s = str(odds_str).strip()
-            if "/" in s:
-                n, d = s.split("/")
-                implied = float(d) / (float(n) + float(d))
-            elif s.replace(".", "").isdigit():
-                implied = 1.0 / float(s)
+            if isinstance(decimal_odds, (int, float)):
+                dec = float(decimal_odds)
             else:
-                implied = 0.35
+                s = str(decimal_odds).strip()
+                if "/" in s:
+                    n, d = s.split("/")
+                    dec = (float(n) + float(d)) / float(d)
+                else:
+                    dec = float(s)
         except Exception:
-            implied = 0.35
-        return round(min(implied, 0.80), 4)
+            return 0.50
+        if dec is None or dec != dec or dec <= 1.0:
+            return 0.30 if (dec is not None and dec == dec and dec <= 1.0) else 0.50
+        if confidence is None:
+            return 0.50  # neutral when no base confidence supplied
+        try:
+            conf = float(confidence)
+        except Exception:
+            return 0.50
+        market_implied = 1.0 / dec
+        value_gap = conf - market_implied
+        if value_gap > 0.20:   return 0.85
+        if value_gap > 0.15:   return 0.78
+        if value_gap > 0.10:   return 0.70
+        if value_gap > 0.05:   return 0.62
+        if value_gap > -0.05:  return 0.50
+        if value_gap > -0.10:  return 0.42
+        if value_gap > -0.15:  return 0.35
+        return 0.28
 
     # ── Signal 4: Market Moves (15%) ──────────────────────────
     def _score_market_moves(self, signal: str, bet_movements: list = None) -> float:
@@ -424,11 +452,18 @@ class OddsModel:
         "GD": "GOOD", "Gd": "GOOD", "G": "GOOD",
         # Fast / Firm
         "GF": "FAST", "F": "FAST", "FT": "FAST", "Fm": "FAST", "HF": "FAST",
+        "FM": "FAST", "GD/FM": "FAST", "Gd/Fm": "FAST",
         # Soft
         "GS": "SOFT", "SF": "SOFT", "Sf": "SOFT", "S": "SOFT",
         "SL": "SOFT", "Sl": "SOFT", "HV": "SOFT", "Hv": "SOFT", "H": "SOFT",
+        # v2.6.12 — Irish jumps shortcodes
+        "GY": "SOFT", "Y": "SOFT", "YS": "SOFT",
+        "HY": "SOFT", "Hy": "SOFT", "Yg": "SOFT", "Gy": "SOFT",
+        "Sft": "SOFT", "GD/SF": "SOFT", "Gd/Sf": "SOFT",
         # All-weather
         "STD": "AW", "SS": "AW", "AW": "AW",
+        # v2.6.12 — additional AW compound shortcodes
+        "STS": "AW", "STF": "AW",
     }
 
     @staticmethod
@@ -448,11 +483,13 @@ class OddsModel:
         # Full string — case-insensitive substring checks
         sl = s.lower()
         if "firm" in sl:           return "FAST"
+        # v2.6.12 — Irish goings: "yielding", "soft to heavy", "good to yielding"
+        if "yielding" in sl:       return "SOFT"
         if "heavy" in sl or "soft" in sl: return "SOFT"
         if "standard" in sl or "slow" in sl or "polytrack" in sl or "tapeta" in sl or "all weather" in sl or "all-weather" in sl:
             return "AW"
         if "good" in sl:
-            # "Good to Firm" handled above by 'firm', "Good to Soft" by 'soft'
+            # "Good to Firm" handled above by 'firm', "Good to Soft"/"Good to Yielding" by earlier checks
             return "GOOD"
         return ""
 
@@ -950,7 +987,9 @@ class OddsModel:
 
         s_form    = self._score_horse_form(form_str, last_ran)
         s_tf      = self._score_tf_stars(tf_stars)
-        s_odds    = self._score_market_odds(odds_str)
+        # v2.6.12 — two-pass value calc: market_odds is scored AFTER base
+        # confidence is known. Compute decimal first; defer s_odds until base.
+        decimal_odds = _to_decimal(odds_str)
         s_moves   = self._score_market_moves(signal, bet_moves)
         # v2.6.8 — going group tightens trainer/jockey signals when historical
         # data covers today's surface; falls back gracefully to overall stats.
@@ -1013,10 +1052,13 @@ class OddsModel:
         # renormalise weights across signals that have real data.
         # Note: _score_tf_stars(None) returns 0.45 (not 0.50), so missing
         # tf_stars stays in the active set as a slight negative.
-        signal_scores = {
+        # v2.6.12 — two-pass value calc:
+        #   PASS 1: compute base_conf from every signal EXCEPT market_odds.
+        #   PASS 2: score market_odds using (decimal_odds, base_conf) and
+        #           re-blend into the final raw score.
+        base_signals = {
             "s_form":     s_form,
             "s_tf":       s_tf,
-            "s_odds":     s_odds,
             "s_moves":    s_moves,
             "s_trainer":  s_trainer,
             "s_jockey":   s_jockey,
@@ -1027,6 +1069,19 @@ class OddsModel:
             "s_class":    s_class,
             "s_fresh":    s_fresh,
         }
+        base_active = {k: v for k, v in base_signals.items() if abs(v - 0.50) > 0.01}
+        if not base_active:
+            base_conf = 0.50
+        else:
+            base_total_w = sum(w[k] for k in base_active)
+            base_conf = sum(v * w[k] / base_total_w for k, v in base_active.items())
+
+        # PASS 2 — value signal uses base_conf as our probability estimate
+        s_odds = self._score_market_odds(decimal_odds if decimal_odds > 0 else None,
+                                          base_conf)
+
+        signal_scores = dict(base_signals)
+        signal_scores["s_odds"] = s_odds
         active = {k: v for k, v in signal_scores.items() if abs(v - 0.50) > 0.01}
         if not active:
             raw = 0.50
@@ -1108,10 +1163,18 @@ class OddsModel:
         all_ratings  = runner_data.get("all_ratings_in_race", []) or []
         last_ran_days = runner_data.get("last_ran_days")
 
+        # v2.6.12 — market_odds is the value signal: needs decimal + base_conf.
+        # Compute a quick base_conf from the same signals used in calculate_confidence
+        # so the breakdown matches what the engine actually sees.
+        _bd_dec = _to_decimal(runner_data.get("current_odds") or runner_data.get("odds", "N/A"))
+        _bd_base = round(0.5 * self._score_horse_form(form_str)
+                          + 0.2 * self._score_tf_stars(tf_stars)
+                          + 0.3 * self._score_market_moves(signal, bet_moves), 4)
         return {
             "horse_form":   round(self._score_horse_form(form_str), 3),
             "tf_stars":     round(self._score_tf_stars(tf_stars), 3),
-            "market_odds":  round(self._score_market_odds(runner_data.get("odds", "N/A")), 3),
+            "market_odds":  round(self._score_market_odds(
+                _bd_dec if _bd_dec > 0 else None, _bd_base), 3),
             "market_moves": round(self._score_market_moves(signal, bet_moves), 3),
             "trainer_form": round(self._score_trainer_form(trainer, tf_stars), 3),
             "jockey_form":  round(self._score_jockey_form(jockey, tf_stars), 3),

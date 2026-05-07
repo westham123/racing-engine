@@ -394,7 +394,7 @@ with st.sidebar:
     st.markdown("🟢 Results (At The Races) — *live (free)*")
     st.markdown("🟢 Results (GG.co.uk) — *live (free)*")
     st.markdown("---")
-    st.markdown("**Engine v2.6.11** — PENDING state for late races, settlement BST/UTC fix, our_horse backup from daily_selections")
+    st.markdown("**Engine v2.6.12** — value signal, price floor 2/1, missing AW/Irish shortcodes, value gap in emails")
     st.caption("Tab 1 rescores all runners live on every load")
     st.markdown("GitHub: `westham123/racing-engine`")
     st.markdown("---")
@@ -975,7 +975,7 @@ BET B is only active when 5+ selections qualify. The straight n-fold
 accumulator has been removed entirely — Lucky perms already cover the
 all-win line, and singles smooth the variance.
 
-**Hard exclusions (upstream):** evens (2.0) price floor, Group/Listed/Grade
+**Hard exclusions (upstream):** 2/1 (3.0) price floor (v2.6.12), Group/Listed/Grade
 races, and the standard confidence threshold.
             """)
 
