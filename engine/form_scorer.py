@@ -54,12 +54,18 @@ def record_result(race_date: str, course: str, race_time: str,
         trainer:    Trainer name
         odds:       Winning odds (optional)
     """
+    # v2.7 — guard against blank-horse entries; results_store should only
+    # ever contain real winners. A bug in the daily brief previously wrote
+    # empty rows when a full race card was looped over instead of selections.
+    if not winner or not str(winner).strip():
+        return
     store = _load_store()
     store["results"].append({
         "date": race_date,
         "course": course,
         "time": race_time,
         "winner": winner,
+        "horse": winner,
         "jockey": jockey,
         "trainer": trainer,
         "odds": odds,

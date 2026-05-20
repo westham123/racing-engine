@@ -986,6 +986,90 @@ def _section(title: str, content_html: str, border_color: str = "#01696F") -> st
   </div>"""
 
 
+def _tiered_selections_block(selections: list) -> str:
+    """v2.7 — render selections grouped by tier (TWILIGHT_JET, STEAMERS,
+    VALUE, EACH_WAY). Each selection is tier-classified via
+    `engine.staking._classify_tier`. Used in confirmed selections + morning
+    brief emails.
+    Blank-horse entries are silently skipped.
+    """
+    try:
+        from engine.staking import _classify_tier
+    except Exception:
+        return ""
+    if not selections:
+        return ""
+
+    buckets: dict = {"TWILIGHT_JET": [], "STEAMER": [], "SHORT_STEAMER": [],
+                     "VALUE": [], "EACH_WAY": [], "STANDARD": []}
+    for s in selections:
+        try:
+            if not s or not str(s.get("horse", "")).strip():
+                continue
+            h = dict(s)
+            # normalise decimal/show keys used by _classify_tier
+            h.setdefault("decimal_odds", s.get("decimal") or s.get("best_odds_decimal"))
+            h.setdefault("show_price_decimal", s.get("show_price_decimal")
+                         or s.get("show_decimal") or s.get("show_price") or 0)
+            tier = _classify_tier(h)
+            buckets.setdefault(tier, []).append(h)
+        except Exception:
+            continue
+
+    def _row(h):
+        try:
+            horse = h.get("horse", "?")
+            dec = float(h.get("decimal_odds") or h.get("decimal") or 0)
+            show = float(h.get("show_price_decimal") or 0)
+            conf = float(h.get("confidence") or 0)
+            move = ""
+            if show > 0 and dec > 0:
+                pct = (show - dec) / show * 100
+                move = f" — {pct:+.0f}% move from {show:.2f} show"
+            return (f"<li style='padding:3px 0;color:#e0e0e0;font-size:13px;'>"
+                    f"<b>{horse}</b> @ {dec:.2f}x"
+                    f"{move} &nbsp;<span style='color:#888;'>conf {conf*100:.0f}%</span>"
+                    f"</li>")
+        except Exception:
+            return ""
+
+    blocks = []
+    tier_labels = [
+        ("TWILIGHT_JET", "🔴 TWILIGHT JET RULE — mandatory each-way"),
+        ("STEAMER",      "🟡 STEAMERS — mandatory win singles"),
+        ("SHORT_STEAMER","🟡 SHORT STEAMERS — banker singles"),
+        ("VALUE",        "🟢 VALUE (5/1+, 65%+ confidence)"),
+        ("EACH_WAY",     "🔵 EACH-WAY (8/1+)"),
+        ("STANDARD",     "⚪ STANDARD"),
+    ]
+    for key, lbl in tier_labels:
+        items = buckets.get(key) or []
+        if not items:
+            continue
+        rows = "".join(_row(h) for h in items)
+        blocks.append(
+            f"<div style='margin-bottom:10px;'>"
+            f"<div style='font-size:13px;font-weight:bold;color:#ffffff;margin-bottom:4px;'>{lbl}</div>"
+            f"<ul style='margin:0 0 0 18px;padding:0;'>{rows}</ul>"
+            f"</div>"
+        )
+    if not blocks:
+        return ""
+    # Budget split summary line (£50 budget per spec).
+    n_jet = len(buckets.get("TWILIGHT_JET") or [])
+    n_steam = len(buckets.get("STEAMER") or []) + len(buckets.get("SHORT_STEAMER") or [])
+    n_val = len(buckets.get("VALUE") or [])
+    n_ew = len(buckets.get("EACH_WAY") or [])
+    n_total = n_jet + n_steam + n_val + n_ew
+    summary = (
+        f"<div style='font-size:12px;color:#888;margin-top:6px;'>"
+        f"Budget split (£50): steamer singles 30% (£15), value/acca 40% (£20), "
+        f"each-way 30% (£15) &nbsp;|&nbsp; Total: {n_total} selections "
+        f"({n_jet} jets, {n_steam} steamers, {n_val} value, {n_ew} EW).</div>"
+    )
+    return "".join(blocks) + summary
+
+
 def _moves_lookup(movers: list) -> dict:
     """Build a horse-name keyed dict of overnight move data for quick lookup."""
     out = {}
@@ -1589,6 +1673,12 @@ def _morning_html(selections: list) -> str:
     if not selections:
         return '<p style="color:#888;font-size:13px;margin:0;">No qualifying selections at this time.</p>'
 
+    # v2.7 — tiered selections summary at the top of the morning brief.
+    try:
+        tier_html = _tiered_selections_block(selections)
+    except Exception:
+        tier_html = ""
+
     snapshot  = _load_show_price_snapshot()
     # v2.6.0 — added going / course_form / distance_form / or_gap /
     # class_consistency / freshness now that they're computed from feed data.
@@ -1878,6 +1968,17 @@ def _morning_html(selections: list) -> str:
             race_card += '</div>'
             html += race_card
 
+    # v2.7 — prepend tier summary so the reader sees groupings up front.
+    if tier_html:
+        html = (
+            '<div style="background:#1c1f2e;border-radius:10px;padding:14px 16px;'
+            'margin-bottom:14px;border-top:2px solid #ff8a00;">'
+            '<div style="font-size:13px;font-weight:bold;color:#ffffff;'
+            'margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px;">'
+            'v2.7 Tier Summary</div>'
+            f'{tier_html}</div>'
+        ) + html
+
     return html
 
 
@@ -1900,6 +2001,10 @@ def _save_daily_selections_snapshot(selections: list) -> None:
     today = datetime.now(_LONDON).date().isoformat()
     snap_sels = []
     for s in (selections or []):
+        # v2.7 — guard: never write blank-horse entries to the daily snapshot.
+        _hn = s.get("horse", "")
+        if not _hn or not str(_hn).strip():
+            continue
         snap_sels.append({
             "horse":        s.get("horse", ""),
             "course":       s.get("course", ""),

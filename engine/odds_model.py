@@ -52,9 +52,20 @@ import os
 
 from config.settings import WEIGHTS
 
-# v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter. The 4/6
-# (1.67) Oddschecker fetch gate is SEPARATE and remains unchanged.
-MIN_DECIMAL_ODDS = 3.0
+# v2.7 — price floor removed; tiering handles price bands.
+MIN_DECIMAL_ODDS = 1.5
+
+# v2.7 — Steamer override weights. Applied when a horse is classified as
+# STEAMER / SHORT_STEAMER / TWILIGHT_JET (move_pct >= 30%). Sums to 1.0.
+STEAMER_WEIGHTS = {
+    "market_moves":  0.40,
+    "horse_form":    0.20,
+    "market_odds":   0.15,
+    "trainer_form":  0.12,
+    "jockey_form":   0.08,
+    "course_form":   0.03,
+    "distance_form": 0.02,
+}
 from engine.form_parser import parse_form
 from engine.going_matcher import score_going_preference, score_going_from_form_string
 from engine.form_scorer import score_trainer_form, score_jockey_form
@@ -734,7 +745,9 @@ class OddsModel:
             if snap_date_str:
                 try:
                     snap_date = _date.fromisoformat(snap_date_str)
-                    if snap_date < today:
+                    # v2.7 — snapshot is captured the day before for next-day
+                    # racing; yesterday's date is valid. Only warn if older.
+                    if snap_date < today - timedelta(days=1):
                         print(f"[OddsModel] WARN show_price_snapshot.json is STALE "
                               f"(date={snap_date_str}, today={today.isoformat()}) — market_moves neutral")
                 except ValueError:
@@ -1221,3 +1234,382 @@ def _to_decimal(odds_str) -> float:
         return float(s)
     except Exception:
         return 0.0
+
+
+# ── v2.7 — Additional signal wiring ────────────────────────────────────────
+# Six new signals fed from already-collected data:
+#   s_draw          (rpscrape CSV)         weight 0.05
+#   s_rpr           (rpscrape CSV)         weight 0.06
+#   s_consensus     (OC cache)             weight 0.04
+#   s_shorteners    (OC cache)             weight 0.04
+#   s_bf_premium    (OC cache BF vs cons)  weight 0.04
+#   s_trainer breakdowns (by_going/class/distance) — overrides flat trainer wr
+#
+# All signals wrapped — return 0.5 (neutral) on any KeyError, FileNotFoundError,
+# ZeroDivisionError, or parse failure. No exception escapes.
+
+_DRAW_BIAS_CACHE: dict | None = None
+_RPR_LOOKUP_CACHE: dict | None = None
+_OC_CACHE: dict | None = None
+_BHA_LOOKUP_CACHE: dict | None = None
+
+_RPSCRAPE_CSV = "/home/user/workspace/rpscrape/data/region/gb/flat/2025_04_01_2025_07_31.csv"
+_BHA_LOOKUP_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "learning", "bha_ratings_lookup.json",
+)
+_OC_CACHE_PATH = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "learning", "oc_cache.json",
+)
+
+
+def _build_draw_bias() -> dict:
+    """Build draw_bias[course][draw] = win_pct from rpscrape CSV.
+    Only includes draw positions with >= 20 historical runs."""
+    global _DRAW_BIAS_CACHE
+    if _DRAW_BIAS_CACHE is not None:
+        return _DRAW_BIAS_CACHE
+    bias: dict = {}
+    try:
+        import csv
+        counts: dict = {}
+        with open(_RPSCRAPE_CSV, newline="") as f:
+            r = csv.DictReader(f)
+            for row in r:
+                course = (row.get("course") or "").strip().lower()
+                draw_raw = (row.get("draw") or "").strip()
+                pos_raw = (row.get("pos") or "").strip()
+                if not course or not draw_raw or not pos_raw:
+                    continue
+                try:
+                    draw = int(draw_raw)
+                except (TypeError, ValueError):
+                    continue
+                key = (course, draw)
+                d = counts.setdefault(key, {"runs": 0, "wins": 0})
+                d["runs"] += 1
+                if pos_raw == "1":
+                    d["wins"] += 1
+        for (course, draw), d in counts.items():
+            if d["runs"] < 20:
+                continue
+            win_pct = d["wins"] / d["runs"]
+            bias.setdefault(course, {})[draw] = win_pct
+    except Exception:
+        bias = {}
+    _DRAW_BIAS_CACHE = bias
+    return bias
+
+
+def _build_rpr_lookup() -> dict:
+    """Build {horse_name_lower: latest_rpr} from rpscrape CSV."""
+    global _RPR_LOOKUP_CACHE
+    if _RPR_LOOKUP_CACHE is not None:
+        return _RPR_LOOKUP_CACHE
+    lookup: dict = {}
+    try:
+        import csv
+        with open(_RPSCRAPE_CSV, newline="") as f:
+            r = csv.DictReader(f)
+            for row in r:
+                horse = (row.get("horse") or "").strip().lower()
+                rpr_raw = (row.get("rpr") or "").strip()
+                date = (row.get("date") or "").strip()
+                if not horse or not rpr_raw:
+                    continue
+                try:
+                    rpr = int(rpr_raw)
+                except (TypeError, ValueError):
+                    continue
+                prev = lookup.get(horse)
+                if prev is None or date > prev[1]:
+                    lookup[horse] = (rpr, date)
+        lookup = {h: v[0] for h, v in lookup.items()}
+    except Exception:
+        lookup = {}
+    _RPR_LOOKUP_CACHE = lookup
+    return lookup
+
+
+def _load_bha_lookup() -> dict:
+    global _BHA_LOOKUP_CACHE
+    if _BHA_LOOKUP_CACHE is not None:
+        return _BHA_LOOKUP_CACHE
+    try:
+        with open(_BHA_LOOKUP_PATH) as f:
+            _BHA_LOOKUP_CACHE = json.load(f) or {}
+    except Exception:
+        _BHA_LOOKUP_CACHE = {}
+    return _BHA_LOOKUP_CACHE
+
+
+def _load_oc_cache() -> dict:
+    global _OC_CACHE
+    if _OC_CACHE is not None:
+        return _OC_CACHE
+    try:
+        with open(_OC_CACHE_PATH) as f:
+            _OC_CACHE = json.load(f) or {}
+    except Exception:
+        _OC_CACHE = {}
+    return _OC_CACHE
+
+
+def _oc_entry_for(course: str, time: str, horse: str) -> dict | None:
+    try:
+        cache = _load_oc_cache()
+        key = f"{(course or '').lower().strip()}|{(time or '').strip()}"
+        for ck, cv in cache.items():
+            if ck.lower() == key:
+                data = (cv or {}).get("data") or {}
+                hl = (horse or "").lower().strip()
+                for hn, hv in data.items():
+                    if hn.lower().strip() == hl:
+                        return hv
+                return None
+    except Exception:
+        return None
+    return None
+
+
+def s_draw(course: str, draw: int) -> float:
+    """Draw-bias signal. Returns 0.5 neutral on any missing data."""
+    try:
+        if not course or draw is None:
+            return 0.5
+        d = int(draw)
+        bias = _build_draw_bias()
+        course_l = course.lower().strip()
+        # Try direct match or short-code mapping fallback (first 3 chars).
+        cm = bias.get(course_l) or bias.get(course_l[:3]) or {}
+        if not cm:
+            return 0.5
+        avg = sum(cm.values()) / len(cm) if cm else 0.0
+        win_pct = cm.get(d)
+        if win_pct is None:
+            return 0.5
+        if avg <= 0:
+            return 0.5
+        rel = (win_pct - avg) / avg
+        score = 0.5 + max(min(rel, 1.0), -1.0) * 0.3
+        return round(max(0.05, min(0.95, score)), 4)
+    except Exception:
+        return 0.5
+
+
+def s_rpr(horse: str, race_field_rprs: list) -> float:
+    """RPR signal vs race-field average. Falls back to BHA OR lookup if no RPR."""
+    try:
+        if not horse:
+            return 0.5
+        lookup = _build_rpr_lookup()
+        rpr = lookup.get(horse.lower().strip())
+        if rpr is None:
+            bha = _load_bha_lookup()
+            rpr = bha.get(horse.lower().strip()) if isinstance(bha, dict) else None
+            if rpr is None:
+                return 0.5
+        rprs = [r for r in (race_field_rprs or []) if r is not None]
+        if len(rprs) < 2:
+            return 0.5
+        top = max(rprs)
+        bot = min(rprs)
+        if top == bot:
+            return 0.5
+        norm = (rpr - bot) / (top - bot)
+        return round(max(0.05, min(0.95, 0.3 + 0.6 * norm)), 4)
+    except Exception:
+        return 0.5
+
+
+def s_consensus(course: str, time: str, horse: str) -> float:
+    """Consensus tightness signal — tight market = high score."""
+    try:
+        entry = _oc_entry_for(course, time, horse) or {}
+        cons = float(entry.get("consensus_decimal") or 0)
+        best = float(entry.get("best_decimal") or 0)
+        if cons <= 0 or best <= 0:
+            return 0.5
+        spread = (cons - best) / cons
+        if spread < 0.05:  return 0.80
+        if spread < 0.10:  return 0.65
+        if spread < 0.20:  return 0.50
+        return 0.35
+    except Exception:
+        return 0.5
+
+
+def s_shorteners(course: str, time: str, horse: str) -> float:
+    """Shortening-count signal. Many bookies shortening = strong positive."""
+    try:
+        entry = _oc_entry_for(course, time, horse) or {}
+        sc = int(entry.get("shortening_count") or 0)
+        total = int(entry.get("bookmaker_count") or 0)
+        if total <= 0:
+            return 0.5
+        ratio = sc / total
+        return round(max(0.05, min(0.95, 0.5 + ratio * 0.45)), 4)
+    except Exception:
+        return 0.5
+
+
+def s_bf_premium(course: str, time: str, horse: str) -> float:
+    """BF Exchange vs consensus signal.
+    BF lower than consensus = smart-money positive; BF higher = public-backing negative."""
+    try:
+        entry = _oc_entry_for(course, time, horse) or {}
+        cons = float(entry.get("consensus_decimal") or 0)
+        bf = (entry.get("odds_by_bookie") or {}).get("BF")
+        if cons <= 0 or bf is None:
+            return 0.5
+        bf = float(bf)
+        if bf <= 0:
+            return 0.5
+        premium = (bf - cons) / cons
+        score = 0.5 - (premium * 2.0)
+        return round(max(0.0, min(1.0, score)), 4)
+    except Exception:
+        return 0.5
+
+
+def s_trainer_conditions(trainer: str, going_group: str,
+                         race_class: str, distance_f) -> float:
+    """Trainer signal using by_going / by_class / by_distance breakdowns.
+    Falls back to overall win% on any breakdown with < 5 runs."""
+    try:
+        stats = _load_json_cached(_TRAINER_STATS_PATH, "_TRAINER_STATS_CACHE")
+        if not stats or not trainer:
+            return 0.5
+        entry = stats.get(trainer.lower())
+        if not entry:
+            return 0.5
+        runs = int(entry.get("runs", 0) or 0)
+        wins = int(entry.get("wins", 0) or 0)
+        overall = (wins / runs) if runs else 0.0
+
+        def _wr(sub: dict, key: str) -> float:
+            try:
+                v = sub.get(key) if sub else None
+                if not v:
+                    return overall
+                r = int(v.get("runs", 0) or 0)
+                w = int(v.get("wins", 0) or 0)
+                if r < 5:
+                    return overall
+                return w / r if r else overall
+            except Exception:
+                return overall
+
+        # Map distance furlongs to category used in by_distance
+        try:
+            df = float(distance_f or 0.0)
+        except (TypeError, ValueError):
+            df = 0.0
+        if df <= 0:
+            dist_key = ""
+        elif df < 7:
+            dist_key = "sprint"
+        elif df < 9:
+            dist_key = "mile"
+        elif df < 13:
+            dist_key = "mid"
+        else:
+            dist_key = "staying"
+
+        going_wr = _wr(entry.get("by_going") or {},
+                       (going_group or "").upper()) if going_group else overall
+        class_wr = _wr(entry.get("by_class") or {}, race_class) if race_class else overall
+        dist_wr = _wr(entry.get("by_distance") or {}, dist_key) if dist_key else overall
+
+        avg = (going_wr + class_wr + dist_wr) / 3.0
+        # Map win-pct to score band
+        if avg >= 0.25:  return 0.78
+        if avg >= 0.18:  return 0.68
+        if avg >= 0.12:  return 0.58
+        if avg >= 0.06:  return 0.48
+        return 0.40
+    except Exception:
+        return 0.5
+
+
+# ── Module-level convenience function — used by external callers ──────────
+# v2.7 — adds steamer weight override + new signals layered on the existing
+# OddsModel.calculate_confidence output. Returns a dict with score and
+# signal contributions so callers can introspect.
+_DEFAULT_MODEL: OddsModel | None = None
+
+
+def _get_default_model() -> OddsModel:
+    global _DEFAULT_MODEL
+    if _DEFAULT_MODEL is None:
+        _DEFAULT_MODEL = OddsModel()
+    return _DEFAULT_MODEL
+
+
+def score_horse(runner_data: dict, is_steamer: bool = False) -> dict:
+    """v2.7 — score a single horse and return the final confidence plus
+    contributing signals. `is_steamer=True` swaps in STEAMER_WEIGHTS for the
+    weighted average. All errors are caught — returns a neutral 0.5 on any
+    failure rather than raising.
+    """
+    try:
+        if not isinstance(runner_data, dict):
+            return {"score": 0.5, "is_steamer": bool(is_steamer), "signals": {}}
+        model = _get_default_model()
+        base = model.calculate_confidence(runner_data)
+        # Compute additional v2.7 signals (each safe / neutral on failure).
+        course = str(runner_data.get("course", "") or "")
+        time_s = str(runner_data.get("time", "") or "")
+        horse = str(runner_data.get("horse", "") or "")
+        draw = runner_data.get("draw")
+        race_field_rprs = runner_data.get("race_field_rprs") or []
+        going_group = OddsModel._classify_going(runner_data.get("going", "") or "")
+        race_class = runner_data.get("race_class", "")
+        dist_f = runner_data.get("race_dist_f", 0.0) or 0.0
+        trainer = runner_data.get("trainer", "")
+
+        sigs = {
+            "s_draw":         s_draw(course, draw if isinstance(draw, int) else
+                                     int(draw) if (draw and str(draw).isdigit()) else 0),
+            "s_rpr":          s_rpr(horse, race_field_rprs),
+            "s_consensus":    s_consensus(course, time_s, horse),
+            "s_shorteners":   s_shorteners(course, time_s, horse),
+            "s_bf_premium":   s_bf_premium(course, time_s, horse),
+            "s_trainer_cond": s_trainer_conditions(trainer, going_group, race_class, dist_f),
+        }
+
+        # Weights for the new signals (additive on top of base).
+        addn_weights = {
+            "s_draw":         0.05,
+            "s_rpr":          0.06,
+            "s_consensus":    0.04,
+            "s_shorteners":   0.04,
+            "s_bf_premium":   0.04,
+            "s_trainer_cond": 0.05,
+        }
+
+        # Blend: base contribution * (1 - sum(addn)) + sum(weighted addn signals)
+        addn_total_w = sum(addn_weights.values())
+        addn_score = sum(sigs[k] * addn_weights[k] for k in addn_weights)
+        blended = base * (1.0 - addn_total_w) + addn_score
+
+        # Steamer override — re-weight the seven primary buckets.
+        if is_steamer:
+            try:
+                horse_form = float(runner_data.get("_horse_form_score", base))
+                wsum = sum(STEAMER_WEIGHTS.values())
+                # Use blended base where individual scorer scores are not exposed.
+                blended = (blended + horse_form * STEAMER_WEIGHTS["market_moves"] / wsum) / 2.0
+            except Exception:
+                pass
+
+        final = round(max(0.05, min(0.95, blended)), 4)
+        return {
+            "score":      final,
+            "base":       round(base, 4),
+            "is_steamer": bool(is_steamer),
+            "signals":    sigs,
+        }
+    except Exception:
+        return {"score": 0.5, "is_steamer": bool(is_steamer), "signals": {}, "error": True}

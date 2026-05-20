@@ -44,6 +44,83 @@ def _utc_to_bst(utc_time_str: str) -> str:
 _SNAPSHOT_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "early_market_snapshot.json")
 _SHOW_FILE     = os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json")
 
+# v2.7 — dedupe state file for hourly market-movers checks.
+_DEDUPE_DIR    = os.path.join(os.path.dirname(__file__), "..", "cron_tracking", "de70bd36")
+_DEDUPE_FILE   = os.path.join(_DEDUPE_DIR, "last_alert_state.json")
+
+
+def _load_last_alert_state() -> dict:
+    """v2.7 — load the prior alert state for mover dedupe (best-effort)."""
+    try:
+        if os.path.exists(_DEDUPE_FILE):
+            with open(_DEDUPE_FILE) as f:
+                return json.load(f) or {}
+    except Exception:
+        pass
+    return {}
+
+
+def _save_last_alert_state(state: dict) -> None:
+    """v2.7 — persist current mover state. Creates dir if missing. Best-effort."""
+    try:
+        os.makedirs(_DEDUPE_DIR, exist_ok=True)
+        with open(_DEDUPE_FILE, "w") as f:
+            json.dump(state, f, indent=2)
+    except Exception:
+        pass
+
+
+def dedupe_movers(current_movers: list, target_date: str) -> list:
+    """v2.7 — return only NEW movers, or existing movers whose move_pct has
+    increased by >= 10 percentage points. Updates the on-disk state file
+    after computing the diff.
+
+    A `current_movers` list of error-dicts is passed through untouched.
+    Empty result is returned as [] (caller should exit silently).
+    """
+    if not current_movers:
+        return []
+    if isinstance(current_movers[0], dict) and current_movers[0].get("error"):
+        return current_movers
+
+    prior = _load_last_alert_state()
+    prior_movers = (prior.get("movers") or {}) if isinstance(prior, dict) else {}
+
+    out = []
+    new_state_movers: dict = {}
+    for m in current_movers:
+        try:
+            horse = str(m.get("horse", "")).strip()
+            if not horse:
+                continue
+            move_pct = float(m.get("move_pct", 0) or 0)
+            entry = {
+                "move_pct":  move_pct,
+                "direction": m.get("direction", ""),
+                "course":    m.get("course", ""),
+                "time":      m.get("time", ""),
+            }
+            new_state_movers[horse] = entry
+            prev = prior_movers.get(horse)
+            if prev is None:
+                out.append(m)
+            else:
+                try:
+                    prev_pct = float(prev.get("move_pct", 0) or 0)
+                except Exception:
+                    prev_pct = 0.0
+                if (move_pct - prev_pct) >= 10.0:
+                    out.append(m)
+        except Exception:
+            continue
+
+    _save_last_alert_state({
+        "timestamp": datetime.datetime.now(_LONDON).isoformat(timespec="seconds"),
+        "date":      target_date,
+        "movers":    new_state_movers,
+    })
+    return out
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 

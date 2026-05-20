@@ -55,15 +55,10 @@ def _decimal_of(s: dict) -> float:
 
 
 def _has_valid_price(s) -> bool:
-    """v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter.
-    The 4/6 (1.67) Oddschecker fetch gate is SEPARATE — only this bet
-    qualification floor moved.
-
-    Accepts a selection dict (canonical) or a raw price string/number
-    (test/utility usage). Returns True iff a real decimal >= 3.0 can be
-    parsed. Rejects sentinels (?, nan, n/a, -, "") and NaN floats.
+    """v2.7: price floor removed — any real decimal >= 1.5 is valid.
+    Price is no longer an eligibility filter; it now only drives the
+    tier classification in `_classify_tier`.
     """
-    # Allow raw string/number input — convert "X/Y" fraction to decimal.
     if isinstance(s, (int, float, str)):
         raw = s
     else:
@@ -78,7 +73,6 @@ def _has_valid_price(s) -> bool:
         return False
     if sval in ("", "nan", "none", "?", "n/a", "na", "-", "null"):
         return False
-    # Fractional odds (e.g. "2/1") supported when called as a string.
     try:
         if "/" in sval:
             n, d = sval.split("/")
@@ -87,10 +81,62 @@ def _has_valid_price(s) -> bool:
             f = float(raw)
     except (TypeError, ValueError, ZeroDivisionError):
         return False
-    if f != f:  # NaN
+    if f != f:
         return False
-    # v2.6.12 — price floor raised to 3.0 (2/1) — no value in shorter
-    return f >= 3.0
+    return f >= 1.5
+
+
+def _classify_tier(horse: dict) -> str:
+    """v2.7 — assign each selection to one of six tiers based on price and
+    market-move magnitude. Priority order (top wins):
+
+        TWILIGHT_JET   show >= 9.0 dec, current <= 5.0 dec, move >= 50%
+        SHORT_STEAMER  current <= 3.0 dec, move >= 30%
+        STEAMER        move >= 30%, current > 3.0 dec
+        EACH_WAY       current >= 9.0 dec, conf >= 0.40
+        VALUE          current >= 6.0 dec, conf >= 0.65
+        STANDARD       fallback
+
+    All data-access wrapped — returns "STANDARD" on any error.
+    """
+    try:
+        h = horse or {}
+        try:
+            current = float(h.get("decimal_odds")
+                            or h.get("decimal")
+                            or h.get("best_odds_decimal") or 0.0)
+        except (TypeError, ValueError):
+            current = 0.0
+        try:
+            show = float(h.get("show_price_decimal")
+                         or h.get("show_decimal")
+                         or h.get("show_price") or 0.0)
+        except (TypeError, ValueError):
+            show = 0.0
+        try:
+            conf = float(h.get("confidence") or 0.0)
+        except (TypeError, ValueError):
+            conf = 0.0
+
+        if show > 0 and current > 0:
+            move_pct = (show - current) / show
+        else:
+            move_pct = 0.0
+
+        if show >= 9.0 and current <= 5.0 and move_pct >= 0.50:
+            h["twilight_jet_rule"] = True
+            return "TWILIGHT_JET"
+        if current > 0 and current <= 3.0 and move_pct >= 0.30:
+            return "SHORT_STEAMER"
+        if move_pct >= 0.30 and current > 3.0:
+            return "STEAMER"
+        if current >= 9.0 and conf >= 0.40:
+            return "EACH_WAY"
+        if current >= 6.0 and conf >= 0.65:
+            return "VALUE"
+        return "STANDARD"
+    except Exception:
+        return "STANDARD"
 
 
 def _qualifies_for_bet(s: dict, tier_key: str) -> bool:
@@ -154,13 +200,36 @@ def _build_bet(tier_key: str, selections: list) -> dict:
             "reason":                f"Need {n} selections, got {len(pool)}.",
         }
 
-    selections_out = [{
-        "name":         s.get("horse") or s.get("name"),
-        "decimal_odds": _decimal_of(s),
-        "confidence":   float(s.get("confidence", 0.0) or 0.0),
-        "course":       s.get("course", ""),
-        "time":         s.get("time", ""),
-    } for s in pool]
+    selections_out = []
+    for s in pool:
+        tier = _classify_tier(s)
+        if tier == "TWILIGHT_JET":
+            each_way, is_banker = True, False
+            notes = "TWILIGHT JET RULE"
+        elif tier in ("SHORT_STEAMER", "STEAMER"):
+            each_way, is_banker = False, True
+            notes = tier
+        elif tier == "EACH_WAY":
+            each_way, is_banker = True, False
+            notes = tier
+        elif tier == "VALUE":
+            each_way, is_banker = False, False
+            notes = tier
+        else:
+            each_way, is_banker = False, False
+            notes = "STANDARD"
+        selections_out.append({
+            "name":         s.get("horse") or s.get("name"),
+            "decimal_odds": _decimal_of(s),
+            "confidence":   float(s.get("confidence", 0.0) or 0.0),
+            "course":       s.get("course", ""),
+            "time":         s.get("time", ""),
+            "tier":         tier,
+            "each_way":     each_way,
+            "is_banker":    is_banker,
+            "notes":        notes,
+            "twilight_jet_rule": bool(s.get("twilight_jet_rule", False)),
+        })
 
     # Lucky perm — enumerate every k-combination from 1..n; equal stake per line.
     total_lines = sum(1 for k in range(1, n + 1) for _ in _combs(range(n), k))
@@ -1047,7 +1116,7 @@ def get_fold_bets(selections: list) -> dict:
             dec = float(s.get("decimal") or 0.0)
         except Exception:
             continue
-        if dec < 3.0:  # v2.6.12: price floor raised to 3.0 (2/1) — no value in shorter
+        if dec < 1.5:  # v2.7: price floor removed — tiering handles price bands
             continue
         if s.get("low_value_acca", False):
             continue

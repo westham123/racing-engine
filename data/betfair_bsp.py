@@ -68,7 +68,6 @@ class BetfairBSP:
           - On Streamlit Cloud (UK servers) this will succeed automatically.
         """
         if not self.username or not self.password:
-            print("[BetfairBSP] No credentials provided — BSP signals neutral.")
             return False
         try:
             resp = requests.post(
@@ -81,8 +80,8 @@ class BetfairBSP:
                 },
                 timeout=10,
             )
-            if resp.status_code != 200 or not resp.text.strip():
-                print(f"[BetfairBSP] Login HTTP {resp.status_code} — BSP neutral.")
+            # v2.7 — 403 / non-200 / empty response: silently return None.
+            if resp.status_code == 403 or resp.status_code != 200 or not resp.text.strip():
                 return False
 
             data = resp.json()
@@ -97,18 +96,12 @@ class BetfairBSP:
                     "Accept": "application/json",
                 }
                 return True
-            elif status == "BETTING_RESTRICTED_LOCATION":
-                print("[BetfairBSP] Geo-restricted IP — BSP will activate on Streamlit Cloud.")
-                return False
-            else:
-                print(f"[BetfairBSP] Login failed: {status}")
-                return False
-        except Exception as e:
-            print(f"[BetfairBSP] Login error: {e} — BSP neutral.")
+            return False
+        except Exception:
             return False
 
     def _post(self, endpoint: str, payload: dict) -> dict:
-        """Low-level API call."""
+        """Low-level API call. v2.7 — 403 returns silently."""
         try:
             r = requests.post(
                 f"{API_URL}/{endpoint}/",
@@ -116,9 +109,11 @@ class BetfairBSP:
                 data=json.dumps(payload),
                 timeout=10,
             )
+            if r.status_code == 403:
+                return {}
             return r.json()
-        except Exception as e:
-            return {"error": str(e)}
+        except Exception:
+            return {}
 
     # ── Market Discovery ──────────────────────────────────────────────────────
 
