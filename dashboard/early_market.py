@@ -15,7 +15,11 @@
 # Workflow:
 #   Prior afternoon/evening: take_show_snapshot() — captures early show prices
 #   08:00 BST next morning:  take_opening_snapshot() — captures firm morning prices
-#   Hourly checks:           get_market_movers() — flags >=15% moves vs opening
+#   Hourly checks:           get_market_movers() — flags moves vs opening using
+#                            tiered price-band thresholds + bookmaker consensus
+#                            (v2.7.1: 20/1+ needs 40%, 10–20 needs 30%, 5–10
+#                            needs 25%, sub-5/1 needs 20%, AND at least 10 of
+#                            the 26 bookmakers must have shortened)
 #
 # "Steamers" shortening = money coming in = follow signal
 # "Drifters" lengthening = market cooling = avoid signal
@@ -43,6 +47,82 @@ def _utc_to_bst(utc_time_str: str) -> str:
 
 _SNAPSHOT_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "early_market_snapshot.json")
 _SHOW_FILE     = os.path.join(os.path.dirname(__file__), "..", "learning", "show_price_snapshot.json")
+_OC_CACHE_FILE = os.path.join(os.path.dirname(__file__), "..", "learning", "oc_cache.json")
+
+
+def _significant_move(show_price_decimal: float, move_pct: float,
+                      shortening_count, total_bookmakers: int = 26) -> bool:
+    """v2.7.1 — tiered price-band thresholds + bookmaker consensus filter.
+
+    Two conditions must BOTH be met:
+      1. move_pct meets the threshold for the opening price band
+      2. at least 10 bookmakers have shortened (consensus filter)
+
+    move_pct is a positive fraction (0.40 = 40% shortening). If
+    shortening_count is unavailable (None or negative) we fall back to the
+    price-band check only rather than silently blocking on missing data.
+    """
+    # Tier 1: 20/1+ (21.0 dec+) — need 40%+ move
+    if show_price_decimal >= 21.0:
+        pct_threshold = 0.40
+    # Tier 2: 10/1–20/1 (11.0–21.0 dec) — need 30%+ move (Twilight Jet zone)
+    elif show_price_decimal >= 11.0:
+        pct_threshold = 0.30
+    # Tier 3: 5/1–10/1 (6.0–11.0 dec) — need 25%+ move
+    elif show_price_decimal >= 6.0:
+        pct_threshold = 0.25
+    # Tier 4: Under 5/1 (under 6.0 dec) — need 20%+ move
+    else:
+        pct_threshold = 0.20
+
+    move_ok = move_pct >= pct_threshold
+
+    if shortening_count is None or shortening_count < 0:
+        consensus_ok = True
+    else:
+        consensus_ok = shortening_count >= 10
+
+    return move_ok and consensus_ok
+
+
+def _load_oc_cache() -> dict:
+    """Best-effort load of the OC cache (key: '{course_lower}|{HH:MM}')."""
+    try:
+        if os.path.exists(_OC_CACHE_FILE):
+            with open(_OC_CACHE_FILE) as f:
+                return json.load(f) or {}
+    except Exception:
+        pass
+    return {}
+
+
+def _oc_shortening_for(oc_cache: dict, course: str, time_str: str, horse: str):
+    """Look up shortening_count for a horse from the OC cache.
+
+    Returns (shortening_count, bookmaker_count) or (None, 26) if missing —
+    None signals 'data unavailable' to _significant_move().
+    """
+    if not oc_cache:
+        return None, 26
+    key = f"{(course or '').strip().lower()}|{(time_str or '').strip()}"
+    race = oc_cache.get(key)
+    if not isinstance(race, dict):
+        return None, 26
+    data = race.get("data") or {}
+    if not isinstance(data, dict):
+        return None, 26
+    target = (horse or "").strip().lower()
+    for hname, hval in data.items():
+        if hname.strip().lower() == target and isinstance(hval, dict):
+            sc = hval.get("shortening_count")
+            bc = hval.get("bookmaker_count", 26) or 26
+            if sc is None:
+                return None, bc
+            try:
+                return int(sc), int(bc)
+            except Exception:
+                return None, bc
+    return None, 26
 
 # v2.7 — dedupe state file for hourly market-movers checks.
 _DEDUPE_DIR    = os.path.join(os.path.dirname(__file__), "..", "cron_tracking", "de70bd36")
@@ -74,6 +154,11 @@ def dedupe_movers(current_movers: list, target_date: str) -> list:
     """v2.7 — return only NEW movers, or existing movers whose move_pct has
     increased by >= 10 percentage points. Updates the on-disk state file
     after computing the diff.
+
+    v2.7.1 — for STEAM accel re-alerts we additionally verify the move still
+    satisfies _significant_move() (tier threshold + consensus). This avoids
+    re-alerting on an accelerating move that no longer meets consensus
+    (e.g. only one or two bookies are stretching the shortening further).
 
     A `current_movers` list of error-dicts is passed through untouched.
     Empty result is returned as [] (caller should exit silently).
@@ -110,6 +195,16 @@ def dedupe_movers(current_movers: list, target_date: str) -> list:
                 except Exception:
                     prev_pct = 0.0
                 if (move_pct - prev_pct) >= 10.0:
+                    # Accel re-alert: re-verify v2.7.1 criteria for STEAM.
+                    # DRIFT and NR_HOLD do not use the consensus gate.
+                    if m.get("direction") == "STEAM":
+                        base_dec = float(m.get("baseline_dec", 0) or 0)
+                        sc       = m.get("shortening_count")
+                        if base_dec > 0 and not _significant_move(
+                            base_dec, move_pct / 100.0, sc,
+                            int(m.get("total_bookmakers", 26) or 26)
+                        ):
+                            continue
                     out.append(m)
         except Exception:
             continue
@@ -358,7 +453,13 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
     """
     Compare current odds vs baseline snapshot.
     vs: "opening" (08:00 BST snapshot) or "show" (prior-day show prices).
-    Returns horses that have moved >= min_move_pct (v2.5.43 default 30%).
+
+    v2.7.1: replaces the flat min_move_pct threshold with tiered price-band
+    thresholds AND a bookmaker-consensus filter (>=10/26 bookmakers shortened),
+    via _significant_move(). The min_move_pct kwarg is retained as a legacy
+    fallback applied only when shortening_count is unavailable for every
+    runner in a race (e.g. OC cache miss).
+
     Outsiders (baseline > 20.0 / 20-1) are filtered as noise.
     Steamers (shortened) = STEAM, Drifters (lengthened) = DRIFT.
 
@@ -382,8 +483,9 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
         baseline_label = "show price" if vs == "show" else "opening"
         return [{"error": f"No {baseline_label} snapshot for {target_date} — take snapshot first."}]
 
-    races  = get_next_day_card(target_date)
-    movers = []
+    races    = get_next_day_card(target_date)
+    oc_cache = _load_oc_cache()
+    movers   = []
 
     for race in races:
         # ── Build NR-adjusted fair-value baseline for this race ──────────────────
@@ -427,6 +529,20 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
             nr_stretch = min(1.0 / (1.0 - nr_implied_sum), 2.0)
         else:
             nr_stretch = 1.0
+
+        # v2.7.1 — does this race have any shortening_count data in OC cache?
+        # If not (e.g. cache miss for this course/time), fall back to the
+        # legacy flat min_move_pct gate so we never silently drop everything.
+        race_has_oc_data = False
+        race_oc_key = f"{(race['course'] or '').strip().lower()}|{(race['time'] or '').strip()}"
+        race_oc_entry = oc_cache.get(race_oc_key)
+        if isinstance(race_oc_entry, dict):
+            race_oc_data = race_oc_entry.get("data") or {}
+            if isinstance(race_oc_data, dict):
+                for _hv in race_oc_data.values():
+                    if isinstance(_hv, dict) and _hv.get("shortening_count") is not None:
+                        race_has_oc_data = True
+                        break
 
         for rn in race["runners"]:
             key = f"{target_date}::{race['time']}::{race['course']}::{rn['horse'].lower().strip()}"
@@ -480,8 +596,27 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
 
             # Compare current price vs NR-adjusted baseline for the direction/size
             adj_move_pct = (adjusted_baseline - curr_dec) / adjusted_baseline
-            if abs(adj_move_pct) < min_move_pct:
-                continue
+
+            # v2.7.1 — tiered price-band threshold + bookmaker consensus filter.
+            # For shorteners we use _significant_move() (STEAM signals are what
+            # we act on). For drifters we keep the legacy gate, since DRIFT is
+            # informational and consensus on shortening doesn't apply.
+            shortening_count, total_bk = _oc_shortening_for(
+                oc_cache, race["course"], race["time"], rn["horse"]
+            )
+            # Legacy fallback: if NO runner in this race has OC data, fall back
+            # to the flat min_move_pct gate so we don't drop the whole race.
+            if not race_has_oc_data:
+                shortening_count = None
+
+            if adj_move_pct > 0:
+                if not _significant_move(open_dec, adj_move_pct,
+                                         shortening_count, total_bk):
+                    continue
+            else:
+                # Drifters: legacy flat threshold (no consensus concept for drifts)
+                if abs(adj_move_pct) < min_move_pct:
+                    continue
 
             direction = "STEAM" if adj_move_pct > 0 else "DRIFT"
 
@@ -509,6 +644,8 @@ def get_market_movers(target_date: str = None, min_move_pct: float = 0.30,
                 "is_handicap":      race["is_handicap"],
                 "snapshot_label":   snap_label,
                 "snapshot_time":    snap_time,
+                "shortening_count": shortening_count,
+                "total_bookmakers": total_bk,
             })
 
     steamers  = sorted([m for m in movers if m["direction"] == "STEAM"],
