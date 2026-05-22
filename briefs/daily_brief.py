@@ -2728,11 +2728,37 @@ def build_confirmed_selections() -> str:
     )
 
 
+def _silent_git_pull() -> None:
+    """Pull latest main before sending — non-fatal if it fails.
+
+    Why: cron commands previously chained `git pull && python -c ...` and
+    aborted the send when pull errored (e.g. stale .git/index.lock).
+    """
+    import subprocess as _sp
+    repo_dir = "/home/user/workspace/racing-engine"
+    lock_file = os.path.join(repo_dir, ".git", "index.lock")
+    try:
+        if os.path.exists(lock_file):
+            os.remove(lock_file)
+    except Exception:
+        pass
+    try:
+        _sp.run(
+            ["git", "pull", "origin", "main"],
+            cwd=repo_dir,
+            capture_output=True,
+            timeout=30,
+        )
+    except Exception:
+        pass
+
+
 def send_confirmed_selections() -> bool:
     """Called by the 13:30 BST cron. Sends the 'final word' confirmed list.
     v2.5.59 — hard 90s timeout via concurrent.futures; sends plain fallback
     if build hangs so the cron never times out silently.
     """
+    _silent_git_pull()
     # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
     try:
         from engine.odds_model import OddsModel
@@ -3382,6 +3408,7 @@ def send_email(subject: str, html_content: str, recipient: str = RECIPIENT, plai
 # ── Top-level convenience functions (used by crons) ───────────
 def send_morning_brief(budget: float = 100.0):
     """Called directly by the 10:00 BST cron. Checks feed is live before sending."""
+    _silent_git_pull()
     # v2.6.3 — defensive cache clear (cron is fresh subprocess but be safe)
     try:
         from engine.odds_model import OddsModel

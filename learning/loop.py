@@ -357,6 +357,12 @@ class LearningLoop:
                 if our_horse:
                     won_flag = (our_horse.strip().lower() == winner.strip().lower())
 
+                # Skip races where we had no selection — prevents blank entries
+                # cluttering results_store.json from the evening settlement loop.
+                _our = (our_horse or "").strip()
+                if not _our:
+                    continue
+
                 # Store result
                 result_record = {
                     "race_id":    race_id,
