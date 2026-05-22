@@ -3891,8 +3891,9 @@ SYSTEM RULES (CRITICAL — AI must follow at all times)
 
 DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 ──────────────────────────────────────────────────────────────
-• OFFICIAL SELECTION: a horse is official ONLY if it cleared BOTH
-  the confidence threshold AND the 2/1 (3.0 decimal) price cut-off. No exceptions.
+• OFFICIAL SELECTION: a horse is official ONLY if it cleared the confidence
+  threshold (65% min, 70% for handicaps) AND its price is ≥1.5 decimal.
+  Price determines BET TIER, not eligibility. No price floor beyond 1.5 decimal.
 • NO HARDCODED / SAMPLE DATA: all selections must come from the
   live Sporting Life feed. Never display example or fallback horses.
 • NON-RUNNERS: must be stripped at EVERY output point — app Tab 1,
@@ -3904,49 +3905,68 @@ DATA INTEGRITY RULES (CRITICAL — these must never be broken)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-STAKING RULES (PERMANENT — do not change without user approval)
-────────────────────────────────────────────────────────────────
-Budget: £50 per bet (£100 total if both BET A and BET B active)
-Short price cut-off: 2/1 (3.0 decimal) — hard exclusion (v2.6.12)
-Confidence threshold: 65% minimum (handicaps: 70%) — v2.6.7
+STAKING RULES (v2.7 — do not change without user approval)
+────────────────────────────────────────────────────────────
+Budget: £50 per day
+Price floor: NONE — any horse ≥1.5 decimal is eligible
+Price determines BET TIER, not eligibility
+
+BET TIERS (priority order):
+  TWILIGHT_JET  show ≥8/1, current ≤4/1, move ≥50% → mandatory each-way, bypass confidence
+  SHORT_STEAMER current ≤2/1, move ≥30% from show → banker win single
+  STEAMER       move ≥30% from show, any price → banker win single
+  EACH_WAY      8/1+ with some confidence → each-way only
+  VALUE         5/1+, 65%+ confidence → accumulator leg / each-way
+  STANDARD      everything else passing basic eligibility
+
+Budget split on £50:
+  Bankers (TWILIGHT_JET / steamers): 30% = £15 split equally
+  VALUE accumulator / Lucky 15:      40% = £20 (L15 if 4+ VALUE, else acca)
+  EACH-WAY selections:               30% = £15 split equally
+
+Confidence threshold: 65% (handicaps: 70%)
 One horse per race: highest confidence only
-Group/Listed/Grade races: excluded entirely
-Hard cap: max 5 selections per day — quality over volume (v2.6.7)
+Group/Listed/Grade races: excluded
+Hard cap: 5 selections per day
+Large fields: 16+ runners excluded
 
-BET A (CORE) — top 3 selections by confidence (v2.6.7)
-  Patent: £20 stake across 7 combination bets (3 horses)
-  Singles: £30 stake (£10 per horse)
-  Total: £50
+SIGNAL WEIGHTS (v2.7)
+──────────────────────
+Standard (non-steamer):
+  horse_form: 0.22, market_odds: 0.19, market_moves: 0.14,
+  trainer_form: 0.10, jockey_form: 0.07, course_form: 0.07,
+  distance_form: 0.04, s_draw: 0.05, s_rpr: 0.06,
+  s_consensus: 0.03, s_shorteners: 0.03
 
-BET B (MID) — top 5 selections by confidence
-  Lucky 31: £20 stake across 31 combination bets (5 horses)
-  Singles: £30 stake (£6.00 per horse)
-  Total: £50
-  Only active when 5+ selections qualify
+Steamer override (≥30% move):
+  market_moves: 0.40, horse_form: 0.20, market_odds: 0.15,
+  trainer_form: 0.12, jockey_form: 0.08, course_form: 0.03,
+  distance_form: 0.02
 
-Oddschecker multi-bookmaker odds (v2.5.40):
-  Best available price shown across 24 bookmakers
-  Betfair Exchange price included via BF bookmaker code
-  Fallback to Sporting Life if Oddschecker unavailable
+MARKET MOVERS (v2.7.1)
+───────────────────────
+Tiered thresholds by opening show price:
+  20/1+ (21.0 dec+):  40%+ move required
+  10/1–20/1:          30%+ move required (Twilight Jet zone)
+  5/1–10/1:           25%+ move required
+  Under 5/1:          20%+ move required
 
-Target: £2,000+ profit, uncapped.
-
-Additional exclusion rules:
-  - Dominant rival: excluded from Bet A if rival >25% shorter in price (any DOM-flagged horse hard-excluded from Bet A regardless)
-  - Large fields: 16+ runners excluded entirely
-  - Drifters: flagged in Tab 2, auto-drop rule under development
+Consensus filter: move must be confirmed by ≥10/26 bookmakers
+Both conditions must be true for alert to fire.
+Drifters: flat 15% threshold (no consensus gate).
+Dedupe: only alert if horse is new OR move accelerated ≥10% since last alert.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 SCHEDULED CRONS (all times BST = UTC+1)
 ────────────────────────────────────────
-[3fb7f776] 09:00 daily  — Operator Brief → richardking123@outlook.com
-[4eac6ab1] 10:00 daily  — Morning Brief → richardking123@outlook.com
-[a54556fb] 13:00 daily  — Confirmed Selections → richardking123@outlook.com
-[909fe390] 14:30 daily  — Late Pre-Race Alerts (15:00–18:30 BST)
-[c58b4236] 15:30 daily  — Show Price Baseline snapshot
-[de70bd36] Hourly 16:09–07:09 — Market Movers (silent if nothing ≥30%)
-[385f97ff] 21:00 daily  — Evening Summary → richardking123@outlook.com
+[3fb7f776] 09:00 daily     — Operator Brief
+[448364e2] 10:00 daily     — Morning Brief (v2.7 tiered output)
+[83b89402] 13:00 daily     — Confirmed Selections (v2.7 tiered staking)
+[909fe390] 14:30 daily     — Late Pre-Race Alerts (15:00–18:30 BST)
+[c58b4236] 16:00 daily     — Show Price Baseline snapshot
+[de70bd36] 08,10,12,14,16,18,20 BST + hourly overnight — Market Movers (tiered thresholds + consensus filter)
+[385f97ff] 21:00 daily     — Evening Summary
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -3988,7 +4008,10 @@ What's wired           : morning brief calls auto_record_day();
 
 RECENT GIT COMMITS
 ───────────────────
-{git_log}
+ddf2b61  v2.7.1: tiered move thresholds + bookmaker consensus filter for market movers
+43af59f  v2.7: tiered staking, remove price floor, wire unused signals, fix staleness + BSP
+f2310ac  Settle 7-19 May results: 29 selections recorded
+f6e850e  data: rebuild trainer/jockey stats from 12k rows
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -4005,20 +4028,19 @@ Betfair    : richardking123@outlook.com / Pa55word2018!
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-KNOWN BUGS & NEXT BUILDS (in priority order)
-──────────────────────────────────────────────
-1. LEARNING DATA THIN
-   {recs_count} selections logged, {results_count} results in store (from 2 May).
-   Trainer/jockey form, market moves will activate as data accumulates (~2 weeks).
-   Action: none needed — accumulates automatically.
+KNOWN BUGS & NEXT BUILDS
+──────────────────────────
+1. Blank results_store entries — settlement loop writing all race cards not just selections.
+   Fix in progress (v2.7.2).
 
-2. IRISH TRACK PRICE COVERAGE
-   Oddschecker does not cover Punchestown/Leopardstown.
+2. Git pull on cron startup — git pull && send pattern fails silently, send runs ok on retry.
+   Fix in progress (v2.7.2).
+
+3. Thu 21 May confirmed selections — send_confirmed_selections() crashed (v2.7.1 import error).
+   Fixed automatically after v2.7.1 push. Fri 22 May confirmed selections sent successfully.
+
+4. Irish track price coverage — Oddschecker does not cover Punchestown/Leopardstown.
    Horses from these venues qualify on Sporting Life SP only.
-
-3. BETFAIR BSP — HTTP 403
-   BSP data unavailable (app key 403). BSP treated as neutral in all scoring.
-   Expected until Betfair resolves access.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
